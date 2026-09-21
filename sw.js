@@ -1,4 +1,4 @@
-const BUILD_HASH = 'V.01.09.2026.';
+const BUILD_HASH = 'V.03.09.2026.';
 const CACHE_NAME = 'app-' + BUILD_HASH;
 
 const ASSETS_TO_CACHE = [
@@ -34,8 +34,6 @@ const CDN_ASSETS_TO_PRECACHE = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
 
-  'https://accounts.google.com/gsi/client',
-
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
 
@@ -48,7 +46,6 @@ const CDN_ASSETS_TO_PRECACHE = [
 const CACHE_FIRST_ORIGINS = [
   'https://www.gstatic.com',
   'https://unpkg.com',
-  'https://accounts.google.com',
   'https://cdnjs.cloudflare.com',
   'https://fonts.googleapis.com',
   'https://fonts.gstatic.com',
@@ -385,6 +382,10 @@ self.addEventListener('fetch', function (event) {
   var method = event.request.method;
 
   if (method !== 'GET') return;
+
+  // Never intercept Google Identity Services. accounts.google.com sends no CORS
+  // headers, so re-fetching the <script> request in 'cors' mode fails.
+  if (url.origin === 'https://accounts.google.com') return;
 
   if (url.origin === 'https://cdnjs.cloudflare.com' &&
       url.pathname.toLowerCase().includes('sql.js')) {
