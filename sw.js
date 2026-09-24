@@ -1,28 +1,28 @@
-const BUILD_HASH = 'V.03.09.2026.';
+const BUILD_HASH = 'V.24.09.2026.b';
 const CACHE_NAME = 'app-' + BUILD_HASH;
 
 const ASSETS_TO_CACHE = [
-  '/sarim/',
-  '/sarim/index.html',
-  '/sarim/app.css',
-  '/sarim/constants.js',
-  '/sarim/business.js',
-  '/sarim/sync.js',
-  '/sarim/utilities-core.js',
-  '/sarim/utilities-sales.js',
-  '/sarim/utilities-payments.js',
-  '/sarim/factory.js',
-  '/sarim/customers.js',
-  '/sarim/rep-sales.js',
-  '/sarim/admin-data.js',
-  '/sarim/custom-date-picker.js',
-  '/sarim/manifest.json',
-  '/sarim/192.png',
-  '/sarim/512.png',
+  './',
+  './index.html',
+  './app.css',
+  './constants.js',
+  './business.js',
+  './sync.js',
+  './utilities-core.js',
+  './utilities-sales.js',
+  './utilities-payments.js',
+  './factory.js',
+  './customers.js',
+  './rep-sales.js',
+  './admin-data.js',
+  './custom-date-picker.js',
+  './manifest.json',
+  './192.png',
+  './512.png',
 
-  '/sarim/sql-wasm.js',
-  '/sarim/sql-wasm.wasm',
-  '/sarim/sql.js'
+  './sql-wasm.js',
+  './sql-wasm.wasm',
+  './sql.js'
 ];
 
 const CDN_ASSETS_TO_PRECACHE = [
@@ -344,6 +344,7 @@ self.addEventListener('sync', (event) => {
 
 const NETWORK_TIMEOUT_MS  = 4000;
 const NAVIGATE_TIMEOUT_MS = 3000;
+const LOCAL_TIMEOUT_MS    = 30000;
 const API_TIMEOUT_MS      = 8000;
 
 function fetchWithTimeout(request, timeout, opts) {
@@ -361,7 +362,7 @@ function revalidateInBackground(cache, request, opts) {
     .catch(function () {});
 }
 
-function cacheFirstResponse(event, opts) {
+function cacheFirstResponse(event, opts, timeoutMs) {
   event.respondWith(
     caches.open(CACHE_NAME).then(function (cache) {
       return cache.match(event.request).then(function (cached) {
@@ -369,8 +370,8 @@ function cacheFirstResponse(event, opts) {
           revalidateInBackground(cache, event.request, opts);
           return cached;
         }
-        return fetchWithTimeout(event.request, NETWORK_TIMEOUT_MS, opts)
-          .then(function (res) { if (res.ok) cache.put(event.request, res.clone()); return res; })
+        return fetchWithTimeout(event.request, timeoutMs || NETWORK_TIMEOUT_MS, opts)
+          .then(function (res) { if (res.ok) cache.put(event.request, res.clone()).catch(function () {}); return res; })
           .catch(function () { return new Response('', { status: 503 }); });
       });
     })
@@ -382,6 +383,9 @@ self.addEventListener('fetch', function (event) {
   var method = event.request.method;
 
   if (method !== 'GET') return;
+
+  // Ignore chrome-extension://, data:, blob: etc. Cache API only supports http(s).
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
   // Never intercept Google Identity Services. accounts.google.com sends no CORS
   // headers, so re-fetching the <script> request in 'cors' mode fails.
@@ -414,7 +418,7 @@ self.addEventListener('fetch', function (event) {
     event.respondWith(
       caches.open(CACHE_NAME).then(function (cache) {
 
-        return cache.match('/sarim/index.html')
+        return cache.match(new URL('./index.html', self.location.href).href)
           .then(function (cached) { return cached || cache.match(event.request); })
           .then(function (cached) {
             if (cached) {
@@ -502,7 +506,7 @@ self.addEventListener('fetch', function (event) {
   );
 
   if (isLocal) {
-    cacheFirstResponse(event);
+    cacheFirstResponse(event, undefined, LOCAL_TIMEOUT_MS);
     return;
   }
 

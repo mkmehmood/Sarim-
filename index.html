@@ -27,6 +27,7 @@
               https://nominatim.openstreetmap.org
               https://firestore.googleapis.com
               https://*.google.com
+              https://cdnjs.cloudflare.com
               https://accounts.google.com;
   frame-src   https://apis.google.com
               https://*.firebaseapp.com
@@ -397,6 +398,8 @@ if ('serviceWorker' in navigator) {
 }
 input:checked + .theme-toggle-track { background: var(--accent); }
 input:checked + .theme-toggle-track::before { transform: translateX(22px); }
+#calcRangeInputs { position:absolute; left:0; right:0; top:0; height:36px; opacity:0; pointer-events:none; }
+#calcRangeInputs .cdp-wrap { position:absolute; left:0; top:0; width:100%; }
 </style>
 </head>
 <body>
@@ -2109,8 +2112,8 @@ No records found
 <h1 class="shimmer-text u-heading-bold">Calculator</h1>
 </header>
 <div class="section liquid-card chart-card">
-<div class="grid-inputs">
-<div class="field">
+<div class="grid-inputs" style="grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);">
+<div class="field" style="min-width:0;">
 <label>Sales Representative</label>
 <div style="position:relative;">
 <button id="sellerSelectBtn" class="store-selector" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;" onclick="(function(b){var sel=document.getElementById('sellerSelect');var opts=Array.from(sel.options).map(function(o){return{value:o.value,label:o.text};});window._mkPopover(b.parentNode,'_pop_seller',opts,function(v,l){sel.value=v;var _bs=b.querySelector('span');if(_bs)_bs.textContent=l;(async()=>{await loadSalesData();})();});})( this)"><span>COMPARISON </span><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -2119,7 +2122,15 @@ No records found
 </select>
 </div>
 </div>
-<div class="field"><label>Date</label><input type="date" id="sale-date" onchange="(async () => { await loadSalesData(); setPerfOverviewMode(currentPerfOverviewMode || 'day'); })()"></div>
+<div class="field" style="min-width:0;"><label>Date Range</label>
+<div style="position:relative;">
+<button type="button" id="calcRangeBtn" class="cdp-btn" onclick="openCalcRangePicker()"><span class="cdp-btn-label" id="calcRangeLabel" style="font-size:0.78rem;">Select dates</span><span class="cdp-btn-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5h12M5.5 1.8v2.6M10.5 1.8v2.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span></button>
+<div id="calcRangeInputs" aria-hidden="true">
+<input type="date" id="sale-date-from" onchange="onCalcDateChange('from')">
+<input type="date" id="sale-date" onchange="onCalcDateChange('to')">
+</div>
+</div>
+</div>
 </div>
 <div id="entrySection" class="hidden">
 <div class="u-heading-accent" style="margin-top:15px;">Product Quantities</div>

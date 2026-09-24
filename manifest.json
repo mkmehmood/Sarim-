@@ -2,9 +2,9 @@
   "name": "Gull and Zubair Naswar Dealers",
   "short_name": "Gull & Zubair",
   "description": "Comprehensive management system for production, sales, inventory, and credits.",
-  "id": "/sarim/",
-  "start_url": "/sarim/",
-  "scope": "/sarim/",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
@@ -50,26 +50,26 @@
       "name": "New Sale",
       "short_name": "Sale",
       "description": "Record a new customer sale",
-      "url": "/sarim/?action=sales",
+      "url": "./?action=sales",
       "icons": [{ "src": "192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Production Entry",
       "short_name": "Production",
       "description": "Add manufacturing record",
-      "url": "/sarim/?action=production",
+      "url": "./?action=production",
       "icons": [{ "src": "192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Calculator",
       "short_name": "Calc",
       "description": "Open sales calculator",
-      "url": "/sarim/?action=calc",
+      "url": "./?action=calc",
       "icons": [{ "src": "192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "share_target": {
-    "action": "/sarim/",
+    "action": "./",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
     "params": {

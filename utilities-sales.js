@@ -2552,9 +2552,10 @@ const reconciledCustomerIds = new Set();
 if (Array.isArray(salesHistory)) {
   salesHistory.forEach(h => { if (Array.isArray(h.linkedSalesIds)) h.linkedSalesIds.forEach(id => reconciledCustomerIds.add(id)); });
 }
-const linkedIds = await markAllPendingCreditSalesAsCash(seller, reconciledCustomerIds);
+const _cycSel = await getCalcCycleSelection(seller);
+const linkedIds = await markAllPendingCreditSalesAsCash(seller, reconciledCustomerIds, _cycSel.selectedIds);
 entry.linkedSalesIds = linkedIds;
-const linkedRepIds = await markRepSalesEntriesAsUsed(seller, date, calcId);
+const linkedRepIds = await markRepSalesEntriesAsUsed(seller, date, calcId, _cycSel.from);
 entry.linkedRepSalesIds = linkedRepIds;
 try {
 let history = await sqliteStore.get('noman_history', []);
@@ -2578,6 +2579,7 @@ document.getElementById('commissionPerUnit').value = '';
 document.getElementById('commissionPaid').value = '';
 document.getElementById('returnStoreSection').classList.add('hidden');
 document.getElementById('expiredSection').classList.add('hidden');
+window._calcFromManual = false;
 showToast(`Transaction saved! ${linkedIds.length} sales entries reconciled.`, 'success');
 await loadSalesData(currentCompMode);
 if (typeof refreshCustomerSales === 'function') await refreshCustomerSales(1, true);
@@ -2794,7 +2796,7 @@ showToast('Error generating PDF: ' + error.message, 'error');
 }
 }
 
-async function markAllPendingCreditSalesAsCash(seller, reconciledCustomerIds) {
+async function markAllPendingCreditSalesAsCash(seller, reconciledCustomerIds, onlyIds) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 if (!seller || seller === 'COMBINED') return [];
 const linkedIds = [];
@@ -2808,7 +2810,8 @@ sale.customerName === seller &&
 sale.paymentType === 'CREDIT' &&
 !sale.creditReceived &&
 sale.transactionType !== 'OLD_DEBT' &&
-!(reconciledCustomerIds && reconciledCustomerIds.has(sale.id))
+!(reconciledCustomerIds && reconciledCustomerIds.has(sale.id)) &&
+(!(onlyIds instanceof Set) || onlyIds.has(sale.id))
 ) {
 sale.creditReceivedManually = true;
 sale.creditReceived = true;
@@ -2867,14 +2870,14 @@ refreshCustomerSales(1, false);
 return linkedIds;
 }
 
-async function markRepSalesEntriesAsUsed(seller, date, calcId) {
+async function markRepSalesEntriesAsUsed(seller, date, calcId, fromDate) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
   if (!seller || seller === 'COMBINED' || !date || !calcId) return [];
   const linkedRepIds = [];
   repSales.forEach(sale => {
     if (
       sale.salesRep === seller &&
-      sale.date === date &&
+      ((fromDate && fromDate < date) ? (sale.date >= fromDate && sale.date <= date) : sale.date === date) &&
       !sale.usedInCalcId &&
       (sale.paymentType === 'CREDIT' || sale.paymentType === 'COLLECTION')
     ) {

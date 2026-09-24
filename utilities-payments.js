@@ -130,48 +130,128 @@ html += `</div>`;
 return html;
 }
 
-async function calculateTotalSoldForRepresentative(seller) {
+function _calcSaleDay(sale) {
+return (sale && (sale.supplyDate || sale.date)) || '';
+}
+
+async function getPendingRepDeliveries(seller) {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
-if (!seller || seller === 'COMBINED') return 0;
+if (!seller || seller === 'COMBINED') return [];
 const reconciledSalesIds = new Set();
-if (Array.isArray(salesHistory)) {
-  salesHistory.forEach(entry => {
-    if (Array.isArray(entry.linkedSalesIds)) {
-      entry.linkedSalesIds.forEach(id => reconciledSalesIds.add(id));
-    }
-  });
-}
-let totalSold = 0;
-(Array.isArray(customerSales) ? customerSales : []).forEach(sale => {
-  if (sale.currentRepProfile === 'admin' &&
-      sale.customerName === seller &&
-      sale.paymentType === 'CREDIT' &&
-      !sale.creditReceived &&
-      !reconciledSalesIds.has(sale.id) &&
-      sale.transactionType !== 'OLD_DEBT') {
-    totalSold += (sale.quantity || 0);
-  }
+salesHistory.forEach(entry => {
+  if (Array.isArray(entry.linkedSalesIds)) entry.linkedSalesIds.forEach(id => reconciledSalesIds.add(id));
 });
-return totalSold;
+return customerSales.filter(sale =>
+  sale.currentRepProfile === 'admin' &&
+  sale.customerName === seller &&
+  sale.paymentType === 'CREDIT' &&
+  !sale.creditReceived &&
+  !reconciledSalesIds.has(sale.id) &&
+  sale.transactionType !== 'OLD_DEBT'
+);
+}
+
+function getCalcDateRange(pending) {
+const toEl = document.getElementById('sale-date');
+const fromEl = document.getElementById('sale-date-from');
+const to = (toEl && toEl.value) || new Date().toISOString().split('T')[0];
+let from = (fromEl && fromEl.value) || '';
+if (!window._calcFromManual || !from) {
+  const days = (pending || []).map(_calcSaleDay).filter(d => d && d <= to).sort();
+  from = days.length ? days[0] : to;
+}
+if (from > to) from = to;
+return { from, to };
+}
+
+async function getCalcCycleSelection(seller) {
+const pending = await getPendingRepDeliveries(seller);
+const { from, to } = getCalcDateRange(pending);
+const selected = pending.filter(s => { const d = _calcSaleDay(s); return d >= from && d <= to; });
+return {
+  selected,
+  selectedIds: new Set(selected.map(s => s.id)),
+  qty: selected.reduce((t, s) => t + (s.quantity || 0), 0),
+  from, to
+};
+}
+
+async function calculateTotalSoldForRepresentative(seller) {
+const sel = await getCalcCycleSelection(seller);
+return sel.qty;
+}
+
+const _CALC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function _calcFmtDay(iso, withYear) {
+const p = (iso || '').split('-');
+if (p.length !== 3) return '';
+return parseInt(p[2], 10) + ' ' + _CALC_MONTHS[parseInt(p[1], 10) - 1] + (withYear ? ' ' + p[0] : '');
+}
+
+function updateCalcRangeLabel() {
+const fromEl = document.getElementById('sale-date-from');
+const toEl = document.getElementById('sale-date');
+const lbl = document.getElementById('calcRangeLabel');
+if (!fromEl || !toEl || !lbl) return;
+const from = fromEl.value, to = toEl.value;
+if (from) toEl.setAttribute('min', from); else toEl.removeAttribute('min');
+const seller = (document.getElementById('sellerSelect') || {}).value;
+if (!to) { lbl.textContent = 'Select dates'; return; }
+if (seller === 'COMBINED' || !from || from === to) { lbl.textContent = _calcFmtDay(to, true); return; }
+const sameYear = from.slice(0, 4) === to.slice(0, 4);
+lbl.textContent = _calcFmtDay(from, !sameYear) + ' to ' + _calcFmtDay(to, true);
+}
+
+function openCalcRangePicker() {
+const seller = (document.getElementById('sellerSelect') || {}).value;
+const btn = document.getElementById(seller === 'COMBINED' ? 'sale-date__cdpBtn' : 'sale-date-from__cdpBtn');
+if (btn) btn.click();
+}
+
+async function onCalcDateChange(which) {
+const fromEl = document.getElementById('sale-date-from');
+const toEl = document.getElementById('sale-date');
+if (which === 'from') window._calcFromManual = true;
+if (fromEl && toEl && fromEl.value && toEl.value && fromEl.value > toEl.value) {
+  if (which === 'from') toEl.value = fromEl.value; else fromEl.value = toEl.value;
+}
+updateCalcRangeLabel();
+const seller = (document.getElementById('sellerSelect') || {}).value;
+if (which === 'from' && seller !== 'COMBINED') {
+  setTimeout(() => {
+    const toBtn = document.getElementById('sale-date__cdpBtn');
+    if (toBtn) toBtn.click();
+  }, 0);
+}
+await loadSalesData();
+setPerfOverviewMode(currentPerfOverviewMode || 'day');
 }
 
 async function autoFillTotalSoldQuantity() {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const seller = document.getElementById('sellerSelect').value;
-const date = document.getElementById('sale-date').value;
 const totalSoldField = document.getElementById('totalSold');
 const creditSalesField = document.getElementById('creditSales');
 const recoveredField = document.getElementById('prevCreditReceived');
+const fromEl = document.getElementById('sale-date-from');
 if (!totalSoldField) return;
+if (window._calcSeller !== seller) {
+  window._calcSeller = seller;
+  window._calcFromManual = false;
+}
 if (seller === 'COMBINED') {
 totalSoldField.value = '';
 totalSoldField.readOnly = true;
+updateCalcRangeLabel();
 return;
 }
-const totalSold = await calculateTotalSoldForRepresentative(seller);
-totalSoldField.value = safeNumber(totalSold, 0).toFixed(2);
+const sel = await getCalcCycleSelection(seller);
+if (fromEl && fromEl.value !== sel.from) fromEl.value = sel.from;
+updateCalcRangeLabel();
+totalSoldField.value = safeNumber(sel.qty, 0).toFixed(2);
 totalSoldField.readOnly = true;
 totalSoldField.style.background = 'rgba(37, 99, 235, 0.1)';
 totalSoldField.style.color = 'var(--accent)';
@@ -191,7 +271,7 @@ if (Array.isArray(salesHistory)) {
 let creditSalesKg = 0;
 let recoveredCash = 0;
 (Array.isArray(repSales) ? repSales : []).forEach(sale => {
-  if (sale.salesRep === seller && sale.date === date && !usedRepSaleIds.has(sale.id)) {
+  if (sale.salesRep === seller && sale.date >= sel.from && sale.date <= sel.to && !usedRepSaleIds.has(sale.id)) {
     if (sale.paymentType === 'CREDIT') {
       creditSalesKg += (sale.quantity || 0);
     }
@@ -777,10 +857,11 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
     else if (typeof initFirebase === 'function') initFirebase();
   }, 100);
   const today = new Date().toISOString().split('T')[0];
-  ['sys-date','sale-date','cust-date','factory-date','expenseDate','rep-date'].forEach(id => {
+  ['sys-date','sale-date','sale-date-from','cust-date','factory-date','expenseDate','rep-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = today;
   });
+  updateCalcRangeLabel();
   currentFactoryDate = today;
   if (await sqliteStore.get('bio_enabled') === 'true') {
     const bioBtn = document.getElementById('bio-toggle-btn');
