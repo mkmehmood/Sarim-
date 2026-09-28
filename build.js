@@ -28,52 +28,73 @@ function rm(filePath) { if (existsSync(filePath)) unlinkSync(filePath); }
 
 mkdirSync(DIST, { recursive: true });
 
+const MODULES = join(ROOT, 'modules');
+const M = p => join(MODULES, p);
+
+// Load order matters — same order as the <script> tags in index.html.
 const CORE_FILES = [
-  'constants.js', 'business.js', 'admin-data.js',
-  'sync.js', 'utilities-core.js', 'utilities-sales.js',
-  'utilities-payments.js', 'customers.js',
+  'core/constants.js', 'core/business.js', 'core/admin-data.js',
+  'core/sync.js', 'utilities/utilities-core.js', 'utilities/utilities-sales.js',
+  'utilities/utilities-payments.js', 'customers/customers.js',
 ];
+
+// Fail early with a clear message if any module file is missing.
+for (const f of [...CORE_FILES, 'factory/factory.js', 'rep-sales/rep-sales.js', 'ui/app.css',
+  'ui/custom-date-picker.js', 'vendor/sqlite/sql-wasm.js', 'vendor/sqlite/sql-wasm.wasm', 'vendor/sqlite/sql.js']) {
+  if (!existsSync(M(f))) throw new Error('Missing module file: modules/' + f);
+}
 
 const coreTmp    = join(DIST, '_core.js');
 const coreMinTmp = join(DIST, '_core_min.js');
-write(coreTmp, CORE_FILES.map(f => read(join(ROOT, f))).join('\n'));
+write(coreTmp, CORE_FILES.map(f => read(M(f))).join('\n'));
 run([coreTmp, '--bundle=false', '--minify', '--platform=browser', '--target=es2018', `--outfile=${coreMinTmp}`]);
 const coreHash = contentHash(coreMinTmp);
 const coreOut  = `app.${coreHash}.js`;
 copyFileSync(coreMinTmp, join(DIST, coreOut));
 
 const factoryMinTmp = join(DIST, '_factory_min.js');
-run([join(ROOT, 'factory.js'), '--bundle=false', '--minify', '--platform=browser', '--target=es2018', `--outfile=${factoryMinTmp}`]);
+run([M('factory/factory.js'), '--bundle=false', '--minify', '--platform=browser', '--target=es2018', `--outfile=${factoryMinTmp}`]);
 const factoryHash = contentHash(factoryMinTmp);
 const factoryOut  = `factory.${factoryHash}.js`;
 copyFileSync(factoryMinTmp, join(DIST, factoryOut));
 
 const repMinTmp = join(DIST, '_rep_min.js');
-run([join(ROOT, 'rep-sales.js'), '--bundle=false', '--minify', '--platform=browser', '--target=es2018', `--outfile=${repMinTmp}`]);
+run([M('rep-sales/rep-sales.js'), '--bundle=false', '--minify', '--platform=browser', '--target=es2018', `--outfile=${repMinTmp}`]);
 const repHash = contentHash(repMinTmp);
 const repOut  = `rep-sales.${repHash}.js`;
 copyFileSync(repMinTmp, join(DIST, repOut));
 
 const cssMinTmp = join(DIST, '_app_min.css');
-run([join(ROOT, 'app.css'), '--bundle=false', '--minify', `--outfile=${cssMinTmp}`]);
+run([M('ui/app.css'), '--bundle=false', '--minify', `--outfile=${cssMinTmp}`]);
 const cssHash = contentHash(cssMinTmp);
 const cssOut  = `app.${cssHash}.css`;
 copyFileSync(cssMinTmp, join(DIST, cssOut));
 
 for (const t of [coreTmp, coreMinTmp, factoryMinTmp, repMinTmp, cssMinTmp]) rm(t);
 
-for (const f of ['manifest.json','192.png','512.png','sql-wasm.js','sql-wasm.wasm','sql.js']) {
+for (const f of ['manifest.json','192.png','512.png']) {
   copyFileSync(join(ROOT, f), join(DIST, f));
+}
+
+// Files that keep their module path in dist (referenced by runtime code / plain script tags).
+const STATIC_MODULE_FILES = [
+  'vendor/sqlite/sql-wasm.js', 'vendor/sqlite/sql-wasm.wasm', 'vendor/sqlite/sql.js',
+  'ui/custom-date-picker.js',
+];
+for (const f of STATIC_MODULE_FILES) {
+  const dest = join(DIST, 'modules', f);
+  mkdirSync(dirname(dest), { recursive: true });
+  copyFileSync(M(f), dest);
 }
 
 let html = read(join(ROOT, 'index.html'));
 
 html = html.replace(
-  '<link rel="preload" href="admin-data.js" as="script">',
+  '<link rel="preload" href="modules/core/admin-data.js" as="script">',
   `<link rel="preload" href="${coreOut}" as="script">`,
 );
 html = html.replace(
-  '<link rel="stylesheet" href="app.css">',
+  '<link rel="stylesheet" href="modules/ui/app.css">',
   `<link rel="stylesheet" href="${cssOut}">`,
 );
 
@@ -87,10 +108,16 @@ const lazyStub = `<script src="${coreOut}" defer></script>
 })();
 </script>`;
 
-html = html.replace(
-  `<script src="constants.js" defer></script>\n<script src="business.js" defer></script>\n<script src="admin-data.js" defer></script>\n<script src="sync.js" defer></script>\n<script src="utilities-core.js" defer></script>\n<script src="utilities-sales.js" defer></script>\n<script src="utilities-payments.js" defer></script>\n<script src="factory.js" defer></script>\n<script src="customers.js" defer></script>\n<script src="rep-sales.js" defer></script>`,
-  lazyStub,
-);
+const scriptBlock = [
+  'core/constants.js', 'core/business.js', 'core/admin-data.js', 'core/sync.js',
+  'utilities/utilities-core.js', 'utilities/utilities-sales.js', 'utilities/utilities-payments.js',
+  'factory/factory.js', 'customers/customers.js', 'rep-sales/rep-sales.js',
+].map(f => `<script src="modules/${f}" defer></script>`).join('\n');
+
+if (!html.includes(scriptBlock)) {
+  throw new Error('build: index.html script block does not match the module list in build.js');
+}
+html = html.replace(scriptBlock, lazyStub);
 
 write(join(DIST, 'index.html'), html);
 
@@ -106,9 +133,10 @@ const ASSETS_TO_CACHE_BLOCK =
   './192.png',
   './512.png',
 
-  './sql-wasm.js',
-  './sql-wasm.wasm',
-  './sql.js'
+  './modules/ui/custom-date-picker.js',
+  './modules/vendor/sqlite/sql-wasm.js',
+  './modules/vendor/sqlite/sql-wasm.wasm',
+  './modules/vendor/sqlite/sql.js'
 ];`;
 
 let sw = read(join(ROOT, 'sw.js'));

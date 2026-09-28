@@ -1,0 +1,19 @@
+{
+  "name": "sarim",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gull and Zubair Naswar Dealers — offline-first PWA for production, sales, inventory and credits.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "node build.js",
+    "verify": "node scripts/verify.js",
+    "test": "node --test tests/*.test.js",
+    "check": "npm run verify && npm test && npm run build && npm run verify -- dist",
+    "serve": "node scripts/serve.js",
+    "serve:dist": "node scripts/serve.js dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

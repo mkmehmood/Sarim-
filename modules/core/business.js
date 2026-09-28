@@ -689,9 +689,9 @@ return safeString(value).replace(searchValue, replaceValue);
 
 const SQLITE_DB_NAME      = 'naswar_dealers.sqlite';
 
-const SQLITE_JS_LOCAL      = './sql-wasm.js';
-const SQLITE_WASM_LOCAL    = './sql-wasm.wasm';
-const SQLITE_ASMJS_LOCAL   = './sql.js';
+const SQLITE_JS_LOCAL      = './modules/vendor/sqlite/sql-wasm.js';
+const SQLITE_WASM_LOCAL    = './modules/vendor/sqlite/sql-wasm.wasm';
+const SQLITE_ASMJS_LOCAL   = './modules/vendor/sqlite/sql.js';
 const SQLITE_CDN           = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js';
 const SQLITE_WASM_CDN      = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.wasm';
 const SQLITE_ASMJS_CDN     = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql.js';
