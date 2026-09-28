@@ -1,4 +1,15 @@
-function setCashTrackerMode(mode) {
+// Auto-migrated to an ES module. Source: utilities-sales.js
+import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
+import { CryptoEngine, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, compareRecordVersions, compareTimestamps, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
+import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
+import { SarimChart, _restorePayableFromDeletedTransaction, _set_custPaymentChart, _set_custSalesChart, _set_defaultSettings, _set_indPerformanceChart, _set_mfgBarChart, _set_mfgPieChart, _set_storeComparisonChart, custPaymentChart, custSalesChart, defaultSettings, indPerformanceChart, invalidateAllCaches, loadScript, mfgBarChart, mfgPieChart, notifyDataChange, storeComparisonChart, syncCalculatorTab, syncFactoryTab, syncPaymentsTab, syncProductionTab, syncRepTab, syncSalesTab, triggerAutoSync } from './utilities-core.js';
+import { _filterHistoryByPeriod, calculateComparisonData, calculateEntityBalances, deletePaymentTransfer, formatCurrency, formatDisplayDate, formatDisplayDateTime, getCalcCycleSelection, getMetricLabel, getMetricValue, loadSalesData, phoneActionHTML, processExpiredToChora, processReturnToProduction, refreshAllDisplays, refreshPaymentTab, renderUnifiedTable, safeValue, selectReturnStore, setSalesSummaryMode, updateSalesCharts } from './utilities-payments.js';
+import { calculateFactoryProduction, getCostPerUnit, getCostPriceForStore, getEffectiveSalePriceForCustomer, getSalePriceForStore, getSaleTransactionValue, renderFactoryHistory, renderFactoryInventory, selectFactoryEntryStore, syncFactoryProductionStats, updateProductionCostOnStoreChange, updateUnitsAvailableIndicator } from './factory.js';
+import { calculateCustomerStatsForDisplay, currentManagingCustomer, renderCustomerTransactions, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
+import { calculateRepAnalytics, calculateRepSalePreview, getPosition, refreshRepUI, renderRepCustomerTable, repMap, updateRepLiveMap } from './rep-sales.js';
+
+export function setCashTrackerMode(mode) {
 currentCashTrackerMode = mode;
 document.querySelectorAll('#tab-payments .toggle-group .toggle-opt').forEach(opt => {
 opt.classList.remove('active');
@@ -12,7 +23,7 @@ calculateCashTracker();
 if (typeof calculateNetCash === 'function') calculateNetCash();
 }
 
-async function calculateCashTracker() {
+export async function calculateCashTracker() {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -190,7 +201,7 @@ if (elCreditTotal) elCreditTotal.textContent = `${fmtAmt(safeValue(totalCredits)
 return finalTotals;
 }
 
-function updateEconomicDashboardWithNetValues(totals, totalCredits) {
+export function updateEconomicDashboardWithNetValues(totals, totalCredits) {
 const operatingCashFlow = totals.productionValue - totals.totalSoldValue + totals.salesTabCash + totals.calculatorCash;
 const operatingCashElement = document.getElementById('operatingCashFlow');
 if (operatingCashElement) {
@@ -212,7 +223,7 @@ productionValueElement.textContent = `${fmtAmt(safeValue(totals.productionValue)
 }
 }
 
-async function openEntityTransactions(entityId) {
+export async function openEntityTransactions(entityId) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const entity = paymentEntities.find(e => String(e.id) === String(entityId));
@@ -271,7 +282,7 @@ document.getElementById('entityTransactionsOverlay').style.display = 'flex';
 });
 }
 
-function closeEntityTransactions() {
+export function closeEntityTransactions() {
 requestAnimationFrame(() => {
 document.body.style.overflow = '';
 document.documentElement.style.overflow = '';
@@ -279,7 +290,7 @@ document.getElementById('entityTransactionsOverlay').style.display = 'none';
 });
 }
 
-async function savePaymentTransaction() {
+export async function savePaymentTransaction() {
 let message = '';
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -447,7 +458,7 @@ return;
 showToast(message, 'success');
 }
 
-async function deletePaymentTransaction(id) {
+export async function deletePaymentTransaction(id) {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
@@ -522,7 +533,7 @@ showToast(" Failed to delete transaction. Please try again.", "error");
 }
 }
 
-async function filterPaymentHistory() {
+export async function filterPaymentHistory() {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
@@ -538,7 +549,7 @@ card.style.display = 'none';
 });
 }
 
-async function getAvailableCashInHand() {
+export async function getAvailableCashInHand() {
 
 const _gacBatch = await sqliteStore.getBatch([
 'noman_history','mfg_pro_pkr','customer_sales','payment_transactions','expenses',
@@ -596,7 +607,7 @@ if (!entry.isMerged) _gacExp += (parseFloat(entry.additionalCost) || 0);
 return _gacProdVal + _gacSalesCash + _gacCalcCash + _gacPayIn - _gacPayOut - _gacExp;
 }
 
-async function calculateNetCash() {
+export async function calculateNetCash() {
 const _cncBatch = await sqliteStore.getBatch([
 'noman_history','factory_unit_tracking','payment_transactions','payment_entities',
 'expenses','mfg_pro_pkr','customer_sales','stock_returns',
@@ -900,7 +911,7 @@ return null;
 }
 }
 
-function updateEconomicDashboard(indicators) {
+export function updateEconomicDashboard(indicators) {
 const _econMode = typeof currentCashTrackerMode !== 'undefined' ? currentCashTrackerMode : 'all';
 const netCashValueElement = document.getElementById('netCashValue');
 if (netCashValueElement) {
@@ -973,7 +984,7 @@ cashRatioElement.textContent = (cashRatio === null || cashRatio === undefined) ?
 }
 }
 
-async function saveCustomerSale() {
+export async function saveCustomerSale() {
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 let salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
@@ -1182,7 +1193,7 @@ showToast(' Failed to save sale. Please try again.', 'error');
 }
 }
 
-function setSaleMode(mode) {
+export function setSaleMode(mode) {
 custTransactionMode = mode;
 const isSale = mode === 'sale';
 const _el = id => document.getElementById(id);
@@ -1216,7 +1227,7 @@ calculateCustomerSale();
 }
 }
 
-function updateCollectionPreview() {
+export function updateCollectionPreview() {
 if (custTransactionMode !== 'collection') return;
 const creditEl = document.getElementById('customer-current-credit');
 const collRes  = document.getElementById('cust-coll-result');
@@ -1234,7 +1245,7 @@ balEl.style.color = remaining === 0 ? 'var(--accent-emerald)' : 'var(--warning)'
 }
 }
 
-async function saveCustomerCollection() {
+export async function saveCustomerCollection() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -1369,7 +1380,7 @@ restoreBtn();
 }
 }
 
-async function saveCustomerTransaction() {
+export async function saveCustomerTransaction() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -1380,16 +1391,16 @@ await saveCustomerSale();
 }
 }
 
-const _DEFAULT_STORES = [
+export const _DEFAULT_STORES = [
   { key: 'STORE_A', name: 'ZUBAIR',   formulaType: 'standard' },
   { key: 'STORE_B', name: 'MAHMOOD',  formulaType: 'standard' },
   { key: 'STORE_C', name: 'ASAAN',    formulaType: 'asaan'    },
 ];
-let _storesCache = null;
-let _storesCacheTs = 0;
-const _STORES_CACHE_TTL = 3000;
+export let _storesCache = null;
+export let _storesCacheTs = 0;
+export const _STORES_CACHE_TTL = 3000;
 
-async function getAppStores() {
+export async function getAppStores() {
   const now = Date.now();
   if (_storesCache && (now - _storesCacheTs) < _STORES_CACHE_TTL) return _storesCache;
   try {
@@ -1401,11 +1412,11 @@ async function getAppStores() {
   _storesCacheTs = now;
   return _storesCache;
 }
-function _invalidateStoresCache() { _storesCache = null; _storesCacheTs = 0; }
+export function _invalidateStoresCache() { _storesCache = null; _storesCacheTs = 0; }
 window._invalidateStoresCache = _invalidateStoresCache;
 window.getAppStores = getAppStores;
 
-function getStoreLabel(storeCode) {
+export function getStoreLabel(storeCode) {
   if (_storesCache) {
     const f = _storesCache.find(s => s.key === storeCode);
     if (f) return f.name;
@@ -1417,19 +1428,19 @@ function getStoreLabel(storeCode) {
     default: return storeCode || '';
   }
 }
-async function getStoreLabelAsync(storeCode) {
+export async function getStoreLabelAsync(storeCode) {
   const stores = await getAppStores();
   const f = stores.find(s => s.key === storeCode);
   return f ? f.name : (storeCode || '');
 }
-async function getStoreFormulaType(storeCode) {
+export async function getStoreFormulaType(storeCode) {
   const stores = await getAppStores();
   const f = stores.find(s => s.key === storeCode);
   return f ? (f.formulaType || 'standard') : 'standard';
 }
 window.getStoreFormulaType = getStoreFormulaType;
 
-async function rebuildStoreUI() {
+export async function rebuildStoreUI() {
   const stores = await getAppStores();
 
   const supplyGroup = document.getElementById('supply-store-toggles');
@@ -1503,7 +1514,7 @@ async function rebuildStoreUI() {
 }
 window.rebuildStoreUI = rebuildStoreUI;
 
-async function getAvailableStoresForDate(date) {
+export async function getAvailableStoresForDate(date) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const stores = new Set();
@@ -1515,7 +1526,7 @@ stores.add(getStoreLabel(production.store));
 return Array.from(stores).join(', ') || 'None';
 }
 
-async function calculateSalesCost(store, quantity) {
+export async function calculateSalesCost(store, quantity) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
@@ -1542,7 +1553,7 @@ totalValue: totalValue
 };
 }
 
-async function calculateCustomerSale() {
+export async function calculateCustomerSale() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -1602,7 +1613,7 @@ inventoryWarning.style.background = 'rgba(5, 150, 105, 0.1)';
 }
 }
 
-function selectSalesRep(btn, value) {
+export function selectSalesRep(btn, value) {
 document.querySelectorAll('#sales-rep-toggle-group .toggle-opt').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
 document.getElementById('sales-rep-value').value = value;
@@ -1610,7 +1621,7 @@ autoFillCustomerName();
 calculateCustomerSale();
 }
 
-function selectSupplyStore(btn, value) {
+export function selectSupplyStore(btn, value) {
 const grp = document.getElementById('supply-store-toggles');
 if (grp) grp.querySelectorAll('.toggle-opt').forEach(b => b.classList.remove('active'));
 if (btn) btn.classList.add('active');
@@ -1619,7 +1630,7 @@ if (hid) hid.value = value;
 calculateCustomerSale();
 }
 
-function selectPaymentType(btn, value) {
+export function selectPaymentType(btn, value) {
 if (!btn) return;
 document.querySelectorAll('#btn-payment-cash, #btn-payment-credit').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
@@ -1627,14 +1638,14 @@ document.getElementById('payment-type-value').value = value;
 calculateCustomerSale();
 }
 
-function selectRepPaymentType(btn, value) {
+export function selectRepPaymentType(btn, value) {
 document.querySelectorAll('#btn-rep-pay-credit, #btn-rep-pay-cash').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
 document.getElementById('rep-payment-value').value = value;
 calculateRepSalePreview();
 }
 
-function autoFillCustomerName() {
+export function autoFillCustomerName() {
 const salesRepValue = document.getElementById('sales-rep-value').value;
 const nameInput = document.getElementById('cust-name');
 if (salesRepValue === 'NONE') {
@@ -1663,7 +1674,7 @@ infoDisplay.classList.add('hidden');
 }
 }
 
-function createInventoryWarningElement() {
+export function createInventoryWarningElement() {
 const warningDiv = document.createElement('div');
 warningDiv.id = 'inventory-warning';
 warningDiv.style.fontSize = '0.8rem';
@@ -1677,7 +1688,7 @@ salesSection.insertBefore(warningDiv, calculateButton);
 return warningDiv;
 }
 
-async function deleteCustomerSale(id) {
+export async function deleteCustomerSale(id) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -1763,7 +1774,7 @@ showToast(" Failed to delete sale. Please try again.", "error");
 }
 }
 
-async function calculateSales() {
+export async function calculateSales() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
@@ -1812,7 +1823,7 @@ if (payableEl) payableEl.textContent = fmtAmt(safeValue(commissionPayable));
 if (payableBox) payableBox.className = commissionPayable > 0.01 ? 'result-box discrepancy-alert' : 'result-box discrepancy-ok';
 }
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyDYjGQILtrcG2nfKACSfsVtfIPZOAgbr_s",
   authDomain: "calculator-fabd3.firebaseapp.com",
   databaseURL: "https://calculator-fabd3-default-rtdb.firebaseio.com",
@@ -1821,7 +1832,7 @@ const firebaseConfig = {
   messagingSenderId: "124313576124",
   appId: "1:124313576124:web:fb721bb61bc19b51db26b9"
 };
-async function loadFirestoreStats() {
+export async function loadFirestoreStats() {
 try {
 const saved = await sqliteStore.get('firestore_stats', null);
 if (saved && typeof saved === 'object') {
@@ -1836,16 +1847,16 @@ firestoreStats = { reads: 0, writes: 0, history: [], lastReset: Date.now() };
 }
 }
 
-function saveFirestoreStats() {
+export function saveFirestoreStats() {
 sqliteStore.set('firestore_stats', firestoreStats).catch(() => {});
 }
-let firestoreStats = {
+export let firestoreStats = {
 reads: 0,
 writes: 0,
 history: [],
 lastReset: Date.now()
 };
-function checkAndAutoResetFirestoreStats() {
+export function checkAndAutoResetFirestoreStats() {
 const now = Date.now();
 const hoursSinceReset = (now - firestoreStats.lastReset) / (1000 * 60 * 60);
 if (hoursSinceReset >= 24) {
@@ -1856,12 +1867,12 @@ firestoreStats.lastReset = now;
 saveFirestoreStats();
 }
 }
-const FIRESTORE_THRESHOLDS = {
+export const FIRESTORE_THRESHOLDS = {
   reads:  { warn: 40000, critical: 48000 },
   writes: { warn: 16000, critical: 19000 },
   _alerted: { reads_warn: false, reads_critical: false, writes_warn: false, writes_critical: false }
 };
-function _checkFirestoreCostThresholds() {
+export function _checkFirestoreCostThresholds() {
   const r = firestoreStats.reads;
   const w = firestoreStats.writes;
   if (r >= FIRESTORE_THRESHOLDS.reads.critical && !FIRESTORE_THRESHOLDS._alerted.reads_critical) {
@@ -1880,7 +1891,7 @@ function _checkFirestoreCostThresholds() {
   }
 }
 
-function buildFirestoreCostEstimate(estimatedReads, estimatedWrites) {
+export function buildFirestoreCostEstimate(estimatedReads, estimatedWrites) {
   const totalR = firestoreStats.reads  + estimatedReads;
   const totalW = firestoreStats.writes + estimatedWrites;
   const lines = [
@@ -1894,25 +1905,25 @@ function buildFirestoreCostEstimate(estimatedReads, estimatedWrites) {
   return lines.join('\n');
 }
 
-function trackFirestoreRead(count = 1) {
+export function trackFirestoreRead(count = 1) {
 checkAndAutoResetFirestoreStats();
 firestoreStats.reads += count;
 saveFirestoreStats();
 _checkFirestoreCostThresholds();
 }
 
-function trackFirestoreWrite(count = 1) {
+export function trackFirestoreWrite(count = 1) {
 checkAndAutoResetFirestoreStats();
 firestoreStats.writes += count;
 saveFirestoreStats();
 _checkFirestoreCostThresholds();
 }
 
-function resetFirestoreStats() {
+export function resetFirestoreStats() {
 firestoreStats = { reads: 0, writes: 0, history: [], lastReset: Date.now() };
 saveFirestoreStats();
 }
-const originalOpenDataMenu = window.openDataMenu;
+export const originalOpenDataMenu = window.openDataMenu;
 window.openDataMenu = function() {
 if (typeof updateSyncButton === 'function') updateSyncButton();
 if (typeof performOneClickSync === 'function') {
@@ -1921,7 +1932,7 @@ performOneClickSync().catch(function(e){console.error('[openDataMenu] sync error
 originalOpenDataMenu();
 }
 };
-const DeltaSync = {
+export const DeltaSync = {
 _cache: {},
 _cacheGet(key) {
   return Object.prototype.hasOwnProperty.call(this._cache, key)
@@ -2188,7 +2199,7 @@ async recordOperation(collection, reads = 0, writes = 0) {
   await sqliteStore.set('deltaSyncStats', stats);
 }
 };
-async function initializeSyncStatsIfNeeded() {
+export async function initializeSyncStatsIfNeeded() {
 const stats = await DeltaSync.getSyncStats();
 const hasStats = Object.keys(stats).length > 0;
 if (!hasStats) {
@@ -2221,7 +2232,7 @@ return true;
 return false;
 }
 
-const UUIDSyncRegistry = (() => {
+export const UUIDSyncRegistry = (() => {
   const MAX_IDS_PER_COL = 10000;
   const ALL_COLLECTIONS = [
     'production', 'sales', 'calculator_history', 'rep_sales', 'rep_customers',
@@ -2383,7 +2394,7 @@ const UUIDSyncRegistry = (() => {
 window.UUIDSyncRegistry = UUIDSyncRegistry;
 
 updateSyncButton();
-function addSignOutButton() {
+export function addSignOutButton() {
 removeSignOutButton();
 const systemControls = document.querySelector('.system-controls');
 if (systemControls && currentUser) {
@@ -2394,12 +2405,12 @@ const signOutBtn = document.createElement('button');
 }
 }
 
-function removeSignOutButton() {
+export function removeSignOutButton() {
 const btn = document.getElementById('cloud-signout-btn');
 if (btn) btn.remove();
 }
 
-function handleReturnQtyInput() {
+export function handleReturnQtyInput() {
 const retQty = parseFloat(document.getElementById('returnedQuantity').value) || 0;
 const section = document.getElementById('returnStoreSection');
 if (retQty > 0) {
@@ -2410,7 +2421,7 @@ section.classList.add('hidden');
 if (typeof calculateSales === 'function') calculateSales();
 }
 
-function handleExpiredQtyInput() {
+export function handleExpiredQtyInput() {
 const expQty = parseFloat(document.getElementById('expiredQuantity').value) || 0;
 const section = document.getElementById('expiredSection');
 if (expQty > 0) {
@@ -2421,7 +2432,7 @@ section.classList.add('hidden');
 if (typeof calculateSales === 'function') calculateSales();
 }
 
-function handleTripleTap(el, targetTab) {
+export function handleTripleTap(el, targetTab) {
 const now = Date.now();
 const TAP_WINDOW = 600;
 if (!el._tapTimes) el._tapTimes = [];
@@ -2433,7 +2444,7 @@ showTab(targetTab);
 }
 }
 
-async function saveTransaction() {
+export async function saveTransaction() {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
@@ -2594,7 +2605,7 @@ showToast('Failed to save transaction. Please try again.', 'error', 4000);
 }
 }
 
-async function exportCustomerData(type) {
+export async function exportCustomerData(type) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -2796,7 +2807,7 @@ showToast('Error generating PDF: ' + error.message, 'error');
 }
 }
 
-async function markAllPendingCreditSalesAsCash(seller, reconciledCustomerIds, onlyIds) {
+export async function markAllPendingCreditSalesAsCash(seller, reconciledCustomerIds, onlyIds) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 if (!seller || seller === 'COMBINED') return [];
 const linkedIds = [];
@@ -2831,7 +2842,7 @@ notifyDataChange('sales');
 return linkedIds;
 }
 
-async function markSalesEntriesAsReceived(seller, quantityToMark) {
+export async function markSalesEntriesAsReceived(seller, quantityToMark) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 if (!seller || seller === 'COMBINED' || quantityToMark <= 0) return [];
@@ -2870,7 +2881,7 @@ refreshCustomerSales(1, false);
 return linkedIds;
 }
 
-async function markRepSalesEntriesAsUsed(seller, date, calcId, fromDate) {
+export async function markRepSalesEntriesAsUsed(seller, date, calcId, fromDate) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
   if (!seller || seller === 'COMBINED' || !date || !calcId) return [];
   const linkedRepIds = [];
@@ -2893,7 +2904,7 @@ const repSales = ensureArray(await sqliteStore.get('rep_sales'));
   return linkedRepIds;
 }
 
-async function revertRepSalesEntries(repSaleIds) {
+export async function revertRepSalesEntries(repSaleIds) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
   if (!repSaleIds || repSaleIds.length === 0) return 0;
   let revertedCount = 0;
@@ -2914,7 +2925,7 @@ const repSales = ensureArray(await sqliteStore.get('rep_sales'));
   return revertedCount;
 }
 
-async function updateCompositionChart() {
+export async function updateCompositionChart() {
 const _sdEl = document.getElementById('sellerSelect');
 if (_sdEl && _sdEl.value === 'COMBINED') {
 const comp = await calculateComparisonData();
@@ -2922,7 +2933,7 @@ updateSalesCharts(comp);
 }
 }
 
-async function setIndChartMode(mode) {
+export async function setIndChartMode(mode) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
@@ -2935,7 +2946,7 @@ document.getElementById('ind-all-btn').className = `toggle-opt ${mode === 'all' 
 await updateIndChart();
 }
 
-async function setIndChartMetric(metric) {
+export async function setIndChartMetric(metric) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
@@ -2944,7 +2955,7 @@ currentIndMetric = metric;
 await updateIndChart();
 }
 
-async function updateIndChart() {
+export async function updateIndChart() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
@@ -3030,7 +3041,7 @@ const repChartColorsInd = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#dc2626'
 const sellerColor = repChartColorsInd[salesRepsList.indexOf(seller) >= 0 ? salesRepsList.indexOf(seller) : 0];
 const chartElement = document.getElementById('indPerformanceChart');
 if (!chartElement) { return; }
-indPerformanceChart = new SarimChart(chartElement, {
+_set_indPerformanceChart(new SarimChart(chartElement, {
 type: 'bar',
 data: {
 labels: labels,
@@ -3066,10 +3077,10 @@ ticks: { color: colors.text, maxRotation: 45 }
 }
 }
 }
-});
+}));
 }
 
-function setStoreComparisonMetric(metric, event) {
+export function setStoreComparisonMetric(metric, event) {
 if (event) {
 event.preventDefault();
 }
@@ -3083,7 +3094,7 @@ event.target.classList.add('active');
 updateStoreComparisonChart(currentOverviewMode);
 }
 
-async function updateStoreComparisonChart(mode = 'day') {
+export async function updateStoreComparisonChart(mode = 'day') {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -3150,7 +3161,7 @@ grid: 'rgba(37, 99, 235, 0.1)'
 };
 const storeChartElement = document.getElementById('storeComparisonChart');
 if (!storeChartElement) { return; }
-storeComparisonChart = new SarimChart(storeChartElement, {
+_set_storeComparisonChart(new SarimChart(storeChartElement, {
 type: 'bar',
 data: {
 labels: storeLabels,
@@ -3186,10 +3197,10 @@ ticks: { color: colors.text }
 }
 }
 }
-});
+}));
 }
 
-async function refreshUI(page = 1, force = false) {
+export async function refreshUI(page = 1, force = false) {
 const _ruiBatch = await sqliteStore.getBatch([
 'mfg_pro_pkr','stock_returns','customer_sales','sales_customers',
 'noman_history','payment_transactions','payment_entities',
@@ -3392,7 +3403,7 @@ updateUnitsAvailableIndicator();
 }
 }
 
-function filterProductionHistory() {
+export function filterProductionHistory() {
 const searchTerm = document.getElementById('production-search').value.toLowerCase();
 const allCards = document.querySelectorAll('#prodHistoryList .card');
 allCards.forEach(card => {
@@ -3405,7 +3416,7 @@ card.style.display = 'none';
 });
 }
 
-function filterCalculatorHistory() {
+export function filterCalculatorHistory() {
 const searchTerm = document.getElementById('calculator-search').value.toLowerCase();
 const allCards = document.querySelectorAll('#historyList .card');
 allCards.forEach(card => {
@@ -3420,7 +3431,7 @@ card.style.display = 'none';
 });
 }
 
-function filterCustomerTransactions() {
+export function filterCustomerTransactions() {
 const searchTerm = document.getElementById('customer-search').value.toLowerCase();
 const allCards = document.querySelectorAll('#custHistoryList .card');
 allCards.forEach(card => {
@@ -3433,7 +3444,7 @@ card.style.display = 'none';
 });
 }
 
-async function renderEntityTable(page = 1) {
+export async function renderEntityTable(page = 1) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const _retAlive = (item) => item && item.id && !deletedRecordIds.has(String(item.id));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities')).filter(_retAlive);
@@ -3507,7 +3518,7 @@ if(recEl) recEl.innerText = `${fmtAmt(totalReceivables)}`;
 if(payEl) payEl.innerText = `${fmtAmt(totalPayables)}`;
 }
 
-async function filterEntityList() {
+export async function filterEntityList() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const searchTerm = document.getElementById('entity-list-search')?.value.toLowerCase() || '';
 if (entityListViewType === 'table') {
@@ -3534,7 +3545,7 @@ card.style.display = 'none';
 }
 }
 
-async function viewEntityTransactions(entityId) {
+export async function viewEntityTransactions(entityId) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const entity = paymentEntities.find(e => String(e.id) === String(entityId));
@@ -3565,7 +3576,7 @@ message += `Net Balance: ${fmtAmt(netBalance)}\n`;
 showToast(message, 'info', 5000);
 }
 
-async function syncSuppliersToEntities() {
+export async function syncSuppliersToEntities() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const newEntities = [];
@@ -3609,7 +3620,7 @@ await unifiedSave('factory_inventory_data', factoryInventoryData, null, fixedMat
 }
 }
 
-async function verifyAccountPassword(password) {
+export async function verifyAccountPassword(password) {
   if (!currentUser || !password) return false;
   const email = currentUser.email;
   if (navigator.onLine && typeof firebase !== 'undefined' && firebase.apps.length) {
@@ -3630,7 +3641,7 @@ async function verifyAccountPassword(password) {
   }
 }
 
-async function promptVerifiedBackupPassword({ title = 'Confirm Password', subtitle = 'Enter your account password to encrypt this backup file.', inputId = '_bkp_pwd_modal_input' } = {}) {
+export async function promptVerifiedBackupPassword({ title = 'Confirm Password', subtitle = 'Enter your account password to encrypt this backup file.', inputId = '_bkp_pwd_modal_input' } = {}) {
   if (!currentUser) return null;
   return new Promise((resolve) => {
     const modal = document.createElement('div');
@@ -3689,7 +3700,7 @@ async function promptVerifiedBackupPassword({ title = 'Confirm Password', subtit
   });
 }
 
-async function unifiedBackup() {
+export async function unifiedBackup() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -3758,7 +3769,7 @@ showToast('Encryption failed: ' + encErr.message, 'error');
 }
 }
 
-async function unifiedRestore(event) {
+export async function unifiedRestore(event) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
@@ -3908,7 +3919,7 @@ showToast("Error reading file: " + err.message, 'error');
 }
 }
 
-function normaliseBackupFields(data) {
+export function normaliseBackupFields(data) {
   if (!data || typeof data !== 'object') return data;
   if (data.mfg && !data.mfg_pro_pkr)    data.mfg_pro_pkr   = data.mfg;
   if (data.mfg_pro_pkr && !data.mfg)    data.mfg           = data.mfg_pro_pkr;
@@ -3918,7 +3929,7 @@ function normaliseBackupFields(data) {
   return data;
 }
 
-async function _doRestoreMerge(data) {
+export async function _doRestoreMerge(data) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
@@ -4136,7 +4147,7 @@ await sqliteStore.set('factory_unit_tracking_timestamp', settingsTimestamp);
 if (data.settings && JSON.stringify(data.settings) !== JSON.stringify(currentSettings.naswarDefaultSettings)) {
 await sqliteStore.set('naswar_default_settings', data.settings);
 await sqliteStore.set('naswar_default_settings_timestamp', settingsTimestamp);
-defaultSettings = data.settings;
+_set_defaultSettings(data.settings);
 }
 if (Array.isArray(data.appStores) && data.appStores.length > 0) {
 const localStores = (await sqliteStore.get('app_stores')) || [];
@@ -4309,7 +4320,7 @@ if (data.person_photos && typeof data.person_photos === 'object' && !Array.isArr
 showToast(`Restore complete${syncMessage}! ${statsMessage}`, 'success', 5000);
 }
 
-async function _doYearCloseRestore(data, honourPostCloseDeletions = true) {
+export async function _doYearCloseRestore(data, honourPostCloseDeletions = true) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
@@ -4495,13 +4506,13 @@ let factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {}
     currentSettings.lastYearClosedAt   = snap.lastYearClosedAt   ?? null;
     currentSettings.lastYearClosedDate = snap.lastYearClosedDate ?? null;
     currentSettings.pendingFirestoreYearClose = false;
-    pendingFirestoreYearClose = false;
+    _set_pendingFirestoreYearClose(false);
 
     const _restoreMetaTs = Date.now();
     await sqliteStore.set('naswar_default_settings', currentSettings);
     await sqliteStore.set('naswar_default_settings_timestamp', _restoreMetaTs);
     await sqliteStore.set('pendingFirestoreYearClose', false);
-    defaultSettings = currentSettings;
+    _set_defaultSettings(currentSettings);
     if (firebaseDB && currentUser) {
       try {
         await firebaseDB.collection('users').doc(currentUser.uid)
@@ -4591,7 +4602,7 @@ let factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {}
       showToast(' Cloud data replaced with pre-close snapshot', 'success', 3000);
     } catch(cloudErr) {
       console.warn('Cloud replace failed:', _safeErr(cloudErr));
-      pendingFirestoreRestore = true;
+      _set_pendingFirestoreRestore(true);
       await sqliteStore.set('pendingFirestoreRestore', true)
         .catch(e => console.warn('[ycRestore] Could not persist pendingFirestoreRestore:', _safeErr(e)));
       showToast('Local data reversed. Cloud sync failed — will retry automatically.', 'warning', 5000);
@@ -4612,7 +4623,7 @@ let factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {}
       }
     }
   } else {
-    pendingFirestoreRestore = true;
+    _set_pendingFirestoreRestore(true);
     await sqliteStore.set('pendingFirestoreRestore', true)
       .catch(e => console.warn('[ycRestore] Could not persist pendingFirestoreRestore:', _safeErr(e)));
   }
@@ -4652,7 +4663,7 @@ let factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {}
   showToast(` Financial year close reversed! ${totalRecords} pre-close records restored.`, 'success', 6000);
 }
 
-async function showTab(tab) {
+export async function showTab(tab) {
 currentActiveTab = tab;
 requestAnimationFrame(() => {
 const tabs = ['tab-prod', 'tab-sales', 'tab-calc', 'tab-factory', 'tab-payments', 'tab-rep'];
@@ -4734,7 +4745,7 @@ console.warn('[showTab] tab load error:', _safeErr(e));
 }, 50);
 }
 
-function handleRepTabUI() {
+export function handleRepTabUI() {
 const adminControls = document.getElementById('admin-rep-controls');
 const adminAnalytics = document.getElementById('admin-rep-analytics');
 const newTransCard = document.getElementById('rep-new-transaction-card');
@@ -4828,13 +4839,13 @@ window.getScrollY = function() {
 return lastScrollY;
 };
 })();
-function enableGPUAcceleration(element) {
+export function enableGPUAcceleration(element) {
 if (!element) return;
 element.style.transform = 'translateZ(0)';
 element.style.willChange = 'transform';
 element.style.backfaceVisibility = 'hidden';
 }
-const DOMBatch = {
+export const DOMBatch = {
 reads: [],
 writes: [],
 read(fn) {
@@ -4863,7 +4874,7 @@ write();
 this.scheduled = false;
 }
 };
-const lazyLoadObserver = new IntersectionObserver((entries) => {
+export const lazyLoadObserver = new IntersectionObserver((entries) => {
 entries.forEach(entry => {
 if (entry.isIntersecting) {
 entry.target.classList.add('in-view');
@@ -4878,13 +4889,13 @@ root: null,
 rootMargin: '50px',
 threshold: 0.1
 });
-function observeLazyLoad(element) {
+export function observeLazyLoad(element) {
 if (element) {
 lazyLoadObserver.observe(element);
 }
 }
 
-function animateElement(element, keyframes, options = {}) {
+export function animateElement(element, keyframes, options = {}) {
 if (!element) return Promise.resolve();
 const defaultOptions = {
 duration: 300,
@@ -4895,7 +4906,7 @@ const animation = element.animate(keyframes, { ...defaultOptions, ...options });
 return animation.finished;
 }
 
-function fadeIn(element, duration = 150) {
+export function fadeIn(element, duration = 150) {
 if (!element) return Promise.resolve();
 element.style.opacity = '0';
 element.style.display = '';
@@ -4905,7 +4916,7 @@ return animateElement(element, [
 ], { duration });
 }
 
-function fadeOut(element, duration = 100) {
+export function fadeOut(element, duration = 100) {
 if (!element) return Promise.resolve();
 return animateElement(element, [
 { opacity: 1 },
@@ -4915,7 +4926,7 @@ element.style.display = 'none';
 });
 }
 
-function slideIn(element, direction = 'up', duration = 200) {
+export function slideIn(element, direction = 'up', duration = 200) {
 if (!element) return Promise.resolve();
 const transforms = {
 up: [{ transform: 'translateY(20px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
@@ -4926,9 +4937,9 @@ right: [{ transform: 'translateX(-20px)', opacity: 0 }, { transform: 'translateX
 element.style.display = '';
 return animateElement(element, transforms[direction] || transforms.up, { duration });
 }
-let frameCount = 0;
-let lastTime = performance.now();
-function measureFPS() {
+export let frameCount = 0;
+export let lastTime = performance.now();
+export function measureFPS() {
 frameCount++;
 const currentTime = performance.now();
 if (currentTime >= lastTime + 1000) {
@@ -4939,7 +4950,7 @@ lastTime = currentTime;
 requestAnimationFrame(measureFPS);
 }
 
-async function handleAdminRepDateChange(val) {
+export async function handleAdminRepDateChange(val) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -4957,7 +4968,7 @@ calculateRepAnalytics();
 }
 }
 
-function setMfgChartMode(mode) {
+export function setMfgChartMode(mode) {
 currentMfgMode = mode;
 document.getElementById('mfg-week-btn').className = `toggle-opt ${mode === 'week' ? 'active' : ''}`;
 document.getElementById('mfg-month-btn').className = `toggle-opt ${mode === 'month' ? 'active' : ''}`;
@@ -4966,7 +4977,7 @@ document.getElementById('mfg-all-btn').className = `toggle-opt ${mode === 'all' 
 updateMfgCharts();
 }
 
-async function updateMfgCharts() {
+export async function updateMfgCharts() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 
@@ -5064,7 +5075,7 @@ totalValue += (item.totalSale || 0);
 });
 const mfgBarCanvas = document.getElementById('mfgBarChart');
 if (!mfgBarCanvas) { return; }
-mfgBarChart = new SarimChart(mfgBarCanvas, {
+_set_mfgBarChart(new SarimChart(mfgBarCanvas, {
 type: 'bar',
 data: {
 labels: labels,
@@ -5094,12 +5105,12 @@ y: { grid: { color: colors.grid }, ticks: { color: colors.text }, beginAtZero: t
 x: { ticks: { color: colors.text, maxRotation: currentMfgMode === 'all' ? 45 : 0 } }
 }
 }
-});
+}));
 const pieData = [totalCost, totalProfit];
 const pieLabels = ['Total Cost', 'Net Profit'];
 const mfgPieCanvas = document.getElementById('mfgPieChart');
 if (!mfgPieCanvas) { return; }
-mfgPieChart = new SarimChart(mfgPieCanvas, {
+_set_mfgPieChart(new SarimChart(mfgPieCanvas, {
 type: 'pie',
 data: {
 labels: pieLabels,
@@ -5122,10 +5133,10 @@ font: { size: 13, weight: 'bold' }
 }
 }
 }
-});
+}));
 }
 
-async function getWeightPerUnit(storeType) {
+export async function getWeightPerUnit(storeType) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
 const formula = factoryDefaultFormulas[storeType];
@@ -5137,7 +5148,7 @@ totalWeight += item.quantity;
 return totalWeight;
 }
 
-async function getPreviousDayAvailableUnits(storeType, currentDate) {
+export async function getPreviousDayAvailableUnits(storeType, currentDate) {
 const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_production_history'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
@@ -5159,7 +5170,7 @@ return Math.max(0, prevPrevAvailable + prevProduced - prevUsed);
 return 0;
 }
 
-async function updateFactoryUnitsAvailableStats() {
+export async function updateFactoryUnitsAvailableStats() {
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
 const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_production_history'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -5226,7 +5237,7 @@ _setFac('factoryAsaanProfit', await formatCurrency(asaanTotalProfit));
 _setFac('factoryAsaanProfitUnit', await formatCurrency(asaanProfitPerKg) + '/kg');
 }
 
-async function updateFactorySummaryCard() {
+export async function updateFactorySummaryCard() {
 const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_production_history'));
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
@@ -5376,7 +5387,7 @@ _setSum('factorySumProfit', await formatCurrency(totalProfit));
 _setSum('factorySumProfitUnit', await formatCurrency(avgProfitPerKg) + '/kg');
 }
 
-async function getInitialAvailableForRange(storeType, mode, endDate) {
+export async function getInitialAvailableForRange(storeType, mode, endDate) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -5393,7 +5404,7 @@ startDate = new Date(end.getFullYear(), 0, 1);
 return getPreviousDayAvailableUnits(storeType, startDate);
 }
 
-async function refreshFactoryTab() {
+export async function refreshFactoryTab() {
 const _rftBatch = await sqliteStore.getBatch([
 'factory_inventory_data','factory_production_history',
 'factory_default_formulas','factory_additional_costs',
@@ -5479,7 +5490,7 @@ await renderFactoryInventory();
 calculateFactoryProduction();
 }
 
-async function updateAllTabsWithFactoryCosts() {
+export async function updateAllTabsWithFactoryCosts() {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
@@ -5498,7 +5509,7 @@ updateFactorySummaryCard();
 refreshUI();
 }
 
-function initFactoryTab() {
+export function initFactoryTab() {
 const factoryDateInput = document.getElementById('factory-date');
 if (!factoryDateInput.value) {
 const today = new Date().toISOString().split('T')[0];
@@ -5520,7 +5531,7 @@ else opt.classList.remove('active');
 refreshFactoryTab();
 }
 
-function setProductionView(view, event) {
+export function setProductionView(view, event) {
 currentProductionView = view;
 document.querySelectorAll('.production-toggle-btn').forEach(btn => btn.classList.remove('active'));
 if (event && event.target) event.target.classList.add('active');
@@ -5549,7 +5560,7 @@ updateAllStoresOverview(currentOverviewMode);
 refreshUI();
 }
 
-async function updateAllStoresOverview(mode = 'day') {
+export async function updateAllStoresOverview(mode = 'day') {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
@@ -5817,7 +5828,7 @@ allStoresGrid.replaceChildren(_asgFrag);
 updateStoreComparisonChart(mode);
 }
 
-function setCustomerChartMode(mode) {
+export function setCustomerChartMode(mode) {
 currentCustomerChartMode = mode;
 document.getElementById('cust-week-btn').className = `toggle-opt ${mode === 'week' ? 'active' : ''}`;
 document.getElementById('cust-month-btn').className = `toggle-opt ${mode === 'month' ? 'active' : ''}`;
@@ -5826,7 +5837,7 @@ document.getElementById('cust-all-btn').className = `toggle-opt ${mode === 'all'
 updateCustomerCharts();
 }
 
-async function updateCustomerCharts() {
+export async function updateCustomerCharts() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -5991,7 +6002,7 @@ totalCash += item.totalValue;
 });
 const custSalesCanvas = document.getElementById('custSalesChart');
 if (!custSalesCanvas) { return; }
-custSalesChart = new SarimChart(custSalesCanvas, {
+_set_custSalesChart(new SarimChart(custSalesCanvas, {
 type: 'bar',
 data: {
 labels: labels,
@@ -6039,12 +6050,12 @@ ticks: { color: colors.text, maxRotation: currentCustomerChartMode === 'all' ? 4
 }
 }
 }
-});
+}));
 const pieData = [totalCash, totalCredit];
 const pieLabels = ['Cash Sales (Inc. Received Credits)', 'Pending Credits'];
 const custPaymentCanvas = document.getElementById('custPaymentChart');
 if (!custPaymentCanvas) { return; }
-custPaymentChart = new SarimChart(custPaymentCanvas, {
+_set_custPaymentChart(new SarimChart(custPaymentCanvas, {
 type: 'pie',
 data: {
 labels: pieLabels,
@@ -6067,10 +6078,10 @@ font: { size: 13, weight: 'bold' }
 }
 }
 }
-});
+}));
 }
 
-async function refreshCustomerSales(page = 1, force = false) {
+export async function refreshCustomerSales(page = 1, force = false) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const _rcsAlive = (item) => item && item.id && !deletedRecordIds.has(String(item.id));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales')).filter(_rcsAlive);
@@ -6336,7 +6347,7 @@ renderCustomersTable();
 updateCustomerCharts();
 }
 
-async function computeStoreStockSnapshot(store, date) {
+export async function computeStoreStockSnapshot(store, date) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -6358,7 +6369,7 @@ return { production, returns, sales, available };
 }
 window.computeStoreStockSnapshot = computeStoreStockSnapshot;
 
-async function prepareStockTransferScreen() {
+export async function prepareStockTransferScreen() {
 if (appMode === 'userrole' && !(window._userRoleAllowedTabs || []).includes('sales')) {
 showToast('Access Denied — Stock Transfer not in your assigned tabs', 'warning', 3000);
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('stock-transfer-screen');
@@ -6394,7 +6405,7 @@ await renderStockTransferHistory();
 }
 window.prepareStockTransferScreen = prepareStockTransferScreen;
 
-async function updateStockTransferAvailability() {
+export async function updateStockTransferAvailability() {
 const fromStore = (document.getElementById('stock-transfer-from-value') || {}).value;
 const date = (document.getElementById('stock-transfer-date') || {}).value;
 const el = document.getElementById('stockTransferAvailability');
@@ -6406,7 +6417,7 @@ el.style.color = snap.available > 0 ? 'var(--accent-emerald)' : 'var(--danger)';
 }
 window.updateStockTransferAvailability = updateStockTransferAvailability;
 
-async function saveStockTransfer() {
+export async function saveStockTransfer() {
 if (appMode === 'userrole' && !(window._userRoleAllowedTabs || []).includes('sales')) {
 showToast('Access Denied — Stock Transfer not in your assigned tabs', 'warning', 3000);
 return;
@@ -6473,7 +6484,7 @@ triggerAutoSync();
 }
 window.saveStockTransfer = saveStockTransfer;
 
-async function renderStockTransferHistory() {
+export async function renderStockTransferHistory() {
 const list = document.getElementById('stockTransferHistoryList');
 if (!list) return;
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -6503,7 +6514,7 @@ list.replaceChildren(fragment);
 }
 window.renderStockTransferHistory = renderStockTransferHistory;
 
-async function deleteStockTransfer(pairId) {
+export async function deleteStockTransfer(pairId) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const entries = db.filter(item => item.transferPairId === pairId);
 if (entries.length === 0) return;
@@ -6532,4 +6543,126 @@ showToast('Stock transfer removed', 'success');
 showToast('Failed to remove transfer. Please try again.', 'error');
 }
 }
+window.deleteStockTransfer = deleteStockTransfer;
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.setCashTrackerMode = setCashTrackerMode;
+window.calculateCashTracker = calculateCashTracker;
+window.updateEconomicDashboardWithNetValues = updateEconomicDashboardWithNetValues;
+window.openEntityTransactions = openEntityTransactions;
+window.closeEntityTransactions = closeEntityTransactions;
+window.savePaymentTransaction = savePaymentTransaction;
+window.deletePaymentTransaction = deletePaymentTransaction;
+window.filterPaymentHistory = filterPaymentHistory;
+window.getAvailableCashInHand = getAvailableCashInHand;
+window.calculateNetCash = calculateNetCash;
+window.updateEconomicDashboard = updateEconomicDashboard;
+window.saveCustomerSale = saveCustomerSale;
+window.setSaleMode = setSaleMode;
+window.updateCollectionPreview = updateCollectionPreview;
+window.saveCustomerCollection = saveCustomerCollection;
+window.saveCustomerTransaction = saveCustomerTransaction;
+window._DEFAULT_STORES = _DEFAULT_STORES;
+window._storesCache = _storesCache;
+window._storesCacheTs = _storesCacheTs;
+window._STORES_CACHE_TTL = _STORES_CACHE_TTL;
+window.getAppStores = getAppStores;
+window._invalidateStoresCache = _invalidateStoresCache;
+window.getStoreLabel = getStoreLabel;
+window.getStoreLabelAsync = getStoreLabelAsync;
+window.getStoreFormulaType = getStoreFormulaType;
+window.rebuildStoreUI = rebuildStoreUI;
+window.getAvailableStoresForDate = getAvailableStoresForDate;
+window.calculateSalesCost = calculateSalesCost;
+window.calculateCustomerSale = calculateCustomerSale;
+window.selectSalesRep = selectSalesRep;
+window.selectSupplyStore = selectSupplyStore;
+window.selectPaymentType = selectPaymentType;
+window.selectRepPaymentType = selectRepPaymentType;
+window.autoFillCustomerName = autoFillCustomerName;
+window.createInventoryWarningElement = createInventoryWarningElement;
+window.deleteCustomerSale = deleteCustomerSale;
+window.calculateSales = calculateSales;
+window.firebaseConfig = firebaseConfig;
+window.loadFirestoreStats = loadFirestoreStats;
+window.saveFirestoreStats = saveFirestoreStats;
+window.firestoreStats = firestoreStats;
+window.checkAndAutoResetFirestoreStats = checkAndAutoResetFirestoreStats;
+window.FIRESTORE_THRESHOLDS = FIRESTORE_THRESHOLDS;
+window._checkFirestoreCostThresholds = _checkFirestoreCostThresholds;
+window.buildFirestoreCostEstimate = buildFirestoreCostEstimate;
+window.trackFirestoreRead = trackFirestoreRead;
+window.trackFirestoreWrite = trackFirestoreWrite;
+window.resetFirestoreStats = resetFirestoreStats;
+window.originalOpenDataMenu = originalOpenDataMenu;
+window.DeltaSync = DeltaSync;
+window.initializeSyncStatsIfNeeded = initializeSyncStatsIfNeeded;
+window.UUIDSyncRegistry = UUIDSyncRegistry;
+window.addSignOutButton = addSignOutButton;
+window.removeSignOutButton = removeSignOutButton;
+window.handleReturnQtyInput = handleReturnQtyInput;
+window.handleExpiredQtyInput = handleExpiredQtyInput;
+window.handleTripleTap = handleTripleTap;
+window.saveTransaction = saveTransaction;
+window.exportCustomerData = exportCustomerData;
+window.markAllPendingCreditSalesAsCash = markAllPendingCreditSalesAsCash;
+window.markSalesEntriesAsReceived = markSalesEntriesAsReceived;
+window.markRepSalesEntriesAsUsed = markRepSalesEntriesAsUsed;
+window.revertRepSalesEntries = revertRepSalesEntries;
+window.updateCompositionChart = updateCompositionChart;
+window.setIndChartMode = setIndChartMode;
+window.setIndChartMetric = setIndChartMetric;
+window.updateIndChart = updateIndChart;
+window.setStoreComparisonMetric = setStoreComparisonMetric;
+window.updateStoreComparisonChart = updateStoreComparisonChart;
+window.refreshUI = refreshUI;
+window.filterProductionHistory = filterProductionHistory;
+window.filterCalculatorHistory = filterCalculatorHistory;
+window.filterCustomerTransactions = filterCustomerTransactions;
+window.renderEntityTable = renderEntityTable;
+window.filterEntityList = filterEntityList;
+window.viewEntityTransactions = viewEntityTransactions;
+window.syncSuppliersToEntities = syncSuppliersToEntities;
+window.verifyAccountPassword = verifyAccountPassword;
+window.promptVerifiedBackupPassword = promptVerifiedBackupPassword;
+window.unifiedBackup = unifiedBackup;
+window.unifiedRestore = unifiedRestore;
+window.normaliseBackupFields = normaliseBackupFields;
+window._doRestoreMerge = _doRestoreMerge;
+window._doYearCloseRestore = _doYearCloseRestore;
+window.showTab = showTab;
+window.handleRepTabUI = handleRepTabUI;
+window.enableGPUAcceleration = enableGPUAcceleration;
+window.DOMBatch = DOMBatch;
+window.lazyLoadObserver = lazyLoadObserver;
+window.observeLazyLoad = observeLazyLoad;
+window.animateElement = animateElement;
+window.fadeIn = fadeIn;
+window.fadeOut = fadeOut;
+window.slideIn = slideIn;
+window.frameCount = frameCount;
+window.lastTime = lastTime;
+window.measureFPS = measureFPS;
+window.handleAdminRepDateChange = handleAdminRepDateChange;
+window.setMfgChartMode = setMfgChartMode;
+window.updateMfgCharts = updateMfgCharts;
+window.getWeightPerUnit = getWeightPerUnit;
+window.getPreviousDayAvailableUnits = getPreviousDayAvailableUnits;
+window.updateFactoryUnitsAvailableStats = updateFactoryUnitsAvailableStats;
+window.updateFactorySummaryCard = updateFactorySummaryCard;
+window.getInitialAvailableForRange = getInitialAvailableForRange;
+window.refreshFactoryTab = refreshFactoryTab;
+window.updateAllTabsWithFactoryCosts = updateAllTabsWithFactoryCosts;
+window.initFactoryTab = initFactoryTab;
+window.setProductionView = setProductionView;
+window.updateAllStoresOverview = updateAllStoresOverview;
+window.setCustomerChartMode = setCustomerChartMode;
+window.updateCustomerCharts = updateCustomerCharts;
+window.refreshCustomerSales = refreshCustomerSales;
+window.computeStoreStockSnapshot = computeStoreStockSnapshot;
+window.prepareStockTransferScreen = prepareStockTransferScreen;
+window.updateStockTransferAvailability = updateStockTransferAvailability;
+window.saveStockTransfer = saveStockTransfer;
+window.renderStockTransferHistory = renderStockTransferHistory;
 window.deleteStockTransfer = deleteStockTransfer;

@@ -1,4 +1,14 @@
-async function toggleCustomerCreditReceived(id, event) {
+// Auto-migrated to an ES module. Source: utilities-payments.js
+import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
+import { CryptoEngine, SQLiteCrypto, _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _triggerFileDownload, compareRecordVersions, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, loadAllData, registerDevice, safeNumber, scheduleAutomaticCleanup, sqliteStore, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
+import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
+import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
+import { DeltaSync, calculateCashTracker, calculateNetCash, calculateSales, closeEntityTransactions, getAvailableCashInHand, getStoreFormulaType, getStoreLabel, initFactoryTab, loadFirestoreStats, promptVerifiedBackupPassword, refreshCustomerSales, refreshUI, renderEntityTable, revertRepSalesEntries, setProductionView, showTab, syncSuppliersToEntities, trackFirestoreWrite, updateAllStoresOverview, updateAllTabsWithFactoryCosts, updateCustomerCharts, updateIndChart } from './utilities-sales.js';
+import { calculatePaymentSummaries, closeFactoryInventoryModal, getCostPriceForStore, getSalePriceForStore, renderFactoryInventory, syncFactoryProductionStats, unlinkSupplierFromMaterial, updateFactoryInventoryDisplay } from './factory.js';
+import { calculateCustomerStatsForDisplay, currentManagingRepCustomer, openCustomerEditModal, refreshAllCalculations, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
+import { calculateRepCustomerStatsForDisplay, checkBiometricLock, disableBiometricLock, openRepCustomerEditModal, refreshRepUI, renderRepCustomerTable, renderRepCustomerTransactions, renderRepHistory } from './rep-sales.js';
+
+export async function toggleCustomerCreditReceived(id, event) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 if (event) {
 event.preventDefault();
@@ -23,7 +33,7 @@ updateCustomerCharts();
 }
 }
 
-async function calculateComparisonData() {
+export async function calculateComparisonData() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -72,7 +82,7 @@ comp[h.seller].commissionPaid += (h.commissionPaid || 0);
 return comp;
 }
 
-function createReportHTML(title, data, isHistory = false, id = null, sellerName = null, isHighlight = false, isMerged = false) {
+export function createReportHTML(title, data, isHistory = false, id = null, sellerName = null, isHighlight = false, isMerged = false) {
 const creditVal = safeValue(data.creditVal);
 const collected = safeValue(data.collected);
 const balance = creditVal - collected;
@@ -130,11 +140,11 @@ html += `</div>`;
 return html;
 }
 
-function _calcSaleDay(sale) {
+export function _calcSaleDay(sale) {
 return (sale && (sale.supplyDate || sale.date)) || '';
 }
 
-async function getPendingRepDeliveries(seller) {
+export async function getPendingRepDeliveries(seller) {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 if (!seller || seller === 'COMBINED') return [];
@@ -152,7 +162,7 @@ return customerSales.filter(sale =>
 );
 }
 
-function getCalcDateRange(pending) {
+export function getCalcDateRange(pending) {
 const toEl = document.getElementById('sale-date');
 const fromEl = document.getElementById('sale-date-from');
 const to = (toEl && toEl.value) || new Date().toISOString().split('T')[0];
@@ -165,7 +175,7 @@ if (from > to) from = to;
 return { from, to };
 }
 
-async function getCalcCycleSelection(seller) {
+export async function getCalcCycleSelection(seller) {
 const pending = await getPendingRepDeliveries(seller);
 const { from, to } = getCalcDateRange(pending);
 const selected = pending.filter(s => { const d = _calcSaleDay(s); return d >= from && d <= to; });
@@ -177,20 +187,20 @@ return {
 };
 }
 
-async function calculateTotalSoldForRepresentative(seller) {
+export async function calculateTotalSoldForRepresentative(seller) {
 const sel = await getCalcCycleSelection(seller);
 return sel.qty;
 }
 
-const _CALC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+export const _CALC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-function _calcFmtDay(iso, withYear) {
+export function _calcFmtDay(iso, withYear) {
 const p = (iso || '').split('-');
 if (p.length !== 3) return '';
 return parseInt(p[2], 10) + ' ' + _CALC_MONTHS[parseInt(p[1], 10) - 1] + (withYear ? ' ' + p[0] : '');
 }
 
-function updateCalcRangeLabel() {
+export function updateCalcRangeLabel() {
 const fromEl = document.getElementById('sale-date-from');
 const toEl = document.getElementById('sale-date');
 const lbl = document.getElementById('calcRangeLabel');
@@ -204,13 +214,13 @@ const sameYear = from.slice(0, 4) === to.slice(0, 4);
 lbl.textContent = _calcFmtDay(from, !sameYear) + ' to ' + _calcFmtDay(to, true);
 }
 
-function openCalcRangePicker() {
+export function openCalcRangePicker() {
 const seller = (document.getElementById('sellerSelect') || {}).value;
 const btn = document.getElementById(seller === 'COMBINED' ? 'sale-date__cdpBtn' : 'sale-date-from__cdpBtn');
 if (btn) btn.click();
 }
 
-async function onCalcDateChange(which) {
+export async function onCalcDateChange(which) {
 const fromEl = document.getElementById('sale-date-from');
 const toEl = document.getElementById('sale-date');
 if (which === 'from') window._calcFromManual = true;
@@ -229,7 +239,7 @@ await loadSalesData();
 setPerfOverviewMode(currentPerfOverviewMode || 'day');
 }
 
-async function autoFillTotalSoldQuantity() {
+export async function autoFillTotalSoldQuantity() {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const seller = document.getElementById('sellerSelect').value;
@@ -291,14 +301,14 @@ styleAutoFilledField(recoveredField);
 calculateSales();
 }
 
-function styleAutoFilledField(field) {
+export function styleAutoFilledField(field) {
 field.style.background = 'rgba(5, 150, 105, 0.1)';
 field.style.color = 'var(--accent-emerald)';
 field.style.fontWeight = 'bold';
 field.style.border = '1px solid var(--accent-emerald)';
 }
 
-async function loadSalesData(compMode = 'all') {
+export async function loadSalesData(compMode = 'all') {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -449,7 +459,7 @@ await updateIndChart();
 }
 }
 
-function addToRange(range, h) {
+export function addToRange(range, h) {
 range.sold += h.totalSold;
 range.ret += h.returned;
 range.expired = (range.expired || 0) + (h.expired || 0);
@@ -466,7 +476,7 @@ range.fieldExp = (range.fieldExp || 0) + (h.fieldExpenses || 0);
 range.commissionPaid = (range.commissionPaid || 0) + (h.commissionPaid || 0);
 }
 
-function updateSalesCharts(comp) {
+export function updateSalesCharts(comp) {
 
 if(!comp) return;
 const selectedMetric = document.getElementById('metricSelector').value;
@@ -483,7 +493,7 @@ const chartLabels = repNames.map(r => r.split(' ').map(w => w[0]+w.slice(1).toLo
 const chartData = repNames.map(r => (comp[r] || {})[selectedMetric] || 0);
 const chartColors = repNames.map((_, i) => repChartColors[i % repChartColors.length]);
 if(salesPerfChart) salesPerfChart.destroy();
-salesPerfChart = new SarimChart(perfChartElement, {
+_set_salesPerfChart(new SarimChart(perfChartElement, {
 type: 'bar',
 data: {
 labels: chartLabels,
@@ -503,7 +513,7 @@ y: { beginAtZero: true, grid: { color: colors.grid }, ticks: { color: colors.tex
 x: { ticks: { color: colors.text } }
 }
 }
-});
+}));
 const totalCashValue = repNames.reduce((s, r) => s + ((comp[r]||{}).rev||0) - ((comp[r]||{}).giv||0), 0);
 const totalCreditValue = repNames.reduce((s, r) => s + ((comp[r]||{}).giv||0), 0);
 const totalSold = repNames.reduce((s, r) => s + ((comp[r]||{}).sold||0), 0);
@@ -516,7 +526,7 @@ const pieLabels = ['Cash Sale Value', 'Credit Value', 'Return Value'];
 const compChartElement = document.getElementById('compositionChart');
 if (!compChartElement) { return; }
 if(salesCompChart) salesCompChart.destroy();
-salesCompChart = new SarimChart(compChartElement, {
+_set_salesCompChart(new SarimChart(compChartElement, {
 type: 'pie',
 data: {
 labels: pieLabels,
@@ -540,10 +550,10 @@ font: { size: 13, weight: 'bold' }
 }
 }
 }
-});
+}));
 }
 
-async function processReturnToProduction(storeKey, quantity, date, seller) {
+export async function processReturnToProduction(storeKey, quantity, date, seller) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const now = new Date();
@@ -608,7 +618,7 @@ stockReturns.push(returnLogEntry);
 await unifiedSave('stock_returns', stockReturns, returnLogEntry);
 }
 
-async function reverseReturnFromProduction(storeKey, quantity, date) {
+export async function reverseReturnFromProduction(storeKey, quantity, date) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const returnEntry = db.find(item =>
@@ -629,8 +639,8 @@ if (returnLogEntry) {
 await unifiedDelete('stock_returns', stockReturns, returnLogEntry.id, { strict: true }, returnLogEntry);
 }
 }
-const CHORA_MATERIAL_NAME = 'CHORA';
-async function processExpiredToChora(quantity, date, seller) {
+export const CHORA_MATERIAL_NAME = 'CHORA';
+export async function processExpiredToChora(quantity, date, seller) {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
@@ -657,7 +667,7 @@ emitSyncUpdate({ factory_inventory_data: null});
 notifyDataChange('factory');
 }
 
-async function reverseExpiredFromChora(quantity, date) {
+export async function reverseExpiredFromChora(quantity, date) {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
@@ -682,17 +692,17 @@ emitSyncUpdate({ factory_inventory_data: null});
 notifyDataChange('factory');
 }
 
-function formatCurrency(num) {
+export function formatCurrency(num) {
 if (typeof num !== 'number') num = parseFloat(num) || 0;
 if (isNaN(num) || !isFinite(num)) num = 0;
 return String(num.toFixed(2));
 }
 
-function safeValue(value) {
+export function safeValue(value) {
 return isNaN(value) || !isFinite(value) ? 0 : value;
 }
 
-async function refreshAllDisplays() {
+export async function refreshAllDisplays() {
 
 const _radBatch = await sqliteStore.getBatch([
 'mfg_pro_pkr','customer_sales','rep_sales','noman_history',
@@ -920,7 +930,7 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
     if (splash) splash.style.display = 'none';
   }, 800);
 });
-function _filterFactoryHistoryByMode(mode) {
+export function _filterFactoryHistoryByMode(mode) {
 const selectedDateVal = (document.getElementById('factory-date') || {}).value || new Date().toISOString().split('T')[0];
 const selectedDate = new Date(selectedDateVal);
 if (isNaN(selectedDate.getTime())) return;
@@ -941,7 +951,7 @@ item.style.display = show ? '' : 'none';
 });
 }
 
-function _filterPaymentHistoryByPeriod() {
+export function _filterPaymentHistoryByPeriod() {
 const periodFilterEl = document.getElementById('unifiedPeriodFilter');
 const period = periodFilterEl ? periodFilterEl.value : 'all';
 const now = new Date();
@@ -959,7 +969,7 @@ card.style.display = (cd >= startDate) ? '' : 'none';
 });
 }
 
-function _filterHistoryByPeriod(listSelector, refDateStr, mode) {
+export function _filterHistoryByPeriod(listSelector, refDateStr, mode) {
 const refDate = new Date(refDateStr);
 if (isNaN(refDate.getTime())) return;
 const weekStart = new Date(refDate);
@@ -979,7 +989,7 @@ card.style.display = show ? '' : 'none';
 });
 }
 
-function setSalesSummaryMode(mode) {
+export function setSalesSummaryMode(mode) {
 currentSalesSummaryMode = mode;
 const labels = { day:'Daily', week:'Weekly', month:'Monthly', year:'Yearly', all:'All Time' };
 const prefixes = ['day','week','month','year','all'];
@@ -1009,7 +1019,7 @@ const refDate = (document.getElementById('cust-date') || {}).value || new Date()
 _filterHistoryByPeriod('#custHistoryList', refDate, mode);
 }
 
-function setPerfOverviewMode(mode) {
+export function setPerfOverviewMode(mode) {
 currentPerfOverviewMode = mode;
 const prefixes = ['day','week','month','year','all'];
 prefixes.forEach(p => {
@@ -1024,7 +1034,7 @@ const refDate = (document.getElementById('sale-date') || {}).value || new Date()
 _filterHistoryByPeriod('#historyList', refDate, mode);
 }
 
-function setOverviewMode(mode) {
+export function setOverviewMode(mode) {
 currentOverviewMode = mode;
 const buttons = ['day', 'week', 'month', 'year', 'all'];
 buttons.forEach(btnMode => {
@@ -1038,7 +1048,7 @@ updateAllStoresOverview(mode);
 refreshUI();
 }
 
-async function deleteSalesEntry(id) {
+export async function deleteSalesEntry(id) {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -1127,7 +1137,7 @@ showToast("Failed to delete entry. Please try again.", "error");
 }
 }
 
-async function revertSpecificSalesEntries(saleIds) {
+export async function revertSpecificSalesEntries(saleIds) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
@@ -1158,7 +1168,7 @@ triggerAutoSync();
 return revertedCount;
 }
 
-function toggleEntityViewMode() {
+export function toggleEntityViewMode() {
 const toggleBtn = document.getElementById('entityViewModeToggle');
 const entityGrid = document.getElementById('entityCardsGrid');
 if (entityViewMode === 'detailed') {
@@ -1175,7 +1185,7 @@ toggleBtn.textContent = '';
 renderEntityTable();
 }
 
-async function calculateEntityBalances() {
+export async function calculateEntityBalances() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -1238,7 +1248,7 @@ supplierIdSet.add(String(transaction.entityId));
 return balances;
 }
 
-function getDynamicRole(balance) {
+export function getDynamicRole(balance) {
 if (balance > 0.01) {
 return {
 label: 'Payable',
@@ -1266,7 +1276,7 @@ sign: ''
 }
 }
 
-function filterEntityCards() {
+export function filterEntityCards() {
 const searchTerm = document.getElementById('entity-list-search').value.toLowerCase().trim();
 const entityCards = document.querySelectorAll('#entityCardsGrid .entity-card-compact');
 if (!searchTerm) {
@@ -1286,7 +1296,7 @@ card.style.display = 'none';
 });
 }
 
-function openEntityManagement() {
+export function openEntityManagement() {
 editingEntityId = null;
 const _en = document.getElementById('entityName'); if (_en) _en.value = '';
 const _ep = document.getElementById('entityPhone'); if (_ep) _ep.value = '';
@@ -1297,7 +1307,7 @@ clearPersonPhoto('entity');
 if (typeof openStandaloneScreen === 'function') openStandaloneScreen('add-entity-screen');
 }
 
-async function closeEntityManagement() {
+export async function closeEntityManagement() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('add-entity-screen');
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const detailsScreen = document.getElementById('entity-details-screen');
@@ -1307,7 +1317,7 @@ if (entity) renderEntityOverlayContent(entity);
 }
 }
 
-async function saveEntity() {
+export async function saveEntity() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const name = document.getElementById('entityName').value.trim();
@@ -1378,7 +1388,7 @@ showToast('Failed to save entity. Please try again.', 'error');
 }
 }
 
-async function editEntityBasicInfo(id) {
+export async function editEntityBasicInfo(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const entity = paymentEntities.find(e => String(e.id) === String(id));
 if (entity) {
@@ -1392,7 +1402,7 @@ if (typeof openStandaloneScreen === 'function') openStandaloneScreen('add-entity
 }
 }
 
-async function refreshPaymentTab(force = false) {
+export async function refreshPaymentTab(force = false) {
 const _rptBatch = await sqliteStore.getBatch([
 'mfg_pro_pkr','customer_sales','noman_history',
 'factory_inventory_data','factory_production_history','factory_unit_tracking',
@@ -1552,7 +1562,7 @@ showToast('Payment transaction failed.', 'error');
 }
 }
 
-async function selectEntity(id) {
+export async function selectEntity(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 selectedEntityId = id;
 const entity = paymentEntities.find(e => String(e.id) === String(id));
@@ -1578,14 +1588,14 @@ chip.classList.add('active');
 });
 }
 
-async function refreshEntityBalances() {
+export async function refreshEntityBalances() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 renderEntityTable();
 }
 
-function getMetricValue(historyItem, metric) {
+export function getMetricValue(historyItem, metric) {
 switch(metric) {
 case 'weight':
 return ((historyItem.totalSold || 0) - (historyItem.returned || 0)) || 0;
@@ -1604,7 +1614,7 @@ return 0;
 }
 }
 
-function getMetricLabel(metric) {
+export function getMetricLabel(metric) {
 switch(metric) {
 case 'weight': return 'Weight (kg)';
 case 'value': return 'Revenue ()';
@@ -1616,7 +1626,7 @@ default: return 'Metric';
 }
 }
 
-async function deleteFactoryInventoryItem() {
+export async function deleteFactoryInventoryItem() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 if (editingFactoryInventoryId) {
@@ -1666,7 +1676,7 @@ showToast('Failed to delete item. Please try again.', 'error');
 }
 }
 
-async function initPaymentData() {
+export async function initPaymentData() {
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -1788,7 +1798,7 @@ expenseDateInput.value = new Date().toISOString().split('T')[0];
 }
 renderRecentExpenses();
 })();
-async function handleExpenseSearch() {
+export async function handleExpenseSearch() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -1878,7 +1888,7 @@ resultsDiv.innerHTML = html;
 resultsDiv.classList.remove('hidden');
 }
 
-function selectExpense(name, type) {
+export function selectExpense(name, type) {
 document.getElementById('expenseName').value = name;
 document.getElementById('expense-search-results').classList.add('hidden');
 if (!name || typeof name !== 'string') {
@@ -1914,13 +1924,13 @@ if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
 document.getElementById('expenseAmount').focus();
 }
 
-function hideExpenseSearch() {
+export function hideExpenseSearch() {
 document.getElementById('expense-search-results').classList.add('hidden');
 document.getElementById('expenseAmount').focus();
 }
 window._expenseCategory = 'OUT';
 window._returnStore = null;
-function selectExpenseCategory(value, clickedBtn) {
+export function selectExpenseCategory(value, clickedBtn) {
 window._expenseCategory = value;
 ['btn-category-operating','btn-category-in','btn-category-out'].forEach(id => {
 const btn = document.getElementById(id);
@@ -1929,7 +1939,7 @@ if (btn) btn.classList.remove('active');
 if (clickedBtn) clickedBtn.classList.add('active');
 }
 
-function selectReturnStore(value, clickedBtn) {
+export function selectReturnStore(value, clickedBtn) {
 window._returnStore = value;
 ['ret-store-a','ret-store-b'].forEach(id => {
 const btn = document.getElementById(id);
@@ -1938,7 +1948,7 @@ if (btn) btn.classList.remove('active');
 if (clickedBtn) clickedBtn.classList.add('active');
 }
 
-async function saveExpense() {
+export async function saveExpense() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
@@ -2277,7 +2287,7 @@ showToast('Failed to save expense. Please try again.', 'error');
 }
 }
 
-async function createExpenseTransaction(expense) {
+export async function createExpenseTransaction(expense) {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -2331,11 +2341,11 @@ refreshEntityBalances();
 }
 }
 
-function renderRecentExpenses() {
+export function renderRecentExpenses() {
 renderExpenseTable();
 }
 
-async function renderExpenseTable(page = 1) {
+export async function renderExpenseTable(page = 1) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'))
   .filter(item => item && item.id && !deletedRecordIds.has(String(item.id)));
@@ -2447,7 +2457,7 @@ fragment.appendChild(tr);
 tbody.replaceChildren(fragment);
 }
 
-async function renderUnifiedTable(page = 1) {
+export async function renderUnifiedTable(page = 1) {
 
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const _notDeleted = (item) => item && item.id && !deletedRecordIds.has(String(item.id));
@@ -2820,7 +2830,7 @@ if (expensesEl) expensesEl.textContent = fmtAmt(totalExpenses);
 _filterPaymentHistoryByPeriod();
 }
 
-async function updateExpenseBreakdown() {
+export async function updateExpenseBreakdown() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const container = document.getElementById('expense-breakdown-container');
 if (!container) return;
@@ -2864,7 +2874,7 @@ html += `<div style="color: var(--text-muted); font-size: 0.7rem; margin-top: 4p
 container.innerHTML = html;
 }
 
-async function exportUnifiedData() {
+export async function exportUnifiedData() {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const _notDeleted = (item) => item && item.id && !deletedRecordIds.has(String(item.id));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data')).filter(_notDeleted);
@@ -3155,7 +3165,7 @@ showToast('Error generating PDF: ' + error.message, 'error');
 }
 }
 
-function formatExpenseDate(dateString) {
+export function formatExpenseDate(dateString) {
 const date = new Date(dateString);
 const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
 const day = String(date.getDate()).padStart(2, '0');
@@ -3163,7 +3173,7 @@ const year = String(date.getFullYear()).slice(-2);
 return `${month} ${day} ${year}`;
 }
 
-function toSafeDate(value) {
+export function toSafeDate(value) {
 if (!value) return null;
 if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
 return new Date(value.seconds * 1000);
@@ -3173,7 +3183,7 @@ const d = new Date(value);
 return isNaN(d.getTime()) ? null : d;
 }
 
-function formatDisplayDate(dateInput) {
+export function formatDisplayDate(dateInput) {
 if (!dateInput) return '-';
 const date = toSafeDate(dateInput);
 if (!date || isNaN(date.getTime())) return '-';
@@ -3183,13 +3193,13 @@ const year = String(date.getFullYear()).slice(-2);
 return `${month} ${day} ${year}`;
 }
 
-function formatDisplayDateTime(dateInput, timeStr) {
+export function formatDisplayDateTime(dateInput, timeStr) {
 const datePart = formatDisplayDate(dateInput);
 if (!timeStr) return datePart;
 return `${datePart} @ ${timeStr}`;
 }
 
-async function openExpenseEntityDetails(expenseId) {
+export async function openExpenseEntityDetails(expenseId) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -3212,7 +3222,7 @@ showToast('Entity not found for this expense', 'warning');
 }
 }
 
-async function openOperatingExpenseOverlay(expenseName) {
+export async function openOperatingExpenseOverlay(expenseName) {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 currentExpenseOverlayName = expenseName;
 const labelEl = document.getElementById('quickExpenseNameLabel');
@@ -3229,13 +3239,13 @@ if (typeof openStandaloneScreen === 'function') openStandaloneScreen('expense-de
 renderExpenseOverlayContent();
 }
 
-function closeExpenseDetailsOverlay() {
+export function closeExpenseDetailsOverlay() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('expense-details-screen');
 currentExpenseOverlayName = null;
 refreshPaymentTab();
 }
 
-async function renderExpenseOverlayContent() {
+export async function renderExpenseOverlayContent() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const expenseName = currentExpenseOverlayName;
@@ -3324,7 +3334,7 @@ sqliteStore.get('person_photos').then(ph => {
 list.replaceChildren(_expFrag);
 }
 
-function filterExpenseManagementHistory() {
+export function filterExpenseManagementHistory() {
 const term = document.getElementById('expense-history-search').value.toLowerCase();
 const items = document.querySelectorAll('#expenseManagementHistoryList .cust-history-item');
 items.forEach(item => {
@@ -3332,7 +3342,7 @@ item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'non
 });
 }
 
-async function deleteExpenseFromOverlay(expenseId) {
+export async function deleteExpenseFromOverlay(expenseId) {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 await deleteExpense(expenseId);
@@ -3342,7 +3352,7 @@ renderExpenseOverlayContent();
 }
 }
 
-async function saveQuickExpenseEntry() {
+export async function saveQuickExpenseEntry() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -3395,7 +3405,7 @@ showToast('Failed to save expense. Please try again.', 'error');
 }
 }
 
-async function deleteAllExpensesByName() {
+export async function deleteAllExpensesByName() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const expenseName = currentExpenseOverlayName;
@@ -3467,7 +3477,7 @@ showToast('Failed to delete all expense records. Please try again.', 'error');
 }
 }
 
-async function exportExpenseOverlayToPDF() {
+export async function exportExpenseOverlayToPDF() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const expenseName = currentExpenseOverlayName;
 if (!expenseName) { showToast('No expense selected', 'warning'); return; }
@@ -3635,7 +3645,7 @@ showToast('Failed to export PDF: ' + error.message, 'error');
 }
 }
 
-async function deleteExpense(expenseId) {
+export async function deleteExpense(expenseId) {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -3775,7 +3785,7 @@ showToast('Failed to delete expense. Please try again.', 'error');
 }
 }
 
-function clearExpenseForm() {
+export function clearExpenseForm() {
 document.getElementById('expenseName').value = '';
 document.getElementById('expenseAmount').value = '';
 document.getElementById('expenseDescription').value = '';
@@ -3796,7 +3806,7 @@ window._expensePendingPhoto = null;
 _applyExpensePendingPhoto(null);
 }
 
-function getCategoryColor(category) {
+export function getCategoryColor(category) {
 switch(category) {
 case 'operating': return 'var(--danger)';
 case 'loan': return 'var(--warning)';
@@ -3805,7 +3815,7 @@ default: return 'var(--text-muted)';
 }
 }
 
-function getCategoryLabel(category) {
+export function getCategoryLabel(category) {
 switch(category) {
 case 'operating': return 'Operating';
 case 'loan': return ' Loan/Debt';
@@ -3814,7 +3824,7 @@ default: return 'Other';
 }
 }
 
-function openDataMenu() {
+export function openDataMenu() {
 if (appMode === 'rep') {
 return;
 }
@@ -3824,11 +3834,11 @@ performOneClickSync().catch(function(e){console.error('[openDataMenu] sync error
 }
 }
 
-function closeDataMenu() {
+export function closeDataMenu() {
 
 }
-const _recoveredThisSession = new Set();
-async function purgeRecoveredId(id, collectionName, cleanRecord, newId) {
+export const _recoveredThisSession = new Set();
+export async function purgeRecoveredId(id, collectionName, cleanRecord, newId) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
   const sid    = String(id);
@@ -3917,7 +3927,7 @@ const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
   }
 }
 window.purgeRecoveredId = purgeRecoveredId;
-async function _findPairedTransferTombstone(currentId, transferPairId) {
+export async function _findPairedTransferTombstone(currentId, transferPairId) {
   if (!transferPairId) return null;
   const allDeletions = ensureArray(await sqliteStore.get('deletion_records'));
   return allDeletions.find(r =>
@@ -3927,7 +3937,7 @@ async function _findPairedTransferTombstone(currentId, transferPairId) {
   ) || null;
 }
 
-async function recoverRecord(deletedId, collectionName, _isPairRecovery = false) {
+export async function recoverRecord(deletedId, collectionName, _isPairRecovery = false) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -4044,7 +4054,7 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 }
 window.recoverRecord = recoverRecord;
 window.registerDeletion = registerDeletion;
-const RECYCLE_COLLECTION_TO_TAB = {
+export const RECYCLE_COLLECTION_TO_TAB = {
   'sales':              'tab_sales',
   'sales_customers':    'tab_sales',
   'rep_sales':          'tab_rep',
@@ -4059,7 +4069,7 @@ const RECYCLE_COLLECTION_TO_TAB = {
   'entities':           'tab_payments',
   'unknown':            'tab_payments',
 };
-const RECYCLE_BIN_COLLECTION_LABELS = {
+export const RECYCLE_BIN_COLLECTION_LABELS = {
   'sales':              'Customer Sale',
   'sales_customers':    'Customer Contact',
   'rep_sales':          'Rep Sale',
@@ -4074,7 +4084,7 @@ const RECYCLE_BIN_COLLECTION_LABELS = {
   'entities':           'Payment Entity',
   'unknown':            'Record',
 };
-const RECYCLE_TAB_LABELS = {
+export const RECYCLE_TAB_LABELS = {
   'tab_sales':       'Sales Tab',
   'tab_rep':         'Rep Tab',
   'tab_production':  'Manufacturing Tab',
@@ -4082,12 +4092,12 @@ const RECYCLE_TAB_LABELS = {
   'tab_factory':     'Factory Tab',
   'tab_payments':    'Payments Tab',
 };
-const RECYCLE_RECOVERABLE_COLLECTIONS = new Set([
+export const RECYCLE_RECOVERABLE_COLLECTIONS = new Set([
   'sales','transactions','rep_sales','expenses','production',
   'factory_history','inventory','returns','calculator_history',
   'sales_customers','rep_customers','entities'
 ]);
-async function openRecycleBin() {
+export async function openRecycleBin() {
 if (typeof openStandaloneScreen === 'function') openStandaloneScreen('recycle-bin-screen');
 
 const MODE_TO_RECYCLE_FILTER = {
@@ -4142,11 +4152,11 @@ if (filterSel) {
 await renderRecycleBin(defaultFilter);
 }
 
-function closeRecycleBin() {
+export function closeRecycleBin() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('recycle-bin-screen');
 }
 
-async function renderRecycleBin(filterCollection = 'all') {
+export async function renderRecycleBin(filterCollection = 'all') {
   const container = document.getElementById('recycleBinList');
   const statsEl   = document.getElementById('recycleBinStats');
   if (!container) return;
@@ -4437,7 +4447,7 @@ async function renderRecycleBin(filterCollection = 'all') {
   }
 }
 
-async function attemptRecoverRecord(id, collectionName) {
+export async function attemptRecoverRecord(id, collectionName) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
   const tabKey = RECYCLE_COLLECTION_TO_TAB[collectionName] || 'tab_payments';
@@ -4469,7 +4479,7 @@ window.closeRecycleBin = closeRecycleBin;
 window.renderRecycleBin = renderRecycleBin;
 window.attemptRecoverRecord = attemptRecoverRecord;
 
-async function emptyRecycleBin() {
+export async function emptyRecycleBin() {
   const currentFilter = window._recycleBinCurrentFilterKey || (document.getElementById('recycleBinFilter') || {}).value || 'all';
   const targets = (window._recycleBinCurrentFiltered || []).slice();
   if (targets.length === 0) {
@@ -4511,7 +4521,7 @@ async function emptyRecycleBin() {
 }
 window.emptyRecycleBin = emptyRecycleBin;
 
-async function hardDeleteRecord(id, collectionName, _isPairDelete = false) {
+export async function hardDeleteRecord(id, collectionName, _isPairDelete = false) {
   if (!id || !collectionName) return false;
   const sid = String(id);
   try {
@@ -4621,7 +4631,7 @@ async function hardDeleteRecord(id, collectionName, _isPairDelete = false) {
   }
 }
 
-async function attemptHardDeleteRecord(id, collectionName) {
+export async function attemptHardDeleteRecord(id, collectionName) {
   const tabKey   = RECYCLE_COLLECTION_TO_TAB[collectionName] || 'tab_payments';
   const tabLabel = RECYCLE_TAB_LABELS[tabKey] || tabKey;
   const label    = `${tabLabel} › ${RECYCLE_BIN_COLLECTION_LABELS[collectionName] || collectionName}`;
@@ -4650,7 +4660,7 @@ async function attemptHardDeleteRecord(id, collectionName) {
 }
 window.hardDeleteRecord = hardDeleteRecord;
 window.attemptHardDeleteRecord = attemptHardDeleteRecord;
-async function triggerLocalBackup() {
+export async function triggerLocalBackup() {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
@@ -4723,7 +4733,7 @@ showToast('Encryption failed: ' + encErr.message, 'error');
 }
 }
 
-async function uploadOldDataToCloud(event) {
+export async function uploadOldDataToCloud(event) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
@@ -5130,7 +5140,7 @@ showToast('Upload failed: ' + err.message, 'error');
 isSyncing = false;
 }
 }
-const BiometricAuth = {
+export const BiometricAuth = {
 isAvailable: async () => {
 if (!window.PublicKeyCredential) return false;
 const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
@@ -5221,7 +5231,7 @@ throw err;
 }
 }
 };
-async function forceAppModeFromCloud(targetMode, repName = null) {
+export async function forceAppModeFromCloud(targetMode, repName = null) {
 if (!firebaseDB || !currentUser) {
 showToast('Not logged in', 'error', 3000);
 return false;
@@ -5251,7 +5261,7 @@ return false;
 }
 }
 window.forceAppModeFromCloud = forceAppModeFromCloud;
-function updateSystemName() {
+export function updateSystemName() {
 const el = document.getElementById('system-name-display');
 if (!el) return;
 if (appMode === 'admin' || !appMode) {
@@ -5267,7 +5277,7 @@ el.textContent = (window._assignedManagerName || 'User').toUpperCase();
 }
 }
 
-function lockToRepMode() {
+export function lockToRepMode() {
 document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
 if (btn.id !== 'snav-rep') btn.style.display = 'none';
 });
@@ -5291,7 +5301,7 @@ if (newTransCard) newTransCard.style.display = 'block';
 if (typeof refreshRepUI === 'function') refreshRepUI();
 }
 
-function lockToProductionMode() {
+export function lockToProductionMode() {
 document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
 if (btn.id !== 'snav-prod') btn.style.display = 'none';
 });
@@ -5323,7 +5333,7 @@ const dynCost = document.getElementById('dynamic-cost-display');
 if (dynCost) dynCost.style.display = 'none';
 }
 
-function lockToFactoryMode() {
+export function lockToFactoryMode() {
 document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
 if (btn.id !== 'snav-factory') btn.style.display = 'none';
 });
@@ -5357,7 +5367,7 @@ if (formulaDisplay) formulaDisplay.style.display = 'none';
 }
 }
 
-function lockToUserRoleMode() {
+export function lockToUserRoleMode() {
 const assignedTabs = window._assignedUserTabs || [];
 const userName = window._assignedManagerName || 'User';
 const allTabs = ['prod','sales','calc','factory','payments','rep'];
@@ -5441,7 +5451,7 @@ showTab(assignedTabs[0]);
 }
 }
 
-async function enforceRepModeLock() {
+export async function enforceRepModeLock() {
 if (window._modeLockEnforced) return;
 window._modeLockEnforced = true;
 try {
@@ -5470,7 +5480,7 @@ console.warn('enforceRepModeLock: failed to read mode from SQLite, defaulting to
 }
 }
 
-function preventAdminAccess() {
+export function preventAdminAccess() {
 if (!window._originalShowTab && typeof window.showTab === 'function') {
 window._originalShowTab = window.showTab;
 }
@@ -5544,7 +5554,7 @@ btn.style.display = 'none';
 }
 }
 
-async function unlockAdminMode() {
+export async function unlockAdminMode() {
 appMode = 'admin';
 updateSystemName();
 window._assignedManagerName = null;
@@ -5573,7 +5583,7 @@ location.reload();
 }, 2000);
 }
 
-async function deleteRepTransaction(id) {
+export async function deleteRepTransaction(id) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 if (!id || !validateUUID(id)) {
 showToast('Invalid transaction ID', 'error');
@@ -5664,7 +5674,7 @@ showToast('Failed to delete transaction. Please try again.', 'error');
 }
 }
 
-async function handleCustomerInput(query, mode) {
+export async function handleCustomerInput(query, mode) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
@@ -5705,7 +5715,7 @@ phoneContainer.classList.add('hidden');
 }
 }
 
-async function handleUniversalSearch(inputId, resultsId, dataSource) {
+export async function handleUniversalSearch(inputId, resultsId, dataSource) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
@@ -5849,7 +5859,7 @@ resultsDiv.innerHTML = html;
 resultsDiv.classList.remove('hidden');
 }
 
-function selectFromUniversalSearch(inputId, resultsId, value, type, id) {
+export function selectFromUniversalSearch(inputId, resultsId, value, type, id) {
 const input = document.getElementById(inputId);
 const resultsDiv = document.getElementById(resultsId);
 if (input) {
@@ -5936,7 +5946,7 @@ window.selectRepCustomer = function(name) {
   document.getElementById('rep-new-customer-phone-container').classList.add('hidden');
   document.getElementById('rep-new-cust-phone').value = '';
 };
-async function initTheme() {
+export async function initTheme() {
 const savedTheme = await sqliteStore.get('theme') || 'dark';
 const html = document.documentElement;
 html.setAttribute('data-theme', savedTheme);
@@ -5950,7 +5960,7 @@ if (metaThemeColor) {
 metaThemeColor.setAttribute('content', savedTheme === 'light' ? '#ffffff' : '#000000');
 }
 }
-const FIRESTORE_ENHANCED_SCHEMA = {
+export const FIRESTORE_ENHANCED_SCHEMA = {
 production: {
 localKey: 'mfg_pro_pkr',
 firestoreCollection: 'production',
@@ -6032,7 +6042,7 @@ description: 'Unified expense manager records (operating expenses, payments IN/O
 fields: ['name', 'amount', 'category', 'description', 'date', 'time', 'id', 'timestamp', 'syncedAt']
 }
 };
-const FIRESTORE_SETTINGS_SCHEMA = {
+export const FIRESTORE_SETTINGS_SCHEMA = {
 factory_default_formulas: {
 localKey: 'factory_default_formulas',
 localVariable: 'factoryDefaultFormulas',
@@ -6100,7 +6110,7 @@ defaultValue: null,
 description: 'ISO timestamp of the last successful cloud sync'
 }
 };
-const FIRESTORE_LOCAL_ONLY_KEYS = {
+export const FIRESTORE_LOCAL_ONLY_KEYS = {
 theme: {
 localKey: 'theme',
 localVariable: null,
@@ -6127,7 +6137,7 @@ description: 'WebAuthn biometric credential ID'
 // writing to the #connection-indicator element, which never existed in
 // index.html and was independently forced display:none in CSS anyway -
 // this function's writes were previously silent no-ops.
-function updateConnectionStatus() {
+export function updateConnectionStatus() {
 if (!navigator.onLine) {
 _setCloudConnectionState(null);
 } else if (typeof firebase === 'undefined') {
@@ -6140,7 +6150,7 @@ _setCloudConnectionState(null);
 }
 window.addEventListener('online', () => { updateConnectionStatus(); if(typeof updateOfflineBanner==='function') updateOfflineBanner(); });
 window.addEventListener('offline', () => { updateConnectionStatus(); if(typeof updateOfflineBanner==='function') updateOfflineBanner(); });
-const originalSync = window.performOneClickSync;
+export const originalSync = window.performOneClickSync;
 window.performOneClickSync = async function(silent) {
 updateConnectionStatus();
 try {
@@ -6163,7 +6173,7 @@ if (typeof renderExpenseTable === 'function') {
 if (typeof renderRepCustomerTable === 'function') {
 }
 })();
-var ThemeManager = {
+export var ThemeManager = {
 currentTheme: 'dark',
 observers: new Set(),
 async init() {
@@ -6201,7 +6211,7 @@ return getComputedStyle(document.documentElement)
 .getPropertyValue(`--${varName}`).trim();
 }
 };
-const IncrementalRenderer = {
+export const IncrementalRenderer = {
 queue: [],
 isRendering: false,
 batchSize: 20,
@@ -6232,7 +6242,7 @@ this.isRendering = false;
 }
 };
 
-class ReactiveComponent {
+export class ReactiveComponent {
 constructor(element, config = {}) {
 this.element = element;
 this.state = config.initialState || {};
@@ -6265,7 +6275,7 @@ listeners.forEach(cb => cb(newState, oldState));
 }
 }
 }
-var PerformanceMonitor = {
+export var PerformanceMonitor = {
 metrics: {
 renderTime: [],
 queryTime: [],
@@ -6316,7 +6326,7 @@ if (window._syncUpdatesCleanupInterval) { clearInterval(window._syncUpdatesClean
 if (window._connectionCheckInterval) { clearInterval(window._connectionCheckInterval); window._connectionCheckInterval = null; }
 if (window._perfMonitorInterval) { clearInterval(window._perfMonitorInterval); window._perfMonitorInterval = null; }
 });
-async function loadSalesRepsList() {
+export async function loadSalesRepsList() {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const stored = await sqliteStore.get('sales_reps_list', null);
@@ -6353,7 +6363,7 @@ if (cloudTs > localTs) await sqliteStore.set('team_list_timestamp', cloudTs);
 renderAllRepUI();
 }
 
-async function saveSalesRepsList() {
+export async function saveSalesRepsList() {
 try {
 await sqliteStore.set('sales_reps_list', salesRepsList);
 if (firebaseDB && currentUser) {
@@ -6378,7 +6388,7 @@ showToast('Failed to save team list. Please try again.', 'error');
 }
 }
 
-async function saveUserRolesList() {
+export async function saveUserRolesList() {
 try {
 await sqliteStore.set('user_roles_list', userRolesList);
 if (firebaseDB && currentUser) {
@@ -6402,7 +6412,7 @@ showToast('Failed to save user roles. Please try again.', 'error');
 }
 }
 
-function renderAllRepUI() {
+export function renderAllRepUI() {
 const adminSel = document.getElementById('admin-rep-selector');
 if (adminSel) {
 const prev = adminSel.value;
@@ -6431,7 +6441,7 @@ return `<button id="btn-rep-dyn-${i}" class="toggle-opt${currentVal === r ? ' ac
 renderManageRepsList();
 }
 
-function renderManageRepsList() {
+export function renderManageRepsList() {
 const list = document.getElementById('manage-reps-list');
 if (!list) return;
 if (salesRepsList.length === 0) {
@@ -6448,8 +6458,8 @@ list.innerHTML = salesRepsList.map((rep, i) => `
 </div>
 `).join('');
 }
-let _newUserRoleSelectedTabs = new Set();
-function toggleUserRoleTabAccess(tabKey) {
+export let _newUserRoleSelectedTabs = new Set();
+export function toggleUserRoleTabAccess(tabKey) {
 if (_newUserRoleSelectedTabs.has(tabKey)) {
 _newUserRoleSelectedTabs.delete(tabKey);
 } else {
@@ -6467,7 +6477,7 @@ hint.textContent = _newUserRoleSelectedTabs.size === 0
 }
 }
 
-function renderUserRoleList() {
+export function renderUserRoleList() {
 const list = document.getElementById('manage-userrole-list');
 if (!list) return;
 if (userRolesList.length === 0) {
@@ -6491,7 +6501,7 @@ return `
 }).join('');
 }
 
-function switchManageTeamTab(tab) {
+export function switchManageTeamTab(tab) {
 ['rep', 'userrole', 'accounts'].forEach(t => {
 const btn = document.getElementById('team-tab-' + t);
 const panel = document.getElementById('team-panel-' + t);
@@ -6503,7 +6513,7 @@ if (tab === 'rep') renderManageRepsList();
 if (tab === 'accounts' && typeof loadAccountsList === 'function') loadAccountsList();
 }
 
-async function addNewUserRole() {
+export async function addNewUserRole() {
 const input = document.getElementById('new-userrole-name-input');
 if (!input) return;
 const name = input.value.trim().toUpperCase();
@@ -6524,7 +6534,7 @@ renderUserRoleList();
 showToast(`${name} added as User`, 'success');
 }
 
-async function removeUserRole(index) {
+export async function removeUserRole(index) {
 const user = userRolesList[index];
 if (!user) return;
 const _rMsg = `Remove ${esc(user.name)} from the team?\n\nThey will lose access to their assigned sections. This does not delete any recorded data.`;
@@ -6536,7 +6546,7 @@ renderUserRoleList();
 showToast(`${esc(user.name)} removed`, 'info');
 }
 
-async function addNewSalesRep() {
+export async function addNewSalesRep() {
 const input = document.getElementById('new-rep-name-input');
 if (!input) return;
 const name = input.value.trim().toUpperCase();
@@ -6548,7 +6558,7 @@ input.value = '';
 showToast(`${name} added`, 'success');
 }
 
-async function removeSalesRep(index) {
+export async function removeSalesRep(index) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 if (salesRepsList.length <= 1) { showToast('Must have at least one representative', 'warning'); return; }
 const name = salesRepsList[index];
@@ -6574,19 +6584,19 @@ await saveSalesRepsList();
 showToast(`${name} removed`, 'info');
 }
 
-function openManageRepsModal() {
+export function openManageRepsModal() {
 renderManageRepsList();
 if (typeof openStandaloneScreen === 'function') openStandaloneScreen('sales-rep-screen');
 }
 
-function closeManageRepsModal() {
+export function closeManageRepsModal() {
 if (typeof closeStandaloneScreen === 'function') {
 closeStandaloneScreen('sales-rep-screen');
 closeStandaloneScreen('user-roles-screen');
 closeStandaloneScreen('app-accounts-screen');
 }
 }
-const _overlayStack = (() => {
+export const _overlayStack = (() => {
   const _registry = {
     'formula-standard-screen':     { closeFn: () => closeStandaloneScreen('formula-standard-screen'), contentSel: '.screen-body' },
     'formula-asaan-screen':        { closeFn: () => closeStandaloneScreen('formula-asaan-screen'),    contentSel: '.screen-body' },
@@ -6648,7 +6658,7 @@ window.removeSalesRep = removeSalesRep;
 window.openManageRepsModal = openManageRepsModal;
 window.closeManageRepsModal = closeManageRepsModal;
 window.switchManageTeamTab = switchManageTeamTab;
-async function loadUserRolesContent() {
+export async function loadUserRolesContent() {
 if (firebaseDB && currentUser) {
 try {
 const teamDoc = await firebaseDB.collection('users').doc(currentUser.uid)
@@ -6673,7 +6683,7 @@ window.renderUserRoleList = renderUserRoleList;
 window.loadUserRolesContent = loadUserRolesContent;
 window.saveUserRolesList = saveUserRolesList;
 window.lockToUserRoleMode = lockToUserRoleMode;
-function phoneActionHTML(phone, opts = {}) {
+export function phoneActionHTML(phone, opts = {}) {
 const raw = (phone || '').toString().trim();
 const empty = !raw || raw === '-' || raw === 'N/A' || raw === 'No Phone' || raw === 'No contact';
 if (empty) return raw || (opts.dash ? '-' : '');
@@ -6857,7 +6867,7 @@ showToast('Could not parse backup file: ' + error.message, 'error');
     }
   };
 })();
-async function loadDeviceList() {
+export async function loadDeviceList() {
 const container = document.getElementById('device-list-container');
 if (!container) return;
 if (!firebaseDB || !currentUser) {
@@ -7073,7 +7083,7 @@ Error loading devices: ${esc(error.message)}
 }
 }
 
-async function refreshDeviceList() {
+export async function refreshDeviceList() {
 const container = document.getElementById('device-list-container');
 if (container) {
 container.innerHTML = `
@@ -7086,7 +7096,7 @@ await loadDeviceList();
 showToast(' Device list refreshed', 'success', 2000);
 }
 
-async function remoteControlDevice(deviceId, targetMode, repName = null, userTabs = null) {
+export async function remoteControlDevice(deviceId, targetMode, repName = null, userTabs = null) {
 if (!firebaseDB || !currentUser) {
 showToast('Not logged in', 'error', 3000);
 return;
@@ -7155,7 +7165,7 @@ showToast('Failed to control device: ' + error.message, 'error', 4000);
 }
 }
 
-async function removeDevice(deviceId) {
+export async function removeDevice(deviceId) {
 if (!firebaseDB || !currentUser) {
 showToast('Not logged in', 'error', 3000);
 return;
@@ -7193,7 +7203,7 @@ window.removeDevice = removeDevice;
 window.getDeviceId = getDeviceId;
 window.getDeviceName = getDeviceName;
 window.registerDevice = registerDevice;
-function _applyModeFromData(modeStr, ts, assignedRep, assignedManager, assignedUserTabs, remoteApplied) {
+export function _applyModeFromData(modeStr, ts, assignedRep, assignedManager, assignedUserTabs, remoteApplied) {
   const previousMode = appMode;
   appMode = modeStr;
   const modeBatch = [['appMode', appMode], ['appMode_timestamp', ts]];
@@ -7220,7 +7230,7 @@ function _applyModeFromData(modeStr, ts, assignedRep, assignedManager, assignedU
   setTimeout(() => { window.location.reload(); }, 1500);
 }
 window._applyModeFromData = _applyModeFromData;
-async function restoreDeviceModeOnLogin(uid) {
+export async function restoreDeviceModeOnLogin(uid) {
 try {
   const localTimestamp = Number(await sqliteStore.get('appMode_timestamp')) || 0;
 
@@ -7280,7 +7290,7 @@ try {
 }
 }
 window.restoreDeviceModeOnLogin = restoreDeviceModeOnLogin;
-async function listenForDeviceCommands() {
+export async function listenForDeviceCommands() {
 if (!firebaseDB || !currentUser) return;
 
 if (typeof window.deviceCommandsUnsubscribe === 'function') {
@@ -7381,7 +7391,7 @@ console.error('[device] listenForDeviceCommands failed:', _safeErr(error));
 }
 }
 
-async function applyRemoteModeChange(targetMode, source, repName = null, userTabs = null) {
+export async function applyRemoteModeChange(targetMode, source, repName = null, userTabs = null) {
 const previousMode = appMode;
 const previousManager = window._assignedManagerName || null;
 const previousTabs = JSON.stringify(window._assignedUserTabs || []);
@@ -7456,7 +7466,7 @@ showToast('Device unlocked to Admin mode', 'info', 4000);
 }
 }
 window.listenForDeviceCommands = listenForDeviceCommands;
-function listenForTeamChanges() {
+export function listenForTeamChanges() {
 if (window._teamUnsubscribe) {
 try { window._teamUnsubscribe(); } catch(e) {}
 window._teamUnsubscribe = null;
@@ -7465,7 +7475,7 @@ window._teamUnsubscribe = null;
 window.listenForTeamChanges = listenForTeamChanges;
 window.applyRemoteModeChange = applyRemoteModeChange;
 
-async function prepareEntityTransferScreen() {
+export async function prepareEntityTransferScreen() {
 if (appMode === 'userrole' && !(window._userRoleAllowedTabs || []).includes('payments')) {
 showToast('Access Denied — Payment Transfer not in your assigned tabs', 'warning', 3000);
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('payment-transfer-screen');
@@ -7489,7 +7499,7 @@ await renderPaymentTransferHistory();
 }
 window.prepareEntityTransferScreen = prepareEntityTransferScreen;
 
-async function saveEntityTransfer() {
+export async function saveEntityTransfer() {
 if (appMode === 'userrole' && !(window._userRoleAllowedTabs || []).includes('payments')) {
 showToast('Access Denied — Payment Transfer not in your assigned tabs', 'warning', 3000);
 return;
@@ -7563,12 +7573,12 @@ triggerAutoSync();
 }
 window.saveEntityTransfer = saveEntityTransfer;
 
-function openPaymentTransferPhotoCapture() {
+export function openPaymentTransferPhotoCapture() {
 openPhotoCapture('paytransfer');
 }
 window.openPaymentTransferPhotoCapture = openPaymentTransferPhotoCapture;
 
-function handlePaymentTransferPhotoFile(event) {
+export function handlePaymentTransferPhotoFile(event) {
 const file = event.target.files && event.target.files[0];
 if (!file) return;
 const reader = new FileReader();
@@ -7579,7 +7589,7 @@ event.target.value = '';
 window.handlePaymentTransferPhotoFile = handlePaymentTransferPhotoFile;
 
 window._paymentTransferPendingPhoto = null;
-function _applyPaymentTransferPendingPhoto(dataUrl) {
+export function _applyPaymentTransferPendingPhoto(dataUrl) {
 window._paymentTransferPendingPhoto = dataUrl || null;
 const dot = document.getElementById('payment-transfer-photo-dot');
 const btn = document.getElementById('payment-transfer-photo-btn');
@@ -7591,7 +7601,7 @@ btn.title = dataUrl ? 'Photo attached — click to replace' : 'Attach photo';
 }
 window._applyPaymentTransferPendingPhoto = _applyPaymentTransferPendingPhoto;
 
-async function renderPaymentTransferHistory() {
+export async function renderPaymentTransferHistory() {
 const list = document.getElementById('paymentTransferHistoryList');
 if (!list) return;
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -7650,7 +7660,7 @@ list.replaceChildren(fragment);
 }
 window.renderPaymentTransferHistory = renderPaymentTransferHistory;
 
-async function deletePaymentTransfer(pairId, skipConfirm = false) {
+export async function deletePaymentTransfer(pairId, skipConfirm = false) {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const entries = paymentTransactions.filter(t => t.transferPairId === pairId);
 if (entries.length === 0) return;
@@ -7699,4 +7709,162 @@ if (!skipConfirm) showToast('Payment transfer removed', 'success');
 showToast('Failed to remove transfer. Please try again.', 'error');
 }
 }
+window.deletePaymentTransfer = deletePaymentTransfer;
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.toggleCustomerCreditReceived = toggleCustomerCreditReceived;
+window.calculateComparisonData = calculateComparisonData;
+window.createReportHTML = createReportHTML;
+window._calcSaleDay = _calcSaleDay;
+window.getPendingRepDeliveries = getPendingRepDeliveries;
+window.getCalcDateRange = getCalcDateRange;
+window.getCalcCycleSelection = getCalcCycleSelection;
+window.calculateTotalSoldForRepresentative = calculateTotalSoldForRepresentative;
+window._CALC_MONTHS = _CALC_MONTHS;
+window._calcFmtDay = _calcFmtDay;
+window.updateCalcRangeLabel = updateCalcRangeLabel;
+window.openCalcRangePicker = openCalcRangePicker;
+window.onCalcDateChange = onCalcDateChange;
+window.autoFillTotalSoldQuantity = autoFillTotalSoldQuantity;
+window.styleAutoFilledField = styleAutoFilledField;
+window.loadSalesData = loadSalesData;
+window.addToRange = addToRange;
+window.updateSalesCharts = updateSalesCharts;
+window.processReturnToProduction = processReturnToProduction;
+window.reverseReturnFromProduction = reverseReturnFromProduction;
+window.CHORA_MATERIAL_NAME = CHORA_MATERIAL_NAME;
+window.processExpiredToChora = processExpiredToChora;
+window.reverseExpiredFromChora = reverseExpiredFromChora;
+window.formatCurrency = formatCurrency;
+window.safeValue = safeValue;
+window.refreshAllDisplays = refreshAllDisplays;
+window._filterFactoryHistoryByMode = _filterFactoryHistoryByMode;
+window._filterPaymentHistoryByPeriod = _filterPaymentHistoryByPeriod;
+window._filterHistoryByPeriod = _filterHistoryByPeriod;
+window.setSalesSummaryMode = setSalesSummaryMode;
+window.setPerfOverviewMode = setPerfOverviewMode;
+window.setOverviewMode = setOverviewMode;
+window.deleteSalesEntry = deleteSalesEntry;
+window.revertSpecificSalesEntries = revertSpecificSalesEntries;
+window.toggleEntityViewMode = toggleEntityViewMode;
+window.calculateEntityBalances = calculateEntityBalances;
+window.getDynamicRole = getDynamicRole;
+window.filterEntityCards = filterEntityCards;
+window.openEntityManagement = openEntityManagement;
+window.closeEntityManagement = closeEntityManagement;
+window.saveEntity = saveEntity;
+window.editEntityBasicInfo = editEntityBasicInfo;
+window.refreshPaymentTab = refreshPaymentTab;
+window.selectEntity = selectEntity;
+window.refreshEntityBalances = refreshEntityBalances;
+window.getMetricValue = getMetricValue;
+window.getMetricLabel = getMetricLabel;
+window.deleteFactoryInventoryItem = deleteFactoryInventoryItem;
+window.initPaymentData = initPaymentData;
+window.handleExpenseSearch = handleExpenseSearch;
+window.selectExpense = selectExpense;
+window.hideExpenseSearch = hideExpenseSearch;
+window.selectExpenseCategory = selectExpenseCategory;
+window.selectReturnStore = selectReturnStore;
+window.saveExpense = saveExpense;
+window.createExpenseTransaction = createExpenseTransaction;
+window.renderRecentExpenses = renderRecentExpenses;
+window.renderExpenseTable = renderExpenseTable;
+window.renderUnifiedTable = renderUnifiedTable;
+window.updateExpenseBreakdown = updateExpenseBreakdown;
+window.exportUnifiedData = exportUnifiedData;
+window.formatExpenseDate = formatExpenseDate;
+window.toSafeDate = toSafeDate;
+window.formatDisplayDate = formatDisplayDate;
+window.formatDisplayDateTime = formatDisplayDateTime;
+window.openExpenseEntityDetails = openExpenseEntityDetails;
+window.openOperatingExpenseOverlay = openOperatingExpenseOverlay;
+window.closeExpenseDetailsOverlay = closeExpenseDetailsOverlay;
+window.renderExpenseOverlayContent = renderExpenseOverlayContent;
+window.filterExpenseManagementHistory = filterExpenseManagementHistory;
+window.deleteExpenseFromOverlay = deleteExpenseFromOverlay;
+window.saveQuickExpenseEntry = saveQuickExpenseEntry;
+window.deleteAllExpensesByName = deleteAllExpensesByName;
+window.exportExpenseOverlayToPDF = exportExpenseOverlayToPDF;
+window.deleteExpense = deleteExpense;
+window.clearExpenseForm = clearExpenseForm;
+window.getCategoryColor = getCategoryColor;
+window.getCategoryLabel = getCategoryLabel;
+window.openDataMenu = openDataMenu;
+window.closeDataMenu = closeDataMenu;
+window._recoveredThisSession = _recoveredThisSession;
+window.purgeRecoveredId = purgeRecoveredId;
+window._findPairedTransferTombstone = _findPairedTransferTombstone;
+window.recoverRecord = recoverRecord;
+window.RECYCLE_COLLECTION_TO_TAB = RECYCLE_COLLECTION_TO_TAB;
+window.RECYCLE_BIN_COLLECTION_LABELS = RECYCLE_BIN_COLLECTION_LABELS;
+window.RECYCLE_TAB_LABELS = RECYCLE_TAB_LABELS;
+window.RECYCLE_RECOVERABLE_COLLECTIONS = RECYCLE_RECOVERABLE_COLLECTIONS;
+window.openRecycleBin = openRecycleBin;
+window.closeRecycleBin = closeRecycleBin;
+window.renderRecycleBin = renderRecycleBin;
+window.attemptRecoverRecord = attemptRecoverRecord;
+window.emptyRecycleBin = emptyRecycleBin;
+window.hardDeleteRecord = hardDeleteRecord;
+window.attemptHardDeleteRecord = attemptHardDeleteRecord;
+window.triggerLocalBackup = triggerLocalBackup;
+window.uploadOldDataToCloud = uploadOldDataToCloud;
+window.BiometricAuth = BiometricAuth;
+window.forceAppModeFromCloud = forceAppModeFromCloud;
+window.updateSystemName = updateSystemName;
+window.lockToRepMode = lockToRepMode;
+window.lockToProductionMode = lockToProductionMode;
+window.lockToFactoryMode = lockToFactoryMode;
+window.lockToUserRoleMode = lockToUserRoleMode;
+window.enforceRepModeLock = enforceRepModeLock;
+window.preventAdminAccess = preventAdminAccess;
+window.unlockAdminMode = unlockAdminMode;
+window.deleteRepTransaction = deleteRepTransaction;
+window.handleCustomerInput = handleCustomerInput;
+window.handleUniversalSearch = handleUniversalSearch;
+window.selectFromUniversalSearch = selectFromUniversalSearch;
+window.initTheme = initTheme;
+window.FIRESTORE_ENHANCED_SCHEMA = FIRESTORE_ENHANCED_SCHEMA;
+window.FIRESTORE_SETTINGS_SCHEMA = FIRESTORE_SETTINGS_SCHEMA;
+window.FIRESTORE_LOCAL_ONLY_KEYS = FIRESTORE_LOCAL_ONLY_KEYS;
+window.updateConnectionStatus = updateConnectionStatus;
+window.originalSync = originalSync;
+window.ThemeManager = ThemeManager;
+window.IncrementalRenderer = IncrementalRenderer;
+window.ReactiveComponent = ReactiveComponent;
+window.PerformanceMonitor = PerformanceMonitor;
+window.loadSalesRepsList = loadSalesRepsList;
+window.saveSalesRepsList = saveSalesRepsList;
+window.saveUserRolesList = saveUserRolesList;
+window.renderAllRepUI = renderAllRepUI;
+window.renderManageRepsList = renderManageRepsList;
+window._newUserRoleSelectedTabs = _newUserRoleSelectedTabs;
+window.toggleUserRoleTabAccess = toggleUserRoleTabAccess;
+window.renderUserRoleList = renderUserRoleList;
+window.switchManageTeamTab = switchManageTeamTab;
+window.addNewUserRole = addNewUserRole;
+window.removeUserRole = removeUserRole;
+window.addNewSalesRep = addNewSalesRep;
+window.removeSalesRep = removeSalesRep;
+window.openManageRepsModal = openManageRepsModal;
+window.closeManageRepsModal = closeManageRepsModal;
+window._overlayStack = _overlayStack;
+window.loadUserRolesContent = loadUserRolesContent;
+window.phoneActionHTML = phoneActionHTML;
+window.loadDeviceList = loadDeviceList;
+window.refreshDeviceList = refreshDeviceList;
+window.remoteControlDevice = remoteControlDevice;
+window.removeDevice = removeDevice;
+window._applyModeFromData = _applyModeFromData;
+window.restoreDeviceModeOnLogin = restoreDeviceModeOnLogin;
+window.listenForDeviceCommands = listenForDeviceCommands;
+window.applyRemoteModeChange = applyRemoteModeChange;
+window.listenForTeamChanges = listenForTeamChanges;
+window.prepareEntityTransferScreen = prepareEntityTransferScreen;
+window.saveEntityTransfer = saveEntityTransfer;
+window.openPaymentTransferPhotoCapture = openPaymentTransferPhotoCapture;
+window.handlePaymentTransferPhotoFile = handlePaymentTransferPhotoFile;
+window._applyPaymentTransferPendingPhoto = _applyPaymentTransferPendingPhoto;
+window.renderPaymentTransferHistory = renderPaymentTransferHistory;
 window.deletePaymentTransfer = deletePaymentTransfer;

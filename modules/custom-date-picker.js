@@ -1,3 +1,5 @@
+// Auto-migrated to an ES module. Source: custom-date-picker.js
+
 (function () {
   'use strict';
 

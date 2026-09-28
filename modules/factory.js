@@ -1,4 +1,12 @@
-async function getCostPerUnit(storeType) {
+// Auto-migrated to an ES module. Source: factory.js
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
+import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
+import { calculateCashTracker, calculateNetCash, deleteStockTransfer, getAppStores, getStoreFormulaType, getStoreLabel, refreshFactoryTab, refreshUI, updateAllTabsWithFactoryCosts, updateFactorySummaryCard, updateFactoryUnitsAvailableStats } from './utilities-sales.js';
+import { _filterFactoryHistoryByMode, formatCurrency, refreshPaymentTab, renderUnifiedTable, safeValue } from './utilities-payments.js';
+import { showGlassConfirm, showToast } from './customers.js';
+
+export async function getCostPerUnit(storeType) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
@@ -26,7 +34,7 @@ return totalUnits > 0 ? totalWeightedCost / totalUnits : 0;
 return 0;
 }
 
-async function calculateFactoryInventoryValue() {
+export async function calculateFactoryInventoryValue() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
@@ -44,7 +52,7 @@ totalValue += (asaanTracking.available * asaanCostPerUnit);
 return totalValue;
 }
 
-async function updateFactoryInventoryDisplay() {
+export async function updateFactoryInventoryDisplay() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
@@ -64,7 +72,7 @@ if (rawMaterialsEl) rawMaterialsEl.textContent = `${fmtAmt(safeValue(rawMaterial
 if (unitsValueEl) unitsValueEl.textContent = `${fmtAmt(safeValue(formulaUnitsValue))}`;
 }
 
-async function calculatePaymentSummaries() {
+export async function calculatePaymentSummaries() {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const today = new Date().toISOString().split('T')[0];
 const todayObj = new Date();
@@ -120,7 +128,7 @@ updateSummary('payments-month', summaries.month);
 updateSummary('payments-year', summaries.year);
 }
 
-async function openFactorySettings() {
+export async function openFactorySettings() {
 let factoryDefaultFormulas = { standard: [], asaan: [] };
 let factoryAdditionalCosts = { standard: 0, asaan: 0 };
 let factoryCostAdjustmentFactor = { standard: 1, asaan: 1 };
@@ -142,14 +150,14 @@ showToast('Error loading factory settings. Using defaults.', 'warning');
 await renderFactorySettingsRows();
 }
 
-function closeFactorySettings() {
+export function closeFactorySettings() {
 if (typeof closeStandaloneScreen === 'function') {
 closeStandaloneScreen('formula-standard-screen');
 closeStandaloneScreen('formula-asaan-screen');
 }
 }
 
-function selectFactoryStore(store, el) {
+export function selectFactoryStore(store, el) {
 currentFactorySettingsStore = store;
 document.querySelectorAll('.factory-store-opt').forEach(o => o.classList.remove('active'));
 if (el) el.classList.add('active');
@@ -160,7 +168,7 @@ requestAnimationFrame(() => { if (container) container.style.opacity = '1'; });
 }).catch(() => { if (container) container.style.opacity = '1'; });
 }
 
-async function refreshFactorySettingsOverlay() {
+export async function refreshFactorySettingsOverlay() {
 const stdScreen = document.getElementById('formula-standard-screen');
 const asaanScreen = document.getElementById('formula-asaan-screen');
 const isOpen = (stdScreen && stdScreen.style.display !== 'none') || (asaanScreen && asaanScreen.style.display !== 'none');
@@ -192,7 +200,7 @@ if (qty && state.qty) qty.value = state.qty;
 }
 }
 
-async function renderFactorySettingsRows() {
+export async function renderFactorySettingsRows() {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
@@ -257,7 +265,7 @@ _setFS1('factorySettingsSalesCostPerKgAsaan', await formatCurrency(asaanSalesCos
 }
 }
 
-async function createFactorySettingRow(container, selectedId = '', qtyVal = '', costVal = null, savedName = '', inventoryData = null) {
+export async function createFactorySettingRow(container, selectedId = '', qtyVal = '', costVal = null, savedName = '', inventoryData = null) {
 const factoryInventoryData = inventoryData !== null ? inventoryData : ensureArray(await sqliteStore.get('factory_inventory_data'));
 let currentCost = costVal !== null ? costVal : 0;
 let currentId = selectedId ? String(selectedId) : '';
@@ -369,7 +377,7 @@ div.appendChild(delBtn);
 container.appendChild(div);
 }
 
-function getColumnLabel(index) {
+export function getColumnLabel(index) {
 let label = '';
 let num = index;
 while (num >= 0) {
@@ -379,12 +387,12 @@ num = Math.floor(num / 26) - 1;
 return label;
 }
 
-function addFactoryMaterialRow() {
+export function addFactoryMaterialRow() {
 const container = document.getElementById('factoryRawMaterialsContainer');
 createFactorySettingRow(container, '', '', null, '', null);
 }
 
-async function updateFactoryFormulasSummary() {
+export async function updateFactoryFormulasSummary() {
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
 const container = document.getElementById('factoryRawMaterialsContainer');
 const rows = container.querySelectorAll('.factory-formula-grid');
@@ -412,7 +420,7 @@ _setFS('factorySettingsAvailableUnits', available);
 _setFS('factorySettingsSalesCostPerKg', await formatCurrency(salesCostPerKg));
 }
 
-async function saveFactoryFormulas() {
+export async function saveFactoryFormulas() {
 const _sffBatch = await sqliteStore.getBatch([
 'factory_inventory_data','factory_default_formulas','factory_additional_costs',
 'factory_cost_adjustment_factor','payment_transactions',
@@ -535,7 +543,7 @@ closeFactorySettings();
 showToast('Formula saved successfully!', 'success', 3000);
 }
 
-function openFactoryInventoryModal() {
+export function openFactoryInventoryModal() {
 const _facInvT1 = document.getElementById('factoryInventoryModalTitle');
 if (_facInvT1) _facInvT1.innerText = 'Add Raw Material';
 const _delBtnHide = document.getElementById('deleteFactoryInventoryBtn');
@@ -556,11 +564,11 @@ costInput.addEventListener('input', updateFactoryKgCalculation);
 if (typeof openStandaloneScreen === 'function') openStandaloneScreen('raw-material-screen');
 }
 
-function closeFactoryInventoryModal() {
+export function closeFactoryInventoryModal() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('raw-material-screen');
 }
 
-function clearFactoryInventoryForm() {
+export function clearFactoryInventoryForm() {
 document.getElementById('factoryMaterialName').value = '';
 document.getElementById('factoryMaterialQuantity').value = '';
 document.getElementById('factoryMaterialConversionFactor').value = '1';
@@ -569,7 +577,7 @@ document.getElementById('factoryMaterialCost').value = '';
 updateFactoryKgCalculation();
 }
 
-async function editFactoryInventoryItem(id) {
+export async function editFactoryInventoryItem(id) {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const item = factoryInventoryData.find(i => i.id === id);
@@ -614,7 +622,7 @@ newSupplierSection.classList.add('hidden');
 editingFactoryInventoryId = id;
 }
 
-function updateFactoryKgCalculation() {
+export function updateFactoryKgCalculation() {
 const qty = parseFloat(document.getElementById('factoryMaterialQuantity').value) || 0;
 const conversionFactor = parseFloat(document.getElementById('factoryMaterialConversionFactor').value) || 1;
 const cost = parseFloat(document.getElementById('factoryMaterialCost').value) || 0;
@@ -626,7 +634,7 @@ if (kgDisplayElement) kgDisplayElement.textContent = safeNumber(totalKg, 0).toFi
 if (amountDisplayElement) amountDisplayElement.textContent = fmtAmt(totalAmount);
 }
 
-function showSupplierUnlinkOption(material) {
+export function showSupplierUnlinkOption(material) {
 const existingSupplierSection = document.getElementById('existingSupplierSection');
 let unlinkButton = existingSupplierSection.querySelector('.unlink-supplier-btn');
 if (!unlinkButton) {
@@ -639,7 +647,7 @@ existingSupplierSection.appendChild(unlinkButton);
 }
 }
 
-async function unlinkSupplierConfirmation(material) {
+export async function unlinkSupplierConfirmation(material) {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const linkedTransactions = paymentTransactions.filter(t => t.materialId === material.id && t.entityId === material.supplierId && t.isPayable === true);
@@ -660,7 +668,7 @@ renderFactoryInventory();
 }
 }
 
-async function saveFactoryInventoryItem() {
+export async function saveFactoryInventoryItem() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -744,7 +752,7 @@ showToast('Failed to save material. Please try again.', 'error');
 }
 }
 
-async function unlinkSupplierFromMaterial(material, showToastOnNoSupplier = false, skipSideEffects = false) {
+export async function unlinkSupplierFromMaterial(material, showToastOnNoSupplier = false, skipSideEffects = false) {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 if (!material) { showToast('Invalid material data', 'error'); return; }
@@ -782,7 +790,7 @@ showToast(`Unlinked from ${esc(material.name)}`, 'success');
 }
 }
 
-async function createSupplierFromMaterial(supplierData) {
+export async function createSupplierFromMaterial(supplierData) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const existingSupplier = paymentEntities.find(e => e && e.name && supplierData && supplierData.name && e.name.toLowerCase() === supplierData.name.toLowerCase() && e.type === 'payee');
@@ -798,7 +806,7 @@ triggerAutoSync();
 return supplierEntity;
 }
 
-async function renderFactoryInventory() {
+export async function renderFactoryInventory() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const tbody = document.getElementById('factoryInventoryTableBody');
 let totalVal = 0;
@@ -855,7 +863,7 @@ const _invEl = document.getElementById('factoryTotalInventoryValue');
 if (_invEl) _invEl.innerText = await formatCurrency(totalVal);
 }
 
-async function unlinkSupplierFromMaterialById(materialId) {
+export async function unlinkSupplierFromMaterialById(materialId) {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 let material = factoryInventoryData.find(m => m.id === materialId);
@@ -879,7 +887,7 @@ await unlinkSupplierFromMaterial(material, true);
 }
 }
 
-function toggleSupplierFields() {
+export function toggleSupplierFields() {
 const supplierType = document.getElementById('factoryMaterialSupplierType').value;
 const existingSection = document.getElementById('existingSupplierSection');
 const newSection = document.getElementById('newSupplierSection');
@@ -889,7 +897,7 @@ if (supplierType === 'existing') { if (existingSection) existingSection.classLis
 else if (supplierType === 'new') { if (newSection) newSection.classList.remove('hidden'); }
 }
 
-async function loadExistingSuppliers() {
+export async function loadExistingSuppliers() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const selectElement = document.getElementById('factoryExistingSupplier');
 if (!selectElement) return;
@@ -910,7 +918,7 @@ selectElement.appendChild(option);
 }
 }
 
-async function linkMaterialToSupplier(materialId, supplierId, totalCost, skipSideEffects = false, sharedInventory = null) {
+export async function linkMaterialToSupplier(materialId, supplierId, totalCost, skipSideEffects = false, sharedInventory = null) {
 const factoryInventoryData = sharedInventory || ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -983,7 +991,7 @@ await sqliteStore.set('payment_transactions', payableTransactions);
 }
 }
 
-function selectFactoryFormula(formulaType, el) {
+export function selectFactoryFormula(formulaType, el) {
 const container = document.getElementById('factory-formula-selector');
 if (container) container.querySelectorAll('.factory-store-opt').forEach(o => o.classList.remove('active'));
 if (el) el.classList.add('active');
@@ -991,7 +999,7 @@ const representativeStore = (formulaType === 'asaan') ? 'STORE_C' : 'STORE_A';
 currentFactoryEntryStore = representativeStore;
 calculateFactoryProduction();
 }
-function selectFactoryEntryStore(store, el) {
+export function selectFactoryEntryStore(store, el) {
 currentFactoryEntryStore = store;
 const container = document.getElementById('factory-store-selector') || document.querySelector('.factory-store-selector');
 if (container) container.querySelectorAll('.factory-store-opt').forEach(o => o.classList.remove('active'));
@@ -999,14 +1007,14 @@ if (el) el.classList.add('active');
 calculateFactoryProduction();
 }
 
-async function getSalePriceForStore(store) {
+export async function getSalePriceForStore(store) {
 if (!store) return 0;
 const stores = typeof getAppStores === 'function' ? await getAppStores() : [];
 const storeEntry = stores.find(s => s.key === store);
 return (storeEntry && storeEntry.salePrice > 0) ? storeEntry.salePrice : 0;
 }
 
-async function getEffectiveSalePriceForCustomer(customerName, store) {
+export async function getEffectiveSalePriceForCustomer(customerName, store) {
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 if (customerName) {
 const _reg = Array.isArray(salesCustomers) ? salesCustomers.find(c => c && c.name && c.name.toLowerCase() === String(customerName).toLowerCase()) : null;
@@ -1015,7 +1023,7 @@ if (_reg && _reg.customSalePrice > 0) return _reg.customSalePrice;
 return await getSalePriceForStore(store);
 }
 
-async function getSaleTransactionValue(t) {
+export async function getSaleTransactionValue(t) {
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 if (!t) return 0;
 if (t.isMerged) return parseFloat(t.totalValue) || 0;
@@ -1027,7 +1035,7 @@ if (qty <= 0) return parseFloat(t.totalValue) || 0;
 return qty * (await getEffectiveSalePriceForCustomer(t.customerName, t.supplyStore || 'STORE_A'));
 }
 
-async function getCostPriceForStore(store) {
+export async function getCostPriceForStore(store) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
@@ -1036,14 +1044,14 @@ const formulaType = typeof getStoreFormulaType === 'function' ? await getStoreFo
 return await calculateSalesCostPerKg(formulaType);
 }
 
-async function getStorePricing(store) {
+export async function getStorePricing(store) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
 return { salePrice: await getSalePriceForStore(store), costPrice: await getCostPriceForStore(store) };
 }
 
-async function calculateFactoryProduction() {
+export async function calculateFactoryProduction() {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const units = parseInt(document.getElementById('factoryProductionUnits').value) || 1;
@@ -1074,7 +1082,7 @@ const _prodCostEl = document.getElementById('factoryTotalProductionCostDisplay')
 if (_prodCostEl) _prodCostEl.innerText = await formatCurrency(baseCost);
 }
 
-async function saveFactoryProductionEntry() {
+export async function saveFactoryProductionEntry() {
 
 if (!currentFactoryEntryStore) {
 showToast('Please select a formula type (Standard or Asaan) before saving.', 'warning', 3000);
@@ -1199,7 +1207,7 @@ showToast(error.message || 'Failed to save production data. Please try again.', 
 }
 }
 
-function setFactorySummaryMode(mode, el) {
+export function setFactorySummaryMode(mode, el) {
 currentFactorySummaryMode = mode;
 document.querySelectorAll('#tab-factory .toggle-group .toggle-opt').forEach(opt => opt.classList.remove('active'));
 if (el) el.classList.add('active');
@@ -1207,7 +1215,7 @@ updateFactorySummaryCard();
 _filterFactoryHistoryByMode(mode);
 }
 
-async function setFactoryAvailableStore(formulaType, el) {
+export async function setFactoryAvailableStore(formulaType, el) {
 const _ftype = (formulaType === 'asaan') ? 'asaan' : 'standard';
 const stdEl = document.getElementById('factoryAvailStatsStandard');
 const asaanEl = document.getElementById('factoryAvailStatsAsaan');
@@ -1221,7 +1229,7 @@ if (el) el.classList.add('active');
 updateFactoryUnitsAvailableStats();
 }
 
-async function renderFactoryHistory() {
+export async function renderFactoryHistory() {
 const _fhBatch = await sqliteStore.getBatch(['factory_production_history','factory_additional_costs','factory_default_formulas','factory_inventory_data']);
 const factoryProductionHistory = ensureArray(_fhBatch.get('factory_production_history'));
 const factoryAdditionalCosts = (_fhBatch.get('factory_additional_costs')) || {};
@@ -1319,7 +1327,7 @@ list.replaceChildren(_fhFrag);
 _filterFactoryHistoryByMode(currentFactorySummaryMode || 'all');
 }
 
-async function deleteFactoryEntry(id) {
+export async function deleteFactoryEntry(id) {
 const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_production_history'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
@@ -1389,7 +1397,7 @@ showToast(' Failed to delete entry. Please try again.', 'error');
 }
 }
 
-async function calculateDynamicCost(storeType, formulaUnits, netWeight) {
+export async function calculateDynamicCost(storeType, formulaUnits, netWeight) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 let formulaStore = 'standard';
@@ -1421,7 +1429,7 @@ unitWeight: totalWeight
 };
 }
 
-async function calculateSalesCostPerKg(formulaStore) {
+export async function calculateSalesCostPerKg(formulaStore) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
@@ -1434,7 +1442,7 @@ const adjustmentFactor = factoryCostAdjustmentFactor[formulaStore] || 1;
 return adjustmentFactor > 0 ? (rawMaterialCost + additionalCost) / adjustmentFactor : rawMaterialCost + additionalCost;
 }
 
-async function updateFormulaInventory() {
+export async function updateFormulaInventory() {
 const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_production_history'));
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -1475,7 +1483,7 @@ await sqliteStore.set('factory_unit_tracking_timestamp', timestamp);
 return tracking;
 }
 
-async function syncFactoryProductionStats() {
+export async function syncFactoryProductionStats() {
 const tracking = await updateFormulaInventory();
 await updateUnitsAvailableIndicator(tracking);
 updateFactoryUnitsAvailableStats();
@@ -1483,7 +1491,7 @@ updateFactorySummaryCard();
 return tracking;
 }
 
-async function validateFormulaAvailability(storeType, requestedUnits) {
+export async function validateFormulaAvailability(storeType, requestedUnits) {
 const factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {};
 let formulaStore = 'standard';
 if (storeType === 'standard' || storeType === 'asaan') {
@@ -1497,7 +1505,7 @@ const available = factoryUnitTracking[formulaStore]?.available || 0;
 return { available, sufficient: available >= requestedUnits, deficit: Math.max(0, requestedUnits - available) };
 }
 
-async function updateUnitsAvailableIndicator(preloadedTracking) {
+export async function updateUnitsAvailableIndicator(preloadedTracking) {
 const factoryUnitTracking = preloadedTracking || (await sqliteStore.get('factory_unit_tracking')) || {};
 const store = document.getElementById('storeSelector').value;
 if (!store) return;
@@ -1516,7 +1524,7 @@ else warning.classList.add('hidden');
 }
 }
 
-async function calculateDynamicProductionCost() {
+export async function calculateDynamicProductionCost() {
 const net = parseFloat(document.getElementById('net-wt').value) || 0;
 const store = document.getElementById('storeSelector').value;
 if (!store) return;
@@ -1535,7 +1543,7 @@ _setProd('profit-per-kg', `${fmtAmt(safeValue(salePrice - costData.dynamicCostPe
 updateUnitsAvailableIndicator();
 }
 
-async function updateProductionCostOnStoreChange() {
+export async function updateProductionCostOnStoreChange() {
 const store = document.getElementById('storeSelector').value;
 if (!store) return;
 currentStore = store;
@@ -1548,14 +1556,14 @@ updatePaymentStatusVisibility();
 if (typeof refreshUI === 'function') refreshUI();
 }
 
-function calcNet() {
+export function calcNet() {
 const g = parseFloat(document.getElementById('gross-wt').value) || 0;
 const c = parseFloat(document.getElementById('cont-wt').value) || 0;
 document.getElementById('net-wt').value = safeNumber(Math.max(0, g - c), 0).toFixed(2);
 calculateDynamicProductionCost();
 }
 
-async function deleteProdEntry(id) {
+export async function deleteProdEntry(id) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
@@ -1606,3 +1614,58 @@ showToast(' Failed to delete entry. Please try again.', 'error');
 }
 }
 }
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.getCostPerUnit = getCostPerUnit;
+window.calculateFactoryInventoryValue = calculateFactoryInventoryValue;
+window.updateFactoryInventoryDisplay = updateFactoryInventoryDisplay;
+window.calculatePaymentSummaries = calculatePaymentSummaries;
+window.openFactorySettings = openFactorySettings;
+window.closeFactorySettings = closeFactorySettings;
+window.selectFactoryStore = selectFactoryStore;
+window.refreshFactorySettingsOverlay = refreshFactorySettingsOverlay;
+window.renderFactorySettingsRows = renderFactorySettingsRows;
+window.createFactorySettingRow = createFactorySettingRow;
+window.getColumnLabel = getColumnLabel;
+window.addFactoryMaterialRow = addFactoryMaterialRow;
+window.updateFactoryFormulasSummary = updateFactoryFormulasSummary;
+window.saveFactoryFormulas = saveFactoryFormulas;
+window.openFactoryInventoryModal = openFactoryInventoryModal;
+window.closeFactoryInventoryModal = closeFactoryInventoryModal;
+window.clearFactoryInventoryForm = clearFactoryInventoryForm;
+window.editFactoryInventoryItem = editFactoryInventoryItem;
+window.updateFactoryKgCalculation = updateFactoryKgCalculation;
+window.showSupplierUnlinkOption = showSupplierUnlinkOption;
+window.unlinkSupplierConfirmation = unlinkSupplierConfirmation;
+window.saveFactoryInventoryItem = saveFactoryInventoryItem;
+window.unlinkSupplierFromMaterial = unlinkSupplierFromMaterial;
+window.createSupplierFromMaterial = createSupplierFromMaterial;
+window.renderFactoryInventory = renderFactoryInventory;
+window.unlinkSupplierFromMaterialById = unlinkSupplierFromMaterialById;
+window.toggleSupplierFields = toggleSupplierFields;
+window.loadExistingSuppliers = loadExistingSuppliers;
+window.linkMaterialToSupplier = linkMaterialToSupplier;
+window.selectFactoryFormula = selectFactoryFormula;
+window.selectFactoryEntryStore = selectFactoryEntryStore;
+window.getSalePriceForStore = getSalePriceForStore;
+window.getEffectiveSalePriceForCustomer = getEffectiveSalePriceForCustomer;
+window.getSaleTransactionValue = getSaleTransactionValue;
+window.getCostPriceForStore = getCostPriceForStore;
+window.getStorePricing = getStorePricing;
+window.calculateFactoryProduction = calculateFactoryProduction;
+window.saveFactoryProductionEntry = saveFactoryProductionEntry;
+window.setFactorySummaryMode = setFactorySummaryMode;
+window.setFactoryAvailableStore = setFactoryAvailableStore;
+window.renderFactoryHistory = renderFactoryHistory;
+window.deleteFactoryEntry = deleteFactoryEntry;
+window.calculateDynamicCost = calculateDynamicCost;
+window.calculateSalesCostPerKg = calculateSalesCostPerKg;
+window.updateFormulaInventory = updateFormulaInventory;
+window.syncFactoryProductionStats = syncFactoryProductionStats;
+window.validateFormulaAvailability = validateFormulaAvailability;
+window.updateUnitsAvailableIndicator = updateUnitsAvailableIndicator;
+window.calculateDynamicProductionCost = calculateDynamicProductionCost;
+window.updateProductionCostOnStoreChange = updateProductionCostOnStoreChange;
+window.calcNet = calcNet;
+window.deleteProdEntry = deleteProdEntry;

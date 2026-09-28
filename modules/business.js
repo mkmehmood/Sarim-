@@ -1,4 +1,11 @@
-function _safeErr(err) {
+// Auto-migrated to an ES module. Source: business.js
+import { APP_CONFIG } from './constants.js';
+import { OfflineQueue, _set_defaultSettings, cleanupOldDeletions, defaultSettings, loadUIState, triggerAutoSync } from './utilities-core.js';
+import { DeltaSync, UUIDSyncRegistry } from './utilities-sales.js';
+import { listenForDeviceCommands, listenForTeamChanges } from './utilities-payments.js';
+import { showToast } from './customers.js';
+
+export function _safeErr(err) {
   if (err === null || err === undefined) return new Error('Unknown error (null)');
   if (err instanceof Error) return err;
   if (err instanceof DOMException) return new Error('[DOMException] ' + err.name + ': ' + err.message);
@@ -8,7 +15,7 @@ function _safeErr(err) {
   return new Error(String(err));
 }
 
-function escapeHtml(str) {
+export function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g, '&amp;')
@@ -17,8 +24,8 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-const esc = escapeHtml;
-function _triggerFileDownload(blob, filename) {
+export const esc = escapeHtml;
+export function _triggerFileDownload(blob, filename) {
   if (typeof window.navigator.msSaveBlob === 'function') {
     window.navigator.msSaveBlob(blob, filename);
     return;
@@ -38,7 +45,7 @@ function _triggerFileDownload(blob, filename) {
   }, 0);
 }
 
-function _readFileAsArrayBuffer(file) {
+export function _readFileAsArrayBuffer(file) {
   if (typeof file.arrayBuffer === 'function') {
     return file.arrayBuffer();
   }
@@ -50,7 +57,7 @@ function _readFileAsArrayBuffer(file) {
   });
 }
 
-function _readFileAsText(file) {
+export function _readFileAsText(file) {
   if (typeof file.text === 'function') return file.text();
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
@@ -69,7 +76,7 @@ if (window.trustedTypes && window.trustedTypes.createPolicy) {
 } else {
   window.setHTML = (el, html) => { el.innerHTML = html; };
 }
-const CryptoEngine = (() => {
+export const CryptoEngine = (() => {
 
 const MAGIC_V2 = new Uint8Array([0x47,0x5A,0x4E,0x44,0x5F,0x45,0x4E,0x43,0x5F,0x56,0x32]);
 
@@ -192,7 +199,7 @@ return {
   }
 };
 })();
-const _OPFSStore = (() => {
+export const _OPFSStore = (() => {
   const _SUPPORTED = typeof navigator !== 'undefined' &&
                      !!navigator.storage &&
                      typeof navigator.storage.getDirectory === 'function';
@@ -231,7 +238,7 @@ const _OPFSStore = (() => {
   return { read, write, remove };
 })();
 
-const OfflineAuth = {
+export const OfflineAuth = {
   _FILE: 'gznd_auth.json',
   _LS:   '_gznd_auth_data',
   async saveCredentials(email, password) {
@@ -262,7 +269,7 @@ const OfflineAuth = {
     return true;
   }
 };
-async function _checkFirebaseSessionExists() {
+export async function _checkFirebaseSessionExists() {
 try {
 const sessionFlag = sessionStorage.getItem('_gznd_session_active');
 if (sessionFlag === '1') return true;
@@ -280,7 +287,7 @@ return false;
 return false;
 }
 }
-const SQLiteCrypto = (() => {
+export const SQLiteCrypto = (() => {
   let _sessionKey = null;
   let _keyEmail = null;
   let _keyUid = null;
@@ -540,13 +547,6 @@ const SQLiteCrypto = (() => {
     isReady() { return _sessionKey !== null; },
     async encrypt(plainValue) {
       if (!_sessionKey) {
-        // Self-heal: the page may have just been reloaded after the OS/browser
-        // discarded it in the background, wiping this module's in-memory state.
-        // Try to recover the wrapped key from persistent storage before ever
-        // falling back to writing plaintext.
-        await this.restoreSessionKeyFromStorage().catch(() => {});
-      }
-      if (!_sessionKey) {
         return plainValue;
       }
       try {
@@ -604,59 +604,17 @@ const SQLiteCrypto = (() => {
 
 SQLiteCrypto.preWarm();
 
-// --- Keep the encryption key alive across backgrounding / foregrounding ---
-//
-// On Android especially, backgrounding an installed PWA (or just switching
-// apps for a while) can lead the browser/WebView to reclaim memory by
-// discarding the page. When the user comes back, the page is reloaded from
-// scratch: every module-level variable (including SQLiteCrypto's in-memory
-// _sessionKey) is gone, even though the wrapped key on disk (OPFS/localStorage)
-// is untouched. `preWarm()` above already re-derives it, but that happens
-// once at initial script load — if the OS killed and relaunched the page
-// while backgrounded, or if the browser restored the page from the
-// back/forward cache instead of truly reloading it, nothing re-triggers the
-// restore. These listeners cover both cases so the key comes back the same
-// way whether the app was active or backgrounded when it was interrupted.
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !SQLiteCrypto.isReady()) {
-      SQLiteCrypto.restoreSessionKeyFromStorage().catch(() => {});
-    }
-  });
-}
-if (typeof window !== 'undefined') {
-  // Fires on normal loads AND on bfcache restores (event.persisted === true).
-  // In the bfcache case the module state was actually frozen, not wiped, so
-  // this is a cheap no-op guard; in the killed-and-relaunched case it's the
-  // thing that saves you.
-  window.addEventListener('pageshow', () => {
-    if (!SQLiteCrypto.isReady()) {
-      SQLiteCrypto.restoreSessionKeyFromStorage().catch(() => {});
-    }
-  });
-  // Ask the browser not to evict this origin's storage under memory/storage
-  // pressure. Without this, localStorage/OPFS are "best-effort": on Android,
-  // low storage or long idle/background periods can make the browser clear
-  // them, which deletes the wrapped key and device entropy this whole scheme
-  // depends on — a real key loss, not just a slow restore. This is a request,
-  // not a guarantee (the browser may still prompt or silently decline), but
-  // it materially reduces eviction risk on Chrome/Android.
-  if (navigator.storage && navigator.storage.persist) {
-    navigator.storage.persist().catch(() => {});
-  }
-}
-
-const USE_IDB_ONLY = true;
-function safeNumber(value, defaultValue = 0) {
+export const USE_IDB_ONLY = true;
+export function safeNumber(value, defaultValue = 0) {
 const num = Number(value);
 return (isNaN(num) || !isFinite(num)) ? defaultValue : num;
 }
 
-function safeToFixed(value, decimals = 2) {
+export function safeToFixed(value, decimals = 2) {
 return safeNumber(value, 0).toFixed(decimals);
 }
 
-function formatIndianCurrency(value) {
+export function formatIndianCurrency(value) {
 const num = Math.round(safeNumber(value, 0));
 if (isNaN(num)) return '0';
 const isNeg = num < 0;
@@ -674,35 +632,35 @@ result = restFormatted + ',' + last3;
 return isNeg ? '-' + result : result;
 }
 
-function fmtAmt(value) {
+export function fmtAmt(value) {
 return formatIndianCurrency(value);
 }
 
-function safeString(value, defaultValue = '') {
+export function safeString(value, defaultValue = '') {
 if (value === null || value === undefined) return defaultValue;
 return String(value);
 }
 
-function safeReplace(value, searchValue, replaceValue) {
+export function safeReplace(value, searchValue, replaceValue) {
 return safeString(value).replace(searchValue, replaceValue);
 }
 
-const SQLITE_DB_NAME      = 'naswar_dealers.sqlite';
+export const SQLITE_DB_NAME      = 'naswar_dealers.sqlite';
 
-const SQLITE_JS_LOCAL      = './modules/vendor/sqlite/sql-wasm.js';
-const SQLITE_WASM_LOCAL    = './modules/vendor/sqlite/sql-wasm.wasm';
-const SQLITE_ASMJS_LOCAL   = './modules/vendor/sqlite/sql.js';
-const SQLITE_CDN           = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js';
-const SQLITE_WASM_CDN      = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.wasm';
-const SQLITE_ASMJS_CDN     = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql.js';
-const SQLITE_MAGIC        = 'SQLite format 3\0';
-const SQLITE_SCHEMA_VERSION = 2;
+export const SQLITE_JS_LOCAL      = './sql-wasm.js';
+export const SQLITE_WASM_LOCAL    = './sql-wasm.wasm';
+export const SQLITE_ASMJS_LOCAL   = './sql.js';
+export const SQLITE_CDN           = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js';
+export const SQLITE_WASM_CDN      = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.wasm';
+export const SQLITE_ASMJS_CDN     = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql.js';
+export const SQLITE_MAGIC        = 'SQLite format 3\0';
+export const SQLITE_SCHEMA_VERSION = 2;
 
-const PERSIST_URGENT_MS   = 300;
-const PERSIST_NORMAL_MS   = 3000;
-const PERSIST_LAZY_MS     = 8000;
+export const PERSIST_URGENT_MS   = 300;
+export const PERSIST_NORMAL_MS   = 3000;
+export const PERSIST_LAZY_MS     = 8000;
 
-const sqliteStore = (() => {
+export const sqliteStore = (() => {
 
   let _sqlDB           = null;
   let _SQL             = null;
@@ -1434,19 +1392,6 @@ const sqliteStore = (() => {
             }
           });
 
-          // `beforeunload` is unreliable on mobile — Android routinely
-          // backgrounds or kills a page's process without ever firing it, so
-          // relying on it alone means up to PERSIST_LAZY_MS (8s) of pending
-          // writes can be lost the moment the app is backgrounded. `visibilitychange`
-          // (hidden) and `pagehide` are the events that actually fire when the
-          // app leaves the foreground on mobile, so flush immediately there
-          // instead of waiting on the debounce timer.
-          const _flushOnBackground = () => { _flushPersist().catch(() => {}); };
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') _flushOnBackground();
-          });
-          window.addEventListener('pagehide', _flushOnBackground);
-
           return _sqlDB;
         } catch (e) {
           if (myGeneration === _initGeneration) _initPromise = null;
@@ -1810,7 +1755,7 @@ const sqliteStore = (() => {
   try { sqliteStore.init().catch(function() {}); } catch (_) {}
 })();
 
-function ensureArray(value) {
+export function ensureArray(value) {
 if (Array.isArray(value)) {
 return value;
 }
@@ -1827,7 +1772,7 @@ return [];
 return [];
 }
 
-async function loadAllData() {
+export async function loadAllData() {
 if (typeof loadUIState === 'function') await loadUIState();
 const configKeys = [
 'naswar_default_settings', 'appMode', 'repProfile', 'expense_categories',
@@ -1838,7 +1783,7 @@ const batchResults = await sqliteStore.getBatch(configKeys);
 const _notFailed = v => v !== null && v !== undefined && v !== sqliteStore.DECRYPT_FAILED;
 const loadedDefaultSettings = batchResults.get('naswar_default_settings');
 if (loadedDefaultSettings && typeof loadedDefaultSettings === 'object') {
-defaultSettings = loadedDefaultSettings;
+_set_defaultSettings(loadedDefaultSettings);
 }
 const loadedAppMode = batchResults.get('appMode');
 if (_notFailed(loadedAppMode) && typeof loadedAppMode === 'string') {
@@ -1886,19 +1831,19 @@ if (typeof DeltaSync !== 'undefined' && typeof DeltaSync.loadAllUploadedIds === 
 DeltaSync.loadAllUploadedIds().catch(() => {});
 }
 }
-const DEVICE_ID_COOKIE = 'gz_did';
-const INSTALL_TOKEN_COOKIE = 'gz_itk';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 3650;
-const _CACHE_DEVICE_KEY = 'gz_device_anchor';
-const _CACHE_STORE_NAME = 'gz-device-anchor-v1';
-function _readCookie(name) {
+export const DEVICE_ID_COOKIE = 'gz_did';
+export const INSTALL_TOKEN_COOKIE = 'gz_itk';
+export const COOKIE_MAX_AGE = 60 * 60 * 24 * 3650;
+export const _CACHE_DEVICE_KEY = 'gz_device_anchor';
+export const _CACHE_STORE_NAME = 'gz-device-anchor-v1';
+export function _readCookie(name) {
 try {
 const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
 return match ? decodeURIComponent(match[1]) : null;
 } catch (e) { return null; }
 }
 
-function _writeCookie(name, value) {
+export function _writeCookie(name, value) {
 try {
 document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Strict`;
 } catch (e) {
@@ -1906,7 +1851,7 @@ console.warn('_writeCookie failed:', _safeErr(e));
 }
 }
 
-function _generateUUID() {
+export function _generateUUID() {
 
   const buf = new Uint8Array(16);
   if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
@@ -1929,7 +1874,7 @@ function _generateUUID() {
   return 'dev-' + core;
 }
 
-async function _readCacheAnchor() {
+export async function _readCacheAnchor() {
 try {
 if (!('caches' in window)) return null;
 const cache = await caches.open(_CACHE_STORE_NAME);
@@ -1940,7 +1885,7 @@ return text || null;
 } catch (e) { return null; }
 }
 
-async function _writeCacheAnchor(value) {
+export async function _writeCacheAnchor(value) {
 try {
 if (!('caches' in window)) return;
 const cache = await caches.open(_CACHE_STORE_NAME);
@@ -1948,14 +1893,14 @@ await cache.put(_CACHE_DEVICE_KEY, new Response(value));
 } catch (e) {  }
 }
 
-function _readSession(key) {
+export function _readSession(key) {
 try { return sessionStorage.getItem(key) || null; } catch (e) { return null; }
 }
 
-function _writeSession(key, value) {
+export function _writeSession(key, value) {
 try { sessionStorage.setItem(key, value); } catch (e) {  }
 }
-function _extractDeviceFirstLoginTime(deviceId) {
+export function _extractDeviceFirstLoginTime(deviceId) {
   if (!deviceId || typeof deviceId !== 'string') return null;
   const match = deviceId.match(/_(\d{13})$/);
   if (!match) return null;
@@ -1965,7 +1910,7 @@ function _extractDeviceFirstLoginTime(deviceId) {
 }
 window._extractDeviceFirstLoginTime = _extractDeviceFirstLoginTime;
 
-async function _persistDeviceId(deviceId) {
+export async function _persistDeviceId(deviceId) {
 _writeCookie(DEVICE_ID_COOKIE, deviceId);
 try { localStorage.setItem('persistent_device_id', deviceId); } catch (e) {  }
 _writeSession('gz_did_session', deviceId);
@@ -1973,7 +1918,7 @@ try { await sqliteStore.set('device_id', deviceId); } catch (e) {  }
 await _writeCacheAnchor(deviceId);
 }
 
-async function _clearDeviceIdStorage() {
+export async function _clearDeviceIdStorage() {
   try {
     document.cookie = `${DEVICE_ID_COOKIE}=; max-age=0; path=/; SameSite=Strict`;
   } catch(_) {}
@@ -1997,7 +1942,7 @@ async function _clearDeviceIdStorage() {
 }
 window._clearDeviceIdStorage = _clearDeviceIdStorage;
 
-async function _recoverDeviceIdByFingerprint() {
+export async function _recoverDeviceIdByFingerprint() {
 if (!firebaseDB || !currentUser) return null;
 try {
 const fp = await getDeviceFingerprint();
@@ -2017,7 +1962,7 @@ console.warn('Fingerprint-based device ID recovery failed:', _safeErr(e));
 return null;
 }
 
-async function _recoverDeviceIdByToken() {
+export async function _recoverDeviceIdByToken() {
 if (!firebaseDB || !currentUser) return null;
 try {
 const installToken = _readCookie(INSTALL_TOKEN_COOKIE)
@@ -2039,7 +1984,7 @@ console.warn('Token-based device ID recovery failed:', _safeErr(e));
 return null;
 }
 
-async function getDeviceId() {
+export async function getDeviceId() {
 let _loginTs = 0;
 try { _loginTs = parseInt(sessionStorage.getItem('_gznd_login_ts') || '0', 10) || 0; } catch(_) {}
 
@@ -2091,7 +2036,7 @@ if (!existingToken) {
 return deviceId;
 }
 
-async function refreshDeviceIdAnchors() {
+export async function refreshDeviceIdAnchors() {
 try {
 if (firebaseDB && currentUser) {
 try { _writeCookie(DEVICE_ID_COOKIE, ''); } catch(e) {}
@@ -2103,7 +2048,7 @@ await _persistDeviceId(deviceId);
 } catch (e) {  }
 }
 
-async function getDeviceFingerprint() {
+export async function getDeviceFingerprint() {
 const ua = navigator.userAgent;
 let os = 'Unknown OS';
 if (/Windows NT 10/.test(ua)) os = 'Windows 10/11';
@@ -2181,7 +2126,7 @@ fullUserAgent: ua
 };
 }
 
-async function getDeviceName() {
+export async function getDeviceName() {
 let deviceName = await sqliteStore.get('device_name');
 if (!deviceName) {
 const fp = await getDeviceFingerprint();
@@ -2191,7 +2136,7 @@ await sqliteStore.set('device_name', deviceName);
 return deviceName;
 }
 
-async function registerDevice() {
+export async function registerDevice() {
 if (!firebaseDB) {
 return;
 }
@@ -2349,7 +2294,7 @@ console.error('Device registration failed.', _safeErr(error));
 }
 }
 
-function startDeviceHeartbeat(deviceRef) {
+export function startDeviceHeartbeat(deviceRef) {
 if (window.deviceHeartbeatInterval) {
 clearInterval(window.deviceHeartbeatInterval);
 }
@@ -2377,7 +2322,7 @@ console.warn('Heartbeat update failed.', _safeErr(error));
 }, APP_CONFIG.HEARTBEAT_INTERVAL_MS);
 }
 
-async function logDeviceActivity(activityType, details = {}) {
+export async function logDeviceActivity(activityType, details = {}) {
 if (!firebaseDB || !currentUser) return;
 const LOGGABLE_EVENTS = new Set([
 'device_registered',
@@ -2409,7 +2354,7 @@ console.warn('Firebase operation failed.', _safeErr(error));
 }
 }
 window.logDeviceActivity = logDeviceActivity;
-async function initializeDeviceListeners() {
+export async function initializeDeviceListeners() {
 try {
 setTimeout(() => {
 listenForDeviceCommands().catch(e => console.warn('Device command listener failed.', _safeErr(e)));
@@ -2433,27 +2378,27 @@ window.appMode = 'admin';
 window.currentRepProfile = 'admin';
 window.salesRepsList = ['NORAN SHAH', 'NOMAN SHAH'];
 window.userRolesList = [];
-const _VALID_APP_MODES = new Set(['admin','rep','production','factory','userrole']);
+export const _VALID_APP_MODES = new Set(['admin','rep','production','factory','userrole']);
 
-const _MODE_CODES = {
+export const _MODE_CODES = {
   'admin':      '0',
   'rep':        '1',
   'production': '2',
   'factory':    '3',
   'userrole':   '4',
 };
-const _MODE_LABELS = { '0':'admin', '1':'rep', '2':'production', '3':'factory', '4':'userrole' };
+export const _MODE_LABELS = { '0':'admin', '1':'rep', '2':'production', '3':'factory', '4':'userrole' };
 
-const _UUID_V5_NS = new Uint8Array([
+export const _UUID_V5_NS = new Uint8Array([
   0x6b,0xa7,0xb8,0x10, 0x9d,0xad, 0x11,0xd1,
   0x80,0xb4, 0x00,0xc0,0x4f,0xd4,0x30,0xc8,
 ]);
-let _cachedDeviceShard = null;
-let _uuidLastMs = 0;
-let _uuidSeq    = 0;
-let _deviceIdOwnerUid = null;
+export let _cachedDeviceShard = null;
+export let _uuidLastMs = 0;
+export let _uuidSeq    = 0;
+export let _deviceIdOwnerUid = null;
 
-function _deriveDeviceShard(did) {
+export function _deriveDeviceShard(did) {
   if (!did || typeof did !== 'string') return '0000';
   let h = 0x811c9dc5;
   for (let i = 0; i < did.length; i++) {
@@ -2463,7 +2408,7 @@ function _deriveDeviceShard(did) {
   return (h & 0xffff).toString(16).padStart(4, '0');
 }
 
-function _randomBytes(n) {
+export function _randomBytes(n) {
   const buf = new Uint8Array(n);
   if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
     crypto.getRandomValues(buf);
@@ -2480,7 +2425,7 @@ function _randomBytes(n) {
   return buf;
 }
 
-function _nextSeq(nowMs) {
+export function _nextSeq(nowMs) {
   if (nowMs > _uuidLastMs) {
     _uuidLastMs = nowMs;
     _uuidSeq    = _randomBytes(1)[0];
@@ -2494,14 +2439,14 @@ function _nextSeq(nowMs) {
   return { ts: _uuidLastMs, seq: _uuidSeq };
 }
 
-function _encodeModeTag() {
+export function _encodeModeTag() {
   const mode = (typeof appMode !== 'undefined' ? appMode : 'admin') || 'admin';
   return _MODE_CODES[mode] || '0';
 }
 
-let _uuidV5Cache   = null;
-let _uuidV5Pending = false;
-async function _refreshV5Cache() {
+export let _uuidV5Cache   = null;
+export let _uuidV5Pending = false;
+export async function _refreshV5Cache() {
   if (_uuidV5Pending) return;
   _uuidV5Pending = true;
   const name = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
@@ -2523,7 +2468,7 @@ async function _refreshV5Cache() {
   }
 }
 
-function _buildUUIDv3Base() {
+export function _buildUUIDv3Base() {
 
   if (_uuidV5Cache !== null) {
     const cached = _uuidV5Cache;
@@ -2548,7 +2493,7 @@ function _buildUUIDv3Base() {
   return b;
 }
 
-async function initUUIDSalts() {
+export async function initUUIDSalts() {
   _cachedDeviceShard = null;
   try {
     const did = await getDeviceId();
@@ -2563,10 +2508,10 @@ async function initUUIDSalts() {
   return _cachedDeviceShard;
 }
 
-async function initDeviceShard() { return initUUIDSalts(); }
+export async function initDeviceShard() { return initUUIDSalts(); }
 window.initDeviceShard = initDeviceShard;
 
-function generateUUID(prefix = '', retryCount = 0, tsMs = null, modeOverride = null) {
+export function generateUUID(prefix = '', retryCount = 0, tsMs = null, modeOverride = null) {
   const MAX_RETRIES = 3;
   const nowMs = tsMs != null ? tsMs : Date.now();
   const { ts, seq } = _nextSeq(nowMs);
@@ -2601,14 +2546,14 @@ function generateUUID(prefix = '', retryCount = 0, tsMs = null, modeOverride = n
   return finalUUID;
 }
 
-function validateUUID(uuid) {
+export function validateUUID(uuid) {
   if (!uuid || typeof uuid !== 'string') return false;
   const standardRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const prefixedRegex = /^[a-z0-9][a-z0-9_-]*-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(_\d+)?$/i;
   return standardRegex.test(uuid) || prefixedRegex.test(uuid);
 }
 
-function extractUUIDMeta(uuid) {
+export function extractUUIDMeta(uuid) {
   if (!validateUUID(uuid)) return null;
   const allParts = uuid.split('-');
   const coreParts = allParts.slice(allParts.length - 5);
@@ -2647,7 +2592,7 @@ window.initUUIDSalts      = initUUIDSalts;
 window.deriveDeviceShard  = _deriveDeviceShard;
 window._creatorBadgeHtml  = _creatorBadgeHtml;
 window._mergedBadgeHtml   = _mergedBadgeHtml;
-function compareRecordVersions(a, b) {
+export function compareRecordVersions(a, b) {
   if (!a && !b) return 0;
   if (!a) return -1;
   if (!b) return 1;
@@ -2685,11 +2630,11 @@ function compareRecordVersions(a, b) {
   return _fieldMs(a) - _fieldMs(b);
 }
 window.compareRecordVersions = compareRecordVersions;
-function getTimestamp() {
+export function getTimestamp() {
 return Date.now();
 }
 
-function validateTimestamp(timestamp, allowFuture = false) {
+export function validateTimestamp(timestamp, allowFuture = false) {
 if (!timestamp || typeof timestamp !== 'number') return false;
 if (timestamp < 946684800000 || timestamp > 4102444800000) return false;
 if (!allowFuture) {
@@ -2702,7 +2647,7 @@ return false;
 return true;
 }
 
-function _mergedBadgeHtml(record, opts = {}) {
+export function _mergedBadgeHtml(record, opts = {}) {
 if (!record || !record.isMerged) return '';
 if (opts.inline) {
   return ` <span class="merged-badge merged-badge--inline">MERGED</span>`;
@@ -2710,14 +2655,14 @@ if (opts.inline) {
 return `<span class="merged-badge">MERGED</span>`;
 }
 
-function _creatorBadgeHtml(record) {
+export function _creatorBadgeHtml(record) {
 if (!record || !record.createdBy) return '';
 const name = String(record.createdBy).trim();
 if (!name) return '';
 return `<span class="creator-badge" title="Created by ${esc(name)}">${esc(name)}</span>`;
 }
 
-function compareTimestamps(timestamp1, timestamp2) {
+export function compareTimestamps(timestamp1, timestamp2) {
 if (!validateTimestamp(timestamp1) || !validateTimestamp(timestamp2)) {
 return 0;
 }
@@ -2726,7 +2671,7 @@ if (timestamp1 > timestamp2) return 1;
 return 0;
 }
 
-function resolveConflict(local, remote) {
+export function resolveConflict(local, remote) {
 if (!local) return remote;
 if (!remote) return local;
 const localTime = getRecordTimestamp(local);
@@ -2734,7 +2679,7 @@ const remoteTime = getRecordTimestamp(remote);
 return localTime >= remoteTime ? local : remote;
 }
 
-function getRecordTimestamp(record) {
+export function getRecordTimestamp(record) {
 if (!record) return 0;
 if (record.timestamp && typeof record.timestamp === 'number') {
 return record.timestamp;
@@ -2754,7 +2699,7 @@ return new Date(record.date).getTime();
 return 0;
 }
 
-function ensureRecordIntegrity(record, isEdit = false, isMigration = false) {
+export function ensureRecordIntegrity(record, isEdit = false, isMigration = false) {
 if (!record) return record;
 const isTrackingObject = record.produced !== undefined ||
 record.consumed !== undefined ||
@@ -2800,7 +2745,7 @@ record.updatedAt = record.createdAt;
 return record;
 }
 
-async function cleanupOldTombstones() {
+export async function cleanupOldTombstones() {
 const ninetyDaysAgo = Date.now() - APP_CONFIG.TOMBSTONE_EXPIRY_MS;
 const dataTypes = [
 'expenses',
@@ -2843,13 +2788,13 @@ if (totalCleaned > 0) {
 return totalCleaned;
 }
 
-function scheduleAutomaticCleanup() {
+export function scheduleAutomaticCleanup() {
 setTimeout(() => cleanupOldTombstones(), 5000);
 if (window._tombstoneCleanupInterval) clearInterval(window._tombstoneCleanupInterval);
 window._tombstoneCleanupInterval = setInterval(() => cleanupOldTombstones(), APP_CONFIG.TOMBSTONE_CLEANUP_INTERVAL_MS);
 }
 
-async function validateAndFixRecords(dataType, records) {
+export async function validateAndFixRecords(dataType, records) {
 if (!Array.isArray(records) || records.length === 0) {
 return { fixed: 0, valid: 0, total: 0 };
 }
@@ -2898,7 +2843,7 @@ records: validatedRecords
 };
 }
 
-async function validateAllDataOnStartup() {
+export async function validateAllDataOnStartup() {
 const dataTypes = [
 'expenses',
 'mfg_pro_pkr',
@@ -2932,3 +2877,98 @@ if (totalFixed > 0) {
 }
 return { totalFixed, totalValid, totalRecords };
 }
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window._safeErr = _safeErr;
+window.escapeHtml = escapeHtml;
+window.esc = esc;
+window._triggerFileDownload = _triggerFileDownload;
+window._readFileAsArrayBuffer = _readFileAsArrayBuffer;
+window._readFileAsText = _readFileAsText;
+window.CryptoEngine = CryptoEngine;
+window._OPFSStore = _OPFSStore;
+window.OfflineAuth = OfflineAuth;
+window._checkFirebaseSessionExists = _checkFirebaseSessionExists;
+window.SQLiteCrypto = SQLiteCrypto;
+window.USE_IDB_ONLY = USE_IDB_ONLY;
+window.safeNumber = safeNumber;
+window.safeToFixed = safeToFixed;
+window.formatIndianCurrency = formatIndianCurrency;
+window.fmtAmt = fmtAmt;
+window.safeString = safeString;
+window.safeReplace = safeReplace;
+window.SQLITE_DB_NAME = SQLITE_DB_NAME;
+window.SQLITE_JS_LOCAL = SQLITE_JS_LOCAL;
+window.SQLITE_WASM_LOCAL = SQLITE_WASM_LOCAL;
+window.SQLITE_ASMJS_LOCAL = SQLITE_ASMJS_LOCAL;
+window.SQLITE_CDN = SQLITE_CDN;
+window.SQLITE_WASM_CDN = SQLITE_WASM_CDN;
+window.SQLITE_ASMJS_CDN = SQLITE_ASMJS_CDN;
+window.SQLITE_MAGIC = SQLITE_MAGIC;
+window.SQLITE_SCHEMA_VERSION = SQLITE_SCHEMA_VERSION;
+window.PERSIST_URGENT_MS = PERSIST_URGENT_MS;
+window.PERSIST_NORMAL_MS = PERSIST_NORMAL_MS;
+window.PERSIST_LAZY_MS = PERSIST_LAZY_MS;
+window.sqliteStore = sqliteStore;
+window.ensureArray = ensureArray;
+window.loadAllData = loadAllData;
+window.DEVICE_ID_COOKIE = DEVICE_ID_COOKIE;
+window.INSTALL_TOKEN_COOKIE = INSTALL_TOKEN_COOKIE;
+window.COOKIE_MAX_AGE = COOKIE_MAX_AGE;
+window._CACHE_DEVICE_KEY = _CACHE_DEVICE_KEY;
+window._CACHE_STORE_NAME = _CACHE_STORE_NAME;
+window._readCookie = _readCookie;
+window._writeCookie = _writeCookie;
+window._generateUUID = _generateUUID;
+window._readCacheAnchor = _readCacheAnchor;
+window._writeCacheAnchor = _writeCacheAnchor;
+window._readSession = _readSession;
+window._writeSession = _writeSession;
+window._extractDeviceFirstLoginTime = _extractDeviceFirstLoginTime;
+window._persistDeviceId = _persistDeviceId;
+window._clearDeviceIdStorage = _clearDeviceIdStorage;
+window._recoverDeviceIdByFingerprint = _recoverDeviceIdByFingerprint;
+window._recoverDeviceIdByToken = _recoverDeviceIdByToken;
+window.getDeviceId = getDeviceId;
+window.refreshDeviceIdAnchors = refreshDeviceIdAnchors;
+window.getDeviceFingerprint = getDeviceFingerprint;
+window.getDeviceName = getDeviceName;
+window.registerDevice = registerDevice;
+window.startDeviceHeartbeat = startDeviceHeartbeat;
+window.logDeviceActivity = logDeviceActivity;
+window.initializeDeviceListeners = initializeDeviceListeners;
+window._VALID_APP_MODES = _VALID_APP_MODES;
+window._MODE_CODES = _MODE_CODES;
+window._MODE_LABELS = _MODE_LABELS;
+window._UUID_V5_NS = _UUID_V5_NS;
+window._cachedDeviceShard = _cachedDeviceShard;
+window._uuidLastMs = _uuidLastMs;
+window._uuidSeq = _uuidSeq;
+window._deviceIdOwnerUid = _deviceIdOwnerUid;
+window._deriveDeviceShard = _deriveDeviceShard;
+window._randomBytes = _randomBytes;
+window._nextSeq = _nextSeq;
+window._encodeModeTag = _encodeModeTag;
+window._uuidV5Cache = _uuidV5Cache;
+window._uuidV5Pending = _uuidV5Pending;
+window._refreshV5Cache = _refreshV5Cache;
+window._buildUUIDv3Base = _buildUUIDv3Base;
+window.initUUIDSalts = initUUIDSalts;
+window.initDeviceShard = initDeviceShard;
+window.generateUUID = generateUUID;
+window.validateUUID = validateUUID;
+window.extractUUIDMeta = extractUUIDMeta;
+window.compareRecordVersions = compareRecordVersions;
+window.getTimestamp = getTimestamp;
+window.validateTimestamp = validateTimestamp;
+window._mergedBadgeHtml = _mergedBadgeHtml;
+window._creatorBadgeHtml = _creatorBadgeHtml;
+window.compareTimestamps = compareTimestamps;
+window.resolveConflict = resolveConflict;
+window.getRecordTimestamp = getRecordTimestamp;
+window.ensureRecordIntegrity = ensureRecordIntegrity;
+window.cleanupOldTombstones = cleanupOldTombstones;
+window.scheduleAutomaticCleanup = scheduleAutomaticCleanup;
+window.validateAndFixRecords = validateAndFixRecords;
+window.validateAllDataOnStartup = validateAllDataOnStartup;

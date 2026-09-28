@@ -1,4 +1,14 @@
-async function saveWithTracking(key, data, specificRecord = null, specificIds = null) {
+// Auto-migrated to an ES module. Source: sync.js
+import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
+import { OfflineAuth, SQLiteCrypto, _clearDeviceIdStorage, _safeErr, compareRecordVersions, ensureArray, ensureRecordIntegrity, esc, getDeviceId, getTimestamp, initDeviceShard, loadAllData, refreshDeviceIdAnchors, registerDevice, sqliteStore, validateAllDataOnStartup, validateUUID } from './business.js';
+import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, closeYearInProgress, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
+import { OfflineQueue, _setCloudConnectionState, _set_autoSyncTimeout, _set_defaultSettings, autoSyncTimeout, defaultSettings, invalidateAllCaches, syncState, triggerAutoSync } from './utilities-core.js';
+import { DeltaSync, UUIDSyncRegistry, _invalidateStoresCache, firebaseConfig, trackFirestoreRead, trackFirestoreWrite } from './utilities-sales.js';
+import { _applyModeFromData, _recoveredThisSession, closeDataMenu, refreshAllDisplays, renderAllRepUI, renderUnifiedTable, renderUserRoleList, restoreDeviceModeOnLogin } from './utilities-payments.js';
+import { refreshFactorySettingsOverlay, renderFactoryInventory, updateUnitsAvailableIndicator } from './factory.js';
+import { showGlassConfirm, showToast } from './customers.js';
+
+export async function saveWithTracking(key, data, specificRecord = null, specificIds = null) {
 const result = await sqliteStore.set(key, data);
 const collectionEntry = SQLiteToFirestoreMap[key];
 if (collectionEntry) {
@@ -13,7 +23,7 @@ if (collectionEntry) {
 }
 return result;
 }
-const SQLiteToFirestoreMap = {
+export const SQLiteToFirestoreMap = {
 'mfg_pro_pkr': { collection: 'production', varName: 'db' },
 'customer_sales': { collection: 'sales', varName: 'customerSales' },
 'noman_history': { collection: 'calculator_history', varName: 'salesHistory' },
@@ -27,7 +37,7 @@ const SQLiteToFirestoreMap = {
 'expenses': { collection: 'expenses', varName: 'expenseRecords' },
 'stock_returns': { collection: 'returns', varName: 'stockReturns' }
 };
-const FirestoreToSQLiteMap = {
+export const FirestoreToSQLiteMap = {
 'production': 'mfg_pro_pkr',
 'sales': 'customer_sales',
 'calculator_history': 'noman_history',
@@ -41,15 +51,15 @@ const FirestoreToSQLiteMap = {
 'expenses': 'expenses',
 'returns': 'stock_returns'
 };
-function getFirestoreCollection(sqliteKey) {
+export function getFirestoreCollection(sqliteKey) {
 return SQLiteToFirestoreMap[sqliteKey]?.collection || sqliteKey;
 }
 
-function getSQLiteKey(firestoreCollection) {
+export function getSQLiteKey(firestoreCollection) {
 return FirestoreToSQLiteMap[firestoreCollection] || firestoreCollection;
 }
 
-async function saveRecordToFirestore(sqliteKey, record, silent = true) {
+export async function saveRecordToFirestore(sqliteKey, record, silent = true) {
 if (!firebaseDB || !currentUser) {
 return false;
 }
@@ -125,7 +135,7 @@ return false;
 }
 }
 
-async function deleteRecordFromFirestore(sqliteKey, recordId, silent = true) {
+export async function deleteRecordFromFirestore(sqliteKey, recordId, silent = true) {
 if (!firebaseDB || !currentUser) {
 return false;
 }
@@ -181,7 +191,7 @@ return false;
 }
 }
 
-async function unifiedSave(sqliteKey, dataArray, specificRecord = null, linkedIds = null) {
+export async function unifiedSave(sqliteKey, dataArray, specificRecord = null, linkedIds = null) {
 
 if (specificRecord && specificRecord.id) {
   await saveWithTracking(sqliteKey, dataArray, specificRecord);
@@ -236,7 +246,7 @@ triggerAutoSync();
 return true;
 }
 
-async function unifiedDelete(sqliteKey, dataArray, deletedRecordId, opts = {}, preDeletedRecord = null) {
+export async function unifiedDelete(sqliteKey, dataArray, deletedRecordId, opts = {}, preDeletedRecord = null) {
 if (opts.strict !== true) {
   console.warn(`[RecycleBin] BLOCKED unifiedDelete on "${sqliteKey}" id=${deletedRecordId} — strict flag missing. Pass { strict: true } to confirm intentional deletion.`);
   if (typeof window.showToast === 'function') window.showToast('Delete blocked: missing strict confirmation flag.', 'warning');
@@ -261,7 +271,7 @@ triggerAutoSync();
 return true;
 }
 
-async function verifyDeltaSyncSystem() {
+export async function verifyDeltaSyncSystem() {
 const collections = [
 'production', 'sales', 'calculator_history', 'rep_sales', 'rep_customers',
 'sales_customers',
@@ -295,7 +305,7 @@ results.issues.push(status);
 return results;
 }
 
-async function resetDeltaSync() {
+export async function resetDeltaSync() {
 await DeltaSync.clearAllTimestamps();
 await sqliteStore.remove('deltaSyncStats');
 
@@ -308,7 +318,7 @@ window.getFirestoreCollection = getFirestoreCollection;
 window.getSQLiteKey = getSQLiteKey;
 window.saveRecordToFirestore = saveRecordToFirestore;
 window.deleteRecordFromFirestore = deleteRecordFromFirestore;
-async function initializeFirebaseSystem() {
+export async function initializeFirebaseSystem() {
 if (typeof firebase === 'undefined') {
 if (typeof _setCloudConnectionState === 'function') _setCloudConnectionState('loading');
 setTimeout(initializeFirebaseSystem, 500);
@@ -582,7 +592,7 @@ if (typeof _setCloudConnectionState === 'function') _setCloudConnectionState('er
 setTimeout(initializeFirebaseSystem, APP_CONFIG.FIREBASE_INIT_RETRY_DELAY);
 }
 }
-class FirestoreDatabaseInitializer {
+export class FirestoreDatabaseInitializer {
 constructor(firebaseDB, currentUser) {
 this.firebaseDB = firebaseDB;
 this.currentUser = currentUser;
@@ -961,7 +971,7 @@ this.results.errors.push({ collection: 'sync_updates', error: error.message });
 }
 }
 
-async function initializeCompleteFirestoreDatabase(silent = false) {
+export async function initializeCompleteFirestoreDatabase(silent = false) {
 if (!firebaseDB || !currentUser) {
 if (!silent) showToast('Please log in first', 'warning');
 return { success: false, error: 'Not logged in' };
@@ -970,7 +980,7 @@ const initializer = new FirestoreDatabaseInitializer(firebaseDB, currentUser);
 return await initializer.initialize(silent);
 }
 
-async function isCompleteDatabaseInitialized() {
+export async function isCompleteDatabaseInitialized() {
 if (!firebaseDB || !currentUser) return false;
 try {
 const userRef = firebaseDB.collection('users').doc(currentUser.uid);
@@ -998,7 +1008,7 @@ return false;
 }
 }
 
-async function safeInitializeCompleteDatabase(silent = false) {
+export async function safeInitializeCompleteDatabase(silent = false) {
 const isInitialized = await isCompleteDatabaseInitialized();
 if (isInitialized) {
 return {
@@ -1010,11 +1020,11 @@ message: 'Database was already initialized with complete structure'
 return await initializeCompleteFirestoreDatabase(silent);
 }
 
-async function initializeFirestoreStructure(silent = false) {
+export async function initializeFirestoreStructure(silent = false) {
 return await initializeCompleteFirestoreDatabase(silent);
 }
 
-async function cleanupPlaceholders() {
+export async function cleanupPlaceholders() {
 if (!firebaseDB || !currentUser) return false;
 try {
 const userRef = firebaseDB.collection('users').doc(currentUser.uid);
@@ -1049,7 +1059,7 @@ return false;
 }
 }
 
-function retryFirebaseInit(attempts = 0, maxAttempts = APP_CONFIG.FIREBASE_INIT_RETRY_MAX) {
+export function retryFirebaseInit(attempts = 0, maxAttempts = APP_CONFIG.FIREBASE_INIT_RETRY_MAX) {
 initializeFirebaseSystem();
 if (firebaseDB) {
 return;
@@ -1065,7 +1075,7 @@ showToast(' Cloud sync unavailable. App will work offline.', 'warning');
 }
 }
 
-const _syncQueue = (() => {
+export const _syncQueue = (() => {
   let _chain = Promise.resolve();
   return {
     run(fn) {
@@ -1078,7 +1088,7 @@ const _syncQueue = (() => {
 })();
 window._syncQueue = _syncQueue;
 
-const SYNC_COLLECTIONS = [
+export const SYNC_COLLECTIONS = [
   {
     firestoreId:  'production',
     sqliteKey:       'mfg_pro_pkr',
@@ -1153,15 +1163,15 @@ const SYNC_COLLECTIONS = [
   },
 ];
 
-async function _getColData(sqliteKey) {
+export async function _getColData(sqliteKey) {
 return ensureArray(await sqliteStore.get(sqliteKey));
 }
 
-async function _setColData(sqliteKey, value) {
+export async function _setColData(sqliteKey, value) {
 await sqliteStore.set(sqliteKey, value);
 }
 
-function _makeSnapshotHandler(col) {
+export function _makeSnapshotHandler(col) {
 return async function handleSnapshot(snapshot) {
 try {
 if (snapshot.metadata.hasPendingWrites) return;
@@ -1237,7 +1247,7 @@ console.warn(`[Snapshot:${col.firestoreId}] local save error`, _safeErr(err));
 };
 }
 
-function _ensureLocalTombstone(recordId, collectionName) {
+export function _ensureLocalTombstone(recordId, collectionName) {
 const sid = String(recordId);
 _syncQueue.run(async () => {
   try {
@@ -1255,7 +1265,7 @@ _syncQueue.run(async () => {
 });
 }
 
-function _updateArray(array, docData, collectionName) {
+export function _updateArray(array, docData, collectionName) {
   if (docData._placeholder || docData.id === '_placeholder_') return array;
   if (!docData.id) {
     docData = ensureRecordIntegrity(docData, false, true);
@@ -1338,23 +1348,23 @@ function _updateArray(array, docData, collectionName) {
   return array;
 }
 
-let realtimeRefs = [];
-let socketReconnectTimer = null;
-let pendingSocketUpdate = false;
-let socketDebounceTimer = null;
-let dbWakeUpAttempted = false;
-let heartbeatInterval = null;
-let autoSaveTimer = null;
+export let realtimeRefs = [];
+export let socketReconnectTimer = null;
+export let pendingSocketUpdate = false;
+export let socketDebounceTimer = null;
+export let dbWakeUpAttempted = false;
+export let heartbeatInterval = null;
+export let autoSaveTimer = null;
 
-let listenerRetryAttempts = 0;
-const MAX_RETRY_ATTEMPTS = 5;
-const BASE_RETRY_DELAY = 5000;
-let listenerReconnectTimer = null;
-let lastSuccessfulConnection = Date.now();
-let isReconnecting = false;
-let _syncLockPendingQueue = [];
+export let listenerRetryAttempts = 0;
+export const MAX_RETRY_ATTEMPTS = 5;
+export const BASE_RETRY_DELAY = 5000;
+export let listenerReconnectTimer = null;
+export let lastSuccessfulConnection = Date.now();
+export let isReconnecting = false;
+export let _syncLockPendingQueue = [];
 
-function _enqueueSyncLocked(handlerFn, snapshot) {
+export function _enqueueSyncLocked(handlerFn, snapshot) {
   const existing = _syncLockPendingQueue.findIndex(e => e.handlerFn === handlerFn);
   if (existing !== -1) {
     _syncLockPendingQueue[existing].snapshot = snapshot;
@@ -1363,7 +1373,7 @@ function _enqueueSyncLocked(handlerFn, snapshot) {
   }
 }
 
-async function _flushSyncLockQueue() {
+export async function _flushSyncLockQueue() {
   if (_syncLockPendingQueue.length === 0) return;
   const queued = _syncLockPendingQueue.splice(0);
   for (const entry of queued) {
@@ -1378,7 +1388,7 @@ async function _flushSyncLockQueue() {
 // never existed in index.html - these writes were previously silent
 // no-ops. Function name/signature kept as-is since it's called from ~15
 // sites across this file's realtime-listener error handling.
-function updateSignalUI(status) {
+export function updateSignalUI(status) {
   if (typeof _setCloudConnectionState !== 'function') return;
   if (status === 'online') {
     _setCloudConnectionState(null);
@@ -1398,14 +1408,14 @@ function updateSignalUI(status) {
 // class (so it picks up the live theme's accent color) rather than
 // hardcoding an inline box-shadow color that wouldn't adapt between
 // light/dark themes.
-function flashLivePulse() {
+export function flashLivePulse() {
   const dot = document.getElementById('network-status-dot');
   if (!dot) return;
   dot.classList.add('net-dot-flash');
   setTimeout(() => { dot.classList.remove('net-dot-flash'); }, 300);
 }
 
-async function emitSyncUpdate(payload) {
+export async function emitSyncUpdate(payload) {
 if (!firebaseDB || !currentUser) return;
 flashLivePulse();
 if (payload && typeof payload === 'object') {
@@ -1422,7 +1432,7 @@ lastWrite: { ts: firebase.firestore.FieldValue.serverTimestamp(), collections: c
 }
 }
 
-async function startSyncUpdatesCleanup() {
+export async function startSyncUpdatesCleanup() {
   if (!firebaseDB || !currentUser) return;
   const runCleanup = async () => {
     if (!firebaseDB || !currentUser) return;
@@ -1446,7 +1456,7 @@ async function startSyncUpdatesCleanup() {
   window._syncUpdatesCleanupInterval = setInterval(runCleanup, 60 * 60 * 1000);
 }
 
-function scheduleListenerReconnect() {
+export function scheduleListenerReconnect() {
   if (isReconnecting) return;
   if (listenerReconnectTimer) clearTimeout(listenerReconnectTimer);
   if (listenerRetryAttempts >= MAX_RETRY_ATTEMPTS) {
@@ -1470,23 +1480,23 @@ function scheduleListenerReconnect() {
   }, delay);
 }
 
-function recordSuccessfulConnection() {
+export function recordSuccessfulConnection() {
   lastSuccessfulConnection = Date.now();
   listenerRetryAttempts = 0;
   isReconnecting = false;
 }
 
-function isConnectionStale() {
+export function isConnectionStale() {
   return (Date.now() - lastSuccessfulConnection) > 5 * 60 * 1000;
 }
 
-async function subscribeToRealtime() {
+export async function subscribeToRealtime() {
   if (!firebaseDB || !currentUser) return;
   if (window._firestoreNetworkDisabled) return;
   try {
     if (!pendingFirestoreYearClose) {
       const storedFlag = await sqliteStore.get('pendingFirestoreYearClose');
-      if (storedFlag === true) pendingFirestoreYearClose = true;
+      if (storedFlag === true) _set_pendingFirestoreYearClose(true);
     }
   } catch (_flagErr) {  }
   if (pendingFirestoreYearClose && !closeYearInProgress) {
@@ -1518,7 +1528,7 @@ async function subscribeToRealtime() {
         if (!result.ok) { allOk = false; }
       }
       if (allOk) {
-        pendingFirestoreYearClose = false;
+        _set_pendingFirestoreYearClose(false);
         await sqliteStore.set('pendingFirestoreYearClose', false);
 
         try {
@@ -1558,7 +1568,7 @@ async function subscribeToRealtime() {
   if (!pendingFirestoreRestore) {
     try {
       const _storedRestoreFlag = await sqliteStore.get('pendingFirestoreRestore');
-      if (_storedRestoreFlag === true) pendingFirestoreRestore = true;
+      if (_storedRestoreFlag === true) _set_pendingFirestoreRestore(true);
     } catch (_rfErr) {}
   }
   if (pendingFirestoreRestore) {
@@ -1623,7 +1633,7 @@ async function subscribeToRealtime() {
         }
       }
       if (_restoreAllOk) {
-        pendingFirestoreRestore = false;
+        _set_pendingFirestoreRestore(false);
         await sqliteStore.set('pendingFirestoreRestore', false);
 
         try {
@@ -1744,7 +1754,7 @@ async function subscribeToRealtime() {
                   : localFy.lastYearClosedDate
               ) || null,
             };
-            defaultSettings = mergedFy;
+            _set_defaultSettings(mergedFy);
             await sqliteStore.setBatch([
               ['naswar_default_settings', defaultSettings],
               ['naswar_default_settings_timestamp', ct],
@@ -2260,7 +2270,7 @@ async function subscribeToRealtime() {
   }
 }
 
-async function executeSmartPull() {
+export async function executeSmartPull() {
   await pullDataFromCloud(true);
   if (pendingSocketUpdate) {
     pendingSocketUpdate = false;
@@ -2270,12 +2280,12 @@ async function executeSmartPull() {
   }
 }
 
-function scheduleSocketReconnect() {
+export function scheduleSocketReconnect() {
   if (socketReconnectTimer) clearTimeout(socketReconnectTimer);
   socketReconnectTimer = setTimeout(() => { subscribeToRealtime().catch(e => console.warn('subscribeToRealtime socket retry failed:', _safeErr(e))); }, 5000);
 }
 
-async function initFirebase() {
+export async function initFirebase() {
   if (window._firebaseListenersRegistered) return;
   window._firebaseListenersRegistered = true;
   try {
@@ -2294,7 +2304,7 @@ async function initFirebase() {
   } catch (e) { console.warn('Failed to pull data from cloud.', _safeErr(e)); }
 }
 
-function _toMs(v) {
+export function _toMs(v) {
   if (!v) return 0;
   if (typeof v === 'number') return v;
   if (typeof v.toMillis === 'function') return v.toMillis();
@@ -2302,7 +2312,7 @@ function _toMs(v) {
   return new Date(v).getTime() || 0;
 }
 
-function mergeDatasets(localArray, cloudArray, deletedSet = new Set()) {
+export function mergeDatasets(localArray, cloudArray, deletedSet = new Set()) {
   if (!Array.isArray(localArray)) localArray = [];
   if (!Array.isArray(cloudArray)) cloudArray = [];
   const mergedMap = new Map();
@@ -2334,7 +2344,7 @@ function mergeDatasets(localArray, cloudArray, deletedSet = new Set()) {
   return Array.from(mergedMap.values());
 }
 
-function sanitizeForFirestore(obj, depth = 0, seen = new WeakSet()) {
+export function sanitizeForFirestore(obj, depth = 0, seen = new WeakSet()) {
   if (depth > 20) return null;
   if (obj === null || obj === undefined) return null;
   if (obj instanceof Date) return obj.toISOString();
@@ -2401,7 +2411,7 @@ function sanitizeForFirestore(obj, depth = 0, seen = new WeakSet()) {
   return sanitized;
 }
 
-async function _commitMergedBatch(userRef, collectionName, mergedRecords, deleteFilter) {
+export async function _commitMergedBatch(userRef, collectionName, mergedRecords, deleteFilter) {
   const OPS_PER_BATCH = 400;
   let batchesTotal = 0, batchesFailed = 0, firstError = null;
   try {
@@ -2442,7 +2452,7 @@ async function _commitMergedBatch(userRef, collectionName, mergedRecords, delete
   return { ok: batchesFailed === 0, batchesTotal, batchesFailed, error: firstError || null };
 }
 
-function mergeArrays(localArray, cloudArray, collectionName) {
+export function mergeArrays(localArray, cloudArray, collectionName) {
   const merged = [...localArray];
 
   const idxMap = new Map();
@@ -2528,7 +2538,7 @@ function mergeArrays(localArray, cloudArray, collectionName) {
   });
 }
 
-async function _detectUserType(userRef) {
+export async function _detectUserType(userRef) {
   const hasInitialized = await sqliteStore.get('firestore_initialized');
   const sqliteArrays = await Promise.all([
     sqliteStore.get('mfg_pro_pkr', []), sqliteStore.get('customer_sales', []), sqliteStore.get('rep_sales', []),
@@ -2556,7 +2566,7 @@ async function _detectUserType(userRef) {
   }
 }
 
-async function _downloadDeltas(userRef, userType, forceDownload = false) {
+export async function _downloadDeltas(userRef, userType, forceDownload = false) {
   const FRESH_THRESHOLD_MS = 8 * 1000;
   const buildQuery = async (collection, collectionName) => {
 
@@ -2645,7 +2655,7 @@ async function _downloadDeltas(userRef, userType, forceDownload = false) {
   };
 }
 
-async function _mergeAndPersist(cloudData) {
+export async function _mergeAndPersist(cloudData) {
 
   try {
     const deletionsSnap = await firebaseDB
@@ -2823,7 +2833,7 @@ async function _mergeAndPersist(cloudData) {
   await DeltaSync.setLastSyncTimestamp('deletions');
 }
 
-async function _syncSettings(cloudData) {
+export async function _syncSettings(cloudData) {
   const { settings: settingsSnap, factorySettings: factorySettingsSnap, expenseCategories: expCatSnap, appStores: appStoresSnap, personPhotosSnap } = cloudData;
 
   if (settingsSnap && settingsSnap.exists) {
@@ -2855,7 +2865,7 @@ async function _syncSettings(cloudData) {
               : localSettings.lastYearClosedDate
           ) || null,
         };
-        defaultSettings = mergedFy;
+        _set_defaultSettings(mergedFy);
         await sqliteStore.setBatch([
           ['naswar_default_settings', defaultSettings],
           ['naswar_default_settings_timestamp', ct || Date.now()],
@@ -2872,7 +2882,7 @@ async function _syncSettings(cloudData) {
             typeof localSettings.fyCloseCount === 'number' ? localSettings.fyCloseCount : 0
           ),
         };
-        defaultSettings = mergedFy;
+        _set_defaultSettings(mergedFy);
         await sqliteStore.set('naswar_default_settings', defaultSettings);
 
       }
@@ -2988,7 +2998,7 @@ async function _syncSettings(cloudData) {
   }
 }
 
-async function _uploadChanges(userRef) {
+export async function _uploadChanges(userRef) {
   const isRealRecord = item => item && item.id && !item._placeholder && item.id !== '_placeholder_';
   const _keys = [
   'mfg_pro_pkr','customer_sales','rep_sales','rep_customers','sales_customers',
@@ -3207,11 +3217,11 @@ async function _uploadChanges(userRef) {
   return totalUploaded;
 }
 
-function performOneClickSync(silent = false) {
+export function performOneClickSync(silent = false) {
   return _syncQueue.run(() => _doOneClickSync(silent));
 }
 
-async function _doOneClickSync(silent = false) {
+export async function _doOneClickSync(silent = false) {
   if (!firebaseDB) {
     if (!silent) { showToast('⌛ Connecting to cloud…', 'info', 3000); initializeFirebaseSystem(); }
     return;
@@ -3330,11 +3340,11 @@ async function _doOneClickSync(silent = false) {
   }
 }
 
-function pushDataToCloud(silent = false) {
+export function pushDataToCloud(silent = false) {
   return _syncQueue.run(() => _doPushDataToCloud(silent));
 }
 
-async function _doPushDataToCloud(silent = false) {
+export async function _doPushDataToCloud(silent = false) {
   if (!firebaseDB || !currentUser) {
     if (!silent) showToast('Please sign in to sync data', 'warning');
     return;
@@ -3417,12 +3427,12 @@ async function _doPushDataToCloud(silent = false) {
   }
 }
 
-function pullDataFromCloud(silent = false, forceDownload = false) {
+export function pullDataFromCloud(silent = false, forceDownload = false) {
 
   return _syncQueue.run(() => _doPullDataFromCloud(silent, forceDownload));
 }
 
-async function _doPullDataFromCloud(silent = false, forceDownload = false) {
+export async function _doPullDataFromCloud(silent = false, forceDownload = false) {
   if (!firebaseDB || !currentUser) {
     if (!silent) showToast('Please sign in to sync data', 'warning');
     return;
@@ -3522,7 +3532,7 @@ async function _doPullDataFromCloud(silent = false, forceDownload = false) {
   }
 }
 
-async function showSyncHealthPanel() {
+export async function showSyncHealthPanel() {
   try {
     const results = await verifyDeltaSyncSystem();
     const lastSync = (await sqliteStore.get('last_synced', null)) || 'Unknown';
@@ -3567,9 +3577,9 @@ async function showSyncHealthPanel() {
   } catch (e) { console.warn('[SyncHealth]', _safeErr(e)); }
 }
 window.showSyncHealthPanel = showSyncHealthPanel;
-let seamlessBackupTimer = null;
-const SEAMLESS_DELAY_MS = 5000;
-async function triggerSeamlessBackup() {
+export let seamlessBackupTimer = null;
+export const SEAMLESS_DELAY_MS = 5000;
+export async function triggerSeamlessBackup() {
 if (seamlessBackupTimer) {
 clearTimeout(seamlessBackupTimer);
 }
@@ -3582,15 +3592,15 @@ await pushDataToCloud(true);
 }, SEAMLESS_DELAY_MS);
 }
 
-function stopDatabaseHeartbeat() {
+export function stopDatabaseHeartbeat() {
 if (window.deviceHeartbeatInterval) {
 clearInterval(window.deviceHeartbeatInterval);
 window.deviceHeartbeatInterval = null;
 }
 }
-const AUTO_BACKUP_INTERVAL = 900000;
+export const AUTO_BACKUP_INTERVAL = 900000;
 
-async function scheduleAutoBackup() {
+export async function scheduleAutoBackup() {
 clearAutoBackup();
 if (!currentUser) return;
 autoSaveTimer = setInterval(async () => {
@@ -3604,14 +3614,14 @@ await performOneClickSync(true);
 }, AUTO_BACKUP_INTERVAL);
 }
 
-function clearAutoBackup() {
+export function clearAutoBackup() {
 if (autoSaveTimer) {
 clearInterval(autoSaveTimer);
 autoSaveTimer = null;
 }
 }
 
-async function wakeUpDatabaseAndSync() {
+export async function wakeUpDatabaseAndSync() {
   showToast('Connecting to cloud...', 'info');
   if (!firebaseDB || !currentUser) {
     setTimeout(async () => {
@@ -3624,7 +3634,7 @@ async function wakeUpDatabaseAndSync() {
   await pullDataFromCloud(false);
 }
 
-async function triggerCloudAction(action) {
+export async function triggerCloudAction(action) {
 if (!firebaseDB) {
 showToast("Cloud system not initialized. Check internet.", "error");
 return;
@@ -3652,7 +3662,7 @@ await pullDataFromCloud(false);
 }
 }
 
-async function createAuthOverlay() {
+export async function createAuthOverlay() {
 const existing = document.getElementById('auth-overlay');
 if (existing) existing.remove();
 const overlay = document.createElement('div');
@@ -3767,14 +3777,14 @@ try {
 } catch (_e) {}
 }
 
-function showAuthOverlay() {
+export function showAuthOverlay() {
 const existing = document.getElementById('auth-overlay');
 if (existing) existing.remove();
 createAuthOverlay();
 document.body.style.overflow = 'hidden';
 }
 
-function hideAuthOverlay() {
+export function hideAuthOverlay() {
 const overlay = document.getElementById('auth-overlay');
 if (overlay) {
 overlay.style.animation = 'auth-fade-out 0.22s ease forwards';
@@ -3784,7 +3794,7 @@ setTimeout(() => {
 }
 document.body.style.overflow = '';
 }
-const LoginRateLimiter = (() => {
+export const LoginRateLimiter = (() => {
 const KEY_ATTEMPTS = '_gznd_login_attempts';
 const KEY_LOCKOUT  = '_gznd_login_lockout';
 const MAX_ATTEMPTS = 5;
@@ -3829,9 +3839,9 @@ try { sessionStorage.removeItem(KEY_ATTEMPTS); sessionStorage.removeItem(KEY_LOC
 };
 })();
 
-const GOOGLE_CLIENT_ID = window._GOOGLE_CLIENT_ID || '';
+export const GOOGLE_CLIENT_ID = window._GOOGLE_CLIENT_ID || '';
 
-async function _checkUserApproved(uid, email) {
+export async function _checkUserApproved(uid, email) {
 if (!navigator.onLine) return { denied: false };
 try {
 const db = (typeof firebaseDB !== 'undefined' && firebaseDB) ? firebaseDB : firebase.firestore();
@@ -3855,7 +3865,7 @@ return { denied: false };
 }
 }
 
-async function _applyGoogleUser(user) {
+export async function _applyGoogleUser(user) {
 const check = await _checkUserApproved(user.uid, user.email);
 if (check.denied) {
 const messageDiv = document.getElementById('auth-message');
@@ -3903,12 +3913,12 @@ if (typeof performOneClickSync === 'function') performOneClickSync();
 }, 300);
 }
 
-async function _checkGoogleRedirectResult() {}
+export async function _checkGoogleRedirectResult() {}
 
-let _pendingLinkEmail    = null;
-let _pendingLinkPassword = null;
+export let _pendingLinkEmail    = null;
+export let _pendingLinkPassword = null;
 
-async function _linkPasswordAfterGoogleSignIn(user) {
+export async function _linkPasswordAfterGoogleSignIn(user) {
 if (!_pendingLinkEmail || !_pendingLinkPassword) return;
 if (_pendingLinkEmail.toLowerCase() !== (user.email || '').toLowerCase()) {
 _pendingLinkEmail = null;
@@ -3935,7 +3945,7 @@ console.warn('Password link failed (non-critical):', _safeErr(e));
 }
 }
 
-async function _onGoogleCredential(response) {
+export async function _onGoogleCredential(response) {
 const messageDiv = document.getElementById('auth-message');
 if (!response || !response.credential) {
 if (messageDiv) { messageDiv.textContent = 'Google sign-in cancelled.'; messageDiv.style.color = 'var(--danger)'; }
@@ -3990,9 +4000,9 @@ if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
 
 window._onGoogleCredential = _onGoogleCredential;
 
-let _gsiInitialized = false;
+export let _gsiInitialized = false;
 
-function _initGSIInOverlay() {
+export function _initGSIInOverlay() {
 if (_gsiInitialized) return;
 if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
 setTimeout(_initGSIInOverlay, 300);
@@ -4010,7 +4020,7 @@ itp_support:           true,
 _gsiInitialized = true;
 }
 
-function _handleGoogleBtnClick() {
+export function _handleGoogleBtnClick() {
 const btn = document.getElementById('auth-google-btn');
 const msg = document.getElementById('auth-message');
 if (!navigator.onLine) {
@@ -4044,7 +4054,7 @@ doPrompt();
 }
 window._handleGoogleBtnClick = _handleGoogleBtnClick;
 
-async function handleSignIn(e) {
+export async function handleSignIn(e) {
 if(e) e.preventDefault();
 const emailInput = document.getElementById('auth-email');
 const passwordInput = document.getElementById('auth-password');
@@ -4218,7 +4228,7 @@ messageDiv.style.color = 'var(--danger)';
 }
 }
 
-async function _isAdminUser() {
+export async function _isAdminUser() {
 if (!currentUser || !firebaseDB) return false;
 try {
 const snap = await firebaseDB.collection('users').doc(currentUser.uid).get();
@@ -4226,24 +4236,24 @@ return snap.exists && snap.data().role === 'admin';
 } catch(_) { return false; }
 }
 
-function _accountsIndexRef() {
+export function _accountsIndexRef() {
 return firebaseDB.collection('users').doc(currentUser.uid)
   .collection('settings').doc('accounts_index');
 }
 
-async function _readAccountsIndex() {
+export async function _readAccountsIndex() {
 const snap = await _accountsIndexRef().get();
 if (!snap.exists) return [];
 const data = snap.data() || {};
 return Array.isArray(data.accounts) ? data.accounts : [];
 }
 
-async function _writeAccountsIndex(accounts) {
+export async function _writeAccountsIndex(accounts) {
 await _accountsIndexRef().set({ accounts, updatedAt: Date.now() }, { merge: false });
 }
 
-let _newAccountRole = 'user';
-function setNewAccountRole(role) {
+export let _newAccountRole = 'user';
+export function setNewAccountRole(role) {
 _newAccountRole = role;
 const userBtn  = document.getElementById('acct-role-user');
 const adminBtn = document.getElementById('acct-role-admin');
@@ -4251,7 +4261,7 @@ if (userBtn)  userBtn.classList.toggle('active',  role === 'user');
 if (adminBtn) adminBtn.classList.toggle('active', role === 'admin');
 }
 
-async function adminAddAccount() {
+export async function adminAddAccount() {
 const emailEl = document.getElementById('acct-new-email');
 const passEl  = document.getElementById('acct-new-password');
 const msgEl   = document.getElementById('acct-add-msg');
@@ -4299,7 +4309,7 @@ if (btn) { btn.disabled = false; btn.textContent = 'Add Account'; }
 }
 }
 
-async function loadAccountsList() {
+export async function loadAccountsList() {
 const listEl = document.getElementById('manage-accounts-list');
 if (!listEl) return;
 if (!navigator.onLine) {
@@ -4348,7 +4358,7 @@ console.error('loadAccountsList:', _safeErr(err));
 }
 }
 
-async function adminToggleApproval(uid, email, currentlyApproved) {
+export async function adminToggleApproval(uid, email, currentlyApproved) {
 const confirmed = await showGlassConfirm(
 (currentlyApproved ? 'Suspend' : 'Reinstate') + ' the account for ' + email + '?' +
 (currentlyApproved ? '\n\nThey will be blocked on their next login attempt.' : '\n\nThey will be able to sign in again.'),
@@ -4374,7 +4384,7 @@ console.error('adminToggleApproval:', _safeErr(err));
 }
 }
 
-async function adminRemoveAccount(uid, email) {
+export async function adminRemoveAccount(uid, email) {
 if (uid === currentUser.uid) { showToast('You cannot remove your own account.', 'warning'); return; }
 const confirmed = await showGlassConfirm(
 'Remove access for ' + email + '?\n\nThey will be blocked immediately. Their stored data is preserved.\n\nTo fully delete the Firebase Auth account, use Firebase Console.',
@@ -4394,7 +4404,7 @@ console.error('adminRemoveAccount:', _safeErr(err));
 }
 }
 
-async function signOut() {
+export async function signOut() {
 try {
 
 let _savedAppMode = null;
@@ -4420,7 +4430,7 @@ window._firebaseListenersRegistered = false;
 if (seamlessBackupTimer) { clearTimeout(seamlessBackupTimer); seamlessBackupTimer = null; }
 if (socketReconnectTimer) { clearTimeout(socketReconnectTimer); socketReconnectTimer = null; }
 if (listenerReconnectTimer) { clearTimeout(listenerReconnectTimer); listenerReconnectTimer = null; }
-if (autoSyncTimeout) { clearTimeout(autoSyncTimeout); autoSyncTimeout = null; }
+if (autoSyncTimeout) { clearTimeout(autoSyncTimeout); _set_autoSyncTimeout(null); }
 if (window._connectionCheckInterval) { clearInterval(window._connectionCheckInterval); window._connectionCheckInterval = null; }
 if (window._syncUpdatesCleanupInterval) { clearInterval(window._syncUpdatesCleanupInterval); window._syncUpdatesCleanupInterval = null; }
 if (window._tombstoneCleanupInterval) { clearInterval(window._tombstoneCleanupInterval); window._tombstoneCleanupInterval = null; }
@@ -4535,7 +4545,7 @@ showToast(' Error signing out', 'danger');
 }
 }
 
-function updateSyncButton() {
+export function updateSyncButton() {
 const syncBtn = document.getElementById('sync-btn');
 if (!syncBtn) return;
 if (!currentUser) {
@@ -4560,3 +4570,113 @@ syncBtn.style.color = '#fff';
 }
 
 }
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.saveWithTracking = saveWithTracking;
+window.SQLiteToFirestoreMap = SQLiteToFirestoreMap;
+window.FirestoreToSQLiteMap = FirestoreToSQLiteMap;
+window.getFirestoreCollection = getFirestoreCollection;
+window.getSQLiteKey = getSQLiteKey;
+window.saveRecordToFirestore = saveRecordToFirestore;
+window.deleteRecordFromFirestore = deleteRecordFromFirestore;
+window.unifiedSave = unifiedSave;
+window.unifiedDelete = unifiedDelete;
+window.verifyDeltaSyncSystem = verifyDeltaSyncSystem;
+window.resetDeltaSync = resetDeltaSync;
+window.initializeFirebaseSystem = initializeFirebaseSystem;
+window.FirestoreDatabaseInitializer = FirestoreDatabaseInitializer;
+window.initializeCompleteFirestoreDatabase = initializeCompleteFirestoreDatabase;
+window.isCompleteDatabaseInitialized = isCompleteDatabaseInitialized;
+window.safeInitializeCompleteDatabase = safeInitializeCompleteDatabase;
+window.initializeFirestoreStructure = initializeFirestoreStructure;
+window.cleanupPlaceholders = cleanupPlaceholders;
+window.retryFirebaseInit = retryFirebaseInit;
+window._syncQueue = _syncQueue;
+window.SYNC_COLLECTIONS = SYNC_COLLECTIONS;
+window._getColData = _getColData;
+window._setColData = _setColData;
+window._makeSnapshotHandler = _makeSnapshotHandler;
+window._ensureLocalTombstone = _ensureLocalTombstone;
+window._updateArray = _updateArray;
+window.realtimeRefs = realtimeRefs;
+window.socketReconnectTimer = socketReconnectTimer;
+window.pendingSocketUpdate = pendingSocketUpdate;
+window.socketDebounceTimer = socketDebounceTimer;
+window.dbWakeUpAttempted = dbWakeUpAttempted;
+window.heartbeatInterval = heartbeatInterval;
+window.autoSaveTimer = autoSaveTimer;
+window.listenerRetryAttempts = listenerRetryAttempts;
+window.MAX_RETRY_ATTEMPTS = MAX_RETRY_ATTEMPTS;
+window.BASE_RETRY_DELAY = BASE_RETRY_DELAY;
+window.listenerReconnectTimer = listenerReconnectTimer;
+window.lastSuccessfulConnection = lastSuccessfulConnection;
+window.isReconnecting = isReconnecting;
+window._syncLockPendingQueue = _syncLockPendingQueue;
+window._enqueueSyncLocked = _enqueueSyncLocked;
+window._flushSyncLockQueue = _flushSyncLockQueue;
+window.updateSignalUI = updateSignalUI;
+window.flashLivePulse = flashLivePulse;
+window.emitSyncUpdate = emitSyncUpdate;
+window.startSyncUpdatesCleanup = startSyncUpdatesCleanup;
+window.scheduleListenerReconnect = scheduleListenerReconnect;
+window.recordSuccessfulConnection = recordSuccessfulConnection;
+window.isConnectionStale = isConnectionStale;
+window.subscribeToRealtime = subscribeToRealtime;
+window.executeSmartPull = executeSmartPull;
+window.scheduleSocketReconnect = scheduleSocketReconnect;
+window.initFirebase = initFirebase;
+window._toMs = _toMs;
+window.mergeDatasets = mergeDatasets;
+window.sanitizeForFirestore = sanitizeForFirestore;
+window._commitMergedBatch = _commitMergedBatch;
+window.mergeArrays = mergeArrays;
+window._detectUserType = _detectUserType;
+window._downloadDeltas = _downloadDeltas;
+window._mergeAndPersist = _mergeAndPersist;
+window._syncSettings = _syncSettings;
+window._uploadChanges = _uploadChanges;
+window.performOneClickSync = performOneClickSync;
+window._doOneClickSync = _doOneClickSync;
+window.pushDataToCloud = pushDataToCloud;
+window._doPushDataToCloud = _doPushDataToCloud;
+window.pullDataFromCloud = pullDataFromCloud;
+window._doPullDataFromCloud = _doPullDataFromCloud;
+window.showSyncHealthPanel = showSyncHealthPanel;
+window.seamlessBackupTimer = seamlessBackupTimer;
+window.SEAMLESS_DELAY_MS = SEAMLESS_DELAY_MS;
+window.triggerSeamlessBackup = triggerSeamlessBackup;
+window.stopDatabaseHeartbeat = stopDatabaseHeartbeat;
+window.AUTO_BACKUP_INTERVAL = AUTO_BACKUP_INTERVAL;
+window.scheduleAutoBackup = scheduleAutoBackup;
+window.clearAutoBackup = clearAutoBackup;
+window.wakeUpDatabaseAndSync = wakeUpDatabaseAndSync;
+window.triggerCloudAction = triggerCloudAction;
+window.createAuthOverlay = createAuthOverlay;
+window.showAuthOverlay = showAuthOverlay;
+window.hideAuthOverlay = hideAuthOverlay;
+window.LoginRateLimiter = LoginRateLimiter;
+window.GOOGLE_CLIENT_ID = GOOGLE_CLIENT_ID;
+window._checkUserApproved = _checkUserApproved;
+window._applyGoogleUser = _applyGoogleUser;
+window._checkGoogleRedirectResult = _checkGoogleRedirectResult;
+window._pendingLinkEmail = _pendingLinkEmail;
+window._pendingLinkPassword = _pendingLinkPassword;
+window._linkPasswordAfterGoogleSignIn = _linkPasswordAfterGoogleSignIn;
+window._onGoogleCredential = _onGoogleCredential;
+window._gsiInitialized = _gsiInitialized;
+window._initGSIInOverlay = _initGSIInOverlay;
+window._handleGoogleBtnClick = _handleGoogleBtnClick;
+window.handleSignIn = handleSignIn;
+window._isAdminUser = _isAdminUser;
+window._accountsIndexRef = _accountsIndexRef;
+window._readAccountsIndex = _readAccountsIndex;
+window._writeAccountsIndex = _writeAccountsIndex;
+window._newAccountRole = _newAccountRole;
+window.setNewAccountRole = setNewAccountRole;
+window.adminAddAccount = adminAddAccount;
+window.loadAccountsList = loadAccountsList;
+window.adminToggleApproval = adminToggleApproval;
+window.adminRemoveAccount = adminRemoveAccount;
+window.signOut = signOut;
+window.updateSyncButton = updateSyncButton;

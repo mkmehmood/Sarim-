@@ -1,28 +1,29 @@
-const BUILD_HASH = 'V.28.09.2026.a';
+const BUILD_HASH = 'V.24.09.2026.b';
 const CACHE_NAME = 'app-' + BUILD_HASH;
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './modules/ui/app.css',
-  './modules/core/constants.js',
-  './modules/core/business.js',
-  './modules/core/sync.js',
-  './modules/utilities/utilities-core.js',
-  './modules/utilities/utilities-sales.js',
-  './modules/utilities/utilities-payments.js',
-  './modules/factory/factory.js',
-  './modules/customers/customers.js',
-  './modules/rep-sales/rep-sales.js',
-  './modules/core/admin-data.js',
-  './modules/ui/custom-date-picker.js',
+  './app.css',
+  './modules/main.js',
+  './modules/constants.js',
+  './modules/business.js',
+  './modules/sync.js',
+  './modules/utilities-core.js',
+  './modules/utilities-sales.js',
+  './modules/utilities-payments.js',
+  './modules/factory.js',
+  './modules/customers.js',
+  './modules/rep-sales.js',
+  './modules/admin-data.js',
+  './modules/custom-date-picker.js',
   './manifest.json',
   './192.png',
   './512.png',
 
-  './modules/vendor/sqlite/sql-wasm.js',
-  './modules/vendor/sqlite/sql-wasm.wasm',
-  './modules/vendor/sqlite/sql.js'
+  './sql-wasm.js',
+  './sql-wasm.wasm',
+  './sql.js'
 ];
 
 const CDN_ASSETS_TO_PRECACHE = [

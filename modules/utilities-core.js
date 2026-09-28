@@ -1,4 +1,14 @@
-async function toggleDarkMode() {
+// Auto-migrated to an ES module. Source: utilities-core.js
+import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, loadAllData, safeReplace, safeToFixed, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
+import { DeltaSync, calculateCashTracker, calculateCustomerSale, calculateNetCash, getStoreFormulaType, getStoreLabel, refreshCustomerSales, refreshFactoryTab, refreshUI, renderEntityTable, trackFirestoreWrite, updateFactorySummaryCard, updateFactoryUnitsAvailableStats, updateMfgCharts } from './utilities-sales.js';
+import { _applyPaymentTransferPendingPhoto, autoFillTotalSoldQuantity, calculateEntityBalances, deletePaymentTransfer, editEntityBasicInfo, formatCurrency, formatDisplayDate, formatDisplayDateTime, loadSalesData, phoneActionHTML, refreshPaymentTab, renderUnifiedTable, toSafeDate } from './utilities-payments.js';
+import { calculateDynamicCost, getEffectiveSalePriceForCustomer, getSalePriceForStore, getSaleTransactionValue, renderFactoryHistory, renderFactoryInventory, syncFactoryProductionStats, updateUnitsAvailableIndicator, validateFormulaAvailability } from './factory.js';
+import { showGlassConfirm, showToast } from './customers.js';
+import { calculateRepAnalytics, refreshRepUI, renderRepCustomerTable } from './rep-sales.js';
+
+export async function toggleDarkMode() {
 const html = document.documentElement;
 const themeToggle = document.getElementById('themeToggle');
 const currentTheme = html.getAttribute('data-theme') || 'dark';
@@ -25,7 +35,7 @@ if (salesCompChart) salesCompChart.update();
 if (indPerformanceChart) indPerformanceChart.update();
 showToast(newTheme === 'dark' ? ' Dark mode enabled' : 'Light mode enabled', 'info', 2000);
 }
-const syncState = {
+export const syncState = {
 lastUpdate: {
 production: 0,
 sales: 0,
@@ -37,7 +47,7 @@ entities: 0
 isRefreshing: false,
 pendingUpdates: new Set()
 };
-const OfflineQueue = {
+export const OfflineQueue = {
 queue: [],
 deadLetterQueue: [],
 isProcessing: false,
@@ -380,7 +390,7 @@ if (typeof window._firestoreNetworkDisabled === 'undefined') window._firestoreNe
 // display:none in CSS even where referenced), so those updates were
 // silent no-ops. See _setCloudConnectionState()/_setSlowConnectionState()
 // below for how other modules report into this.
-function updateOfflineBanner() {
+export function updateOfflineBanner() {
 const banner = document.getElementById('offline-banner');
 const badge = document.getElementById('offline-queue-badge');
 const dot = document.getElementById('network-status-dot');
@@ -475,7 +485,7 @@ OfflineQueue._renderDeadLetterPanel();
 // realtime listener connecting/erroring/reconnecting). Replaces the old
 // updateSignalUI()/initializeFirebaseSystem()/retryFirebaseInit() writes
 // to the nonexistent #connection-indicator element.
-function _setCloudConnectionState(state) {
+export function _setCloudConnectionState(state) {
 window._cloudConnectionState = state; // 'connecting' | 'loading' | 'error' | 'signed-out' | null
 updateOfflineBanner();
 }
@@ -483,7 +493,7 @@ updateOfflineBanner();
 // Reported by the connection-speed monitor below. Kept as a separate
 // setter (rather than inlining into checkConnection()) so any other module
 // can flag a slow link the same way without duplicating banner logic.
-function _setSlowConnectionState(isSlow, detail) {
+export function _setSlowConnectionState(isSlow, detail) {
 window._isSlowConnection = isSlow;
 window._slowConnectionDetail = detail || null;
 updateOfflineBanner();
@@ -645,7 +655,7 @@ if (typeof updateOfflineBanner === 'function') updateOfflineBanner();
 if (typeof triggerAutoSync === 'function') triggerAutoSync();
 } catch(e) {  }
 }, APP_CONFIG.OFFLINE_MAX_BACKOFF_MS);
-function notifyDataChange(dataType) {
+export function notifyDataChange(dataType) {
 syncState.lastUpdate[dataType] = Date.now();
 syncState.pendingUpdates.add(dataType);
 if (!syncState.isRefreshing) {
@@ -655,9 +665,9 @@ if (typeof triggerSeamlessBackup === 'function') {
 triggerSeamlessBackup();
 }
 }
-let autoSyncTimeout = null;
-const AUTO_SYNC_DELAY = 5000;
-async function invalidateAllCaches() {
+export let autoSyncTimeout = null;
+export const AUTO_SYNC_DELAY = 5000;
+export async function invalidateAllCaches() {
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
 try {
 const freshSettings = await sqliteStore.get('naswar_default_settings');
@@ -672,7 +682,7 @@ console.error('Failed to invalidate caches.', _safeErr(e));
 }
 }
 
-async function triggerAutoSync() {
+export async function triggerAutoSync() {
 if (typeof currentUser === 'undefined' || !currentUser) {
 return;
 }
@@ -701,12 +711,12 @@ showToast('Sync failed: ' + _errMsg, 'error');
 }, AUTO_SYNC_DELAY);
 }
 
-async function updateSettingTimestamp(settingName) {
+export async function updateSettingTimestamp(settingName) {
 const timestamp = getTimestamp();
 await sqliteStore.set(`${settingName}_timestamp`, timestamp);
 }
-const _tabSyncInProgress = {};
-function processSync() {
+export const _tabSyncInProgress = {};
+export function processSync() {
 if (syncState.isRefreshing || syncState.pendingUpdates.size === 0) return;
 syncState.isRefreshing = true;
 const updates = Array.from(syncState.pendingUpdates);
@@ -822,11 +832,11 @@ requestAnimationFrame(() => processSync());
 }
 }
 
-function getCurrentActiveTab() {
+export function getCurrentActiveTab() {
 return currentActiveTab || 'prod';
 }
 
-function syncCoreDisplays() {
+export function syncCoreDisplays() {
 try {
 if (typeof updateUnitsAvailableIndicator === 'function') {
 updateUnitsAvailableIndicator();
@@ -842,7 +852,7 @@ console.error('Calculation failed.', _safeErr(error));
 showToast('Dashboard calculation failed: ' + (_safeErr(error).message || 'please reload the app'), 'error');
 }
 }
-async function syncCalculatorTab() {
+export async function syncCalculatorTab() {
 try {
 if (typeof loadSalesData === 'function') await loadSalesData(currentCompMode);
 if (typeof autoFillTotalSoldQuantity === 'function') autoFillTotalSoldQuantity();
@@ -853,7 +863,7 @@ if (typeof loadSalesData === 'function') setTimeout(() => loadSalesData(currentC
 }
 }
 
-async function syncFactoryTab() {
+export async function syncFactoryTab() {
 try {
 if (typeof syncFactoryProductionStats === 'function') await syncFactoryProductionStats();
 if (typeof updateFactoryUnitsAvailableStats === 'function') updateFactoryUnitsAvailableStats();
@@ -867,7 +877,7 @@ if (typeof updateFactoryUnitsAvailableStats === 'function') setTimeout(updateFac
 }
 }
 
-async function syncPaymentsTab() {
+export async function syncPaymentsTab() {
 try {
 if (typeof refreshPaymentTab === 'function') await refreshPaymentTab();
 if (typeof renderEntityTable === 'function') await renderEntityTable();
@@ -878,7 +888,7 @@ if (typeof refreshPaymentTab === 'function') setTimeout(refreshPaymentTab, 500);
 }
 }
 
-async function syncProductionTab() {
+export async function syncProductionTab() {
 try {
 if (typeof refreshUI === 'function') refreshUI();
 if (typeof updateMfgCharts === 'function') updateMfgCharts();
@@ -890,7 +900,7 @@ if (typeof refreshUI === 'function') setTimeout(refreshUI, 500);
 }
 }
 
-async function syncSalesTab() {
+export async function syncSalesTab() {
 try {
 if (typeof calculateCustomerSale === 'function') calculateCustomerSale();
 if (typeof refreshCustomerSales === 'function') refreshCustomerSales();
@@ -901,7 +911,7 @@ if (typeof refreshCustomerSales === 'function') setTimeout(refreshCustomerSales,
 }
 }
 
-async function syncRepTab() {
+export async function syncRepTab() {
 try {
 if (typeof renderRepCustomerTable === 'function') await renderRepCustomerTable();
 if (typeof calculateRepAnalytics === 'function') calculateRepAnalytics();
@@ -912,9 +922,9 @@ if (typeof renderRepCustomerTable === 'function') setTimeout(renderRepCustomerTa
 }
 }
 
-function stopPeriodicSync() {
+export function stopPeriodicSync() {
 }
-const RefreshDebouncer = {
+export const RefreshDebouncer = {
 timers: {
 production: null,
 sales: null,
@@ -973,7 +983,7 @@ RefreshDebouncer.debounce('rep', () => {
 if (typeof refreshRepUI === 'function') refreshRepUI();
 });
 };
-async function reloadDataFromStorage() {
+export async function reloadDataFromStorage() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -1007,7 +1017,7 @@ if (typeof notifyDataChange === 'function') notifyDataChange(tab);
 window.addEventListener('beforeunload', function() {
 if (typeof stopPeriodicSync === 'function') stopPeriodicSync();
 });
-let defaultSettings = {
+export let defaultSettings = {
 production: {
 STORE_A: { cost: 0, sale: 0 },
 STORE_B: { cost: 0, sale: 0 },
@@ -1020,13 +1030,13 @@ return calc;
 },
 sales: { cost: 0, sale: 0 }
 };
-let mfgBarChart = null, mfgPieChart = null, salesPerfChart = null, salesCompChart = null;
-let custSalesChart = null, custPaymentChart = null;
-let storeComparisonChart = null;
-let indPerformanceChart = null;
+export let mfgBarChart = null, mfgPieChart = null, salesPerfChart = null, salesCompChart = null;
+export let custSalesChart = null, custPaymentChart = null;
+export let storeComparisonChart = null;
+export let indPerformanceChart = null;
 
-const _UI_STATE_KEY = 'ui_state';
-const _UI_DEFAULTS = {
+export const _UI_STATE_KEY = 'ui_state';
+export const _UI_DEFAULTS = {
   currentMfgMode: 'week',
   currentCompMode: 'all',
   currentCustomerChartMode: 'week',
@@ -1054,20 +1064,20 @@ const _UI_DEFAULTS = {
   selectedEntityId: null,
   currentFactoryDate: new Date().toISOString().split('T')[0],
 };
-let _uiState = { ..._UI_DEFAULTS };
+export let _uiState = { ..._UI_DEFAULTS };
 
-function getUI(key) {
+export function getUI(key) {
   return _uiState[key] !== undefined ? _uiState[key] : _UI_DEFAULTS[key];
 }
 
-function setUI(key, val) {
+export function setUI(key, val) {
   _uiState[key] = val;
   if (typeof sqliteStore !== 'undefined') {
     sqliteStore.set(_UI_STATE_KEY, _uiState).catch(() => {});
   }
 }
 
-async function loadUIState() {
+export async function loadUIState() {
   if (typeof sqliteStore === 'undefined') return;
   try {
     const saved = await sqliteStore.get(_UI_STATE_KEY, null);
@@ -1105,7 +1115,7 @@ Object.defineProperties(window, {
   selectedEntityId:             { get: () => getUI('selectedEntityId'),             set: v => setUI('selectedEntityId', v),             configurable: true },
   currentFactoryDate:           { get: () => getUI('currentFactoryDate'),           set: v => setUI('currentFactoryDate', v),           configurable: true },
 });
-const splashQuotes = [
+export const splashQuotes = [
 { quote: "The details are not the details. They make the design.", author: "Charles Eames" },
 { quote: "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.", author: "Antoine de Saint-Exupéry" },
 { quote: "Price is what you pay. Value is what you get.", author: "Warren Buffett" },
@@ -1127,7 +1137,7 @@ const splashQuotes = [
 { quote: "Excellence is never an accident. It is always the result of high intention, sincere effort, and intelligent execution.", author: "Aristotle" },
 { quote: "Your most unhappy customers are your greatest source of learning.", author: "Bill Gates" }
 ];
-function initSplashScreen() {
+export function initSplashScreen() {
 const randomQuote = splashQuotes[Math.floor(Math.random() * splashQuotes.length)];
 document.getElementById('splash-quote').textContent = `"${randomQuote.quote || ''}"`;
 document.getElementById('splash-author').textContent = `— ${randomQuote.author || 'Unknown'}`;
@@ -1135,10 +1145,10 @@ setTimeout(() => {
 }, 3800);
 }
 
-function updatePaymentStatusVisibility() {
+export function updatePaymentStatusVisibility() {
 }
 
-async function recordEntry() {
+export async function recordEntry() {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -1267,7 +1277,7 @@ calculateCashTracker();
 showToast("Production record saved successfully!", "success");
 }
 
-function _dedupDeletionRecordsLocal(arr) {
+export function _dedupDeletionRecordsLocal(arr) {
   if (!Array.isArray(arr)) return [];
   const seen = new Map();
   arr.forEach(r => {
@@ -1285,7 +1295,7 @@ function _dedupDeletionRecordsLocal(arr) {
   return Array.from(seen.values());
 }
 
-async function registerDeletion(id, collectionName = 'unknown', preDeletedRecord = null) {
+export async function registerDeletion(id, collectionName = 'unknown', preDeletedRecord = null) {
 
 const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
@@ -1432,7 +1442,7 @@ uploadDeletionToCloud(deletionRecord).catch(e => console.warn('[registerDeletion
 cleanupOldDeletions().catch(e => console.warn('[registerDeletion] cleanup failed:', _safeErr(e)));
 }
 
-async function _captureRecordSnapshot(id, collectionName) {
+export async function _captureRecordSnapshot(id, collectionName) {
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -1647,7 +1657,7 @@ _captureRecordSnapshot._fromObj = function(snapshotObj, collectionName) {
   } catch(e) {   }
   return result;
 };
-async function uploadDeletionToCloud(deletionRecord) {
+export async function uploadDeletionToCloud(deletionRecord) {
 const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
 if (!firebaseDB || typeof currentUser === 'undefined' || !currentUser) {
 return;
@@ -1709,7 +1719,7 @@ data: null
 }
 }
 
-async function cleanupOldDeletions() {
+export async function cleanupOldDeletions() {
 const deletionRecords = ensureArray(await sqliteStore.get('deletion_records'));
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const threeMonthsAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
@@ -1742,7 +1752,7 @@ console.warn('[cleanupOldDeletions] cloud cleanup failed, will retry when online
 }
 }
 
-async function _buildPreclosePanel(record, type, panelId) {
+export async function _buildPreclosePanel(record, type, panelId) {
   const ms  = record.mergedSummary || {};
   const dr  = ms.dateRange || {};
   const fmt = async (v) => (v != null && v !== '' && !isNaN(Number(v))) ? await formatCurrency(v) : '—';
@@ -1834,7 +1844,7 @@ async function _buildPreclosePanel(record, type, panelId) {
   </div>`;
 }
 
-async function _togglePreclosePanel(btn, panelId, recordId, storeKey, type) {
+export async function _togglePreclosePanel(btn, panelId, recordId, storeKey, type) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
   const isOpen = panel.classList.contains('open');
@@ -1863,7 +1873,7 @@ async function _togglePreclosePanel(btn, panelId, recordId, storeKey, type) {
   btn.classList.add('active');
 }
 
-async function openEntityDetailsOverlay(id) {
+export async function openEntityDetailsOverlay(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
@@ -1874,19 +1884,19 @@ await renderEntityOverlayContent(entity);
 if (typeof openStandaloneScreen === 'function') openStandaloneScreen('entity-details-screen');
 }
 
-function closeEntityDetailsOverlay() {
+export function closeEntityDetailsOverlay() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('entity-details-screen');
 currentEntityId = null;
 refreshPaymentTab();
 }
 
-function openEditEntityFromDetails() {
+export function openEditEntityFromDetails() {
 const id = currentEntityId;
 if (!id) return;
 editEntityBasicInfo(id);
 }
 
-async function renderEntityOverlayContent(entity) {
+export async function renderEntityOverlayContent(entity) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
@@ -2020,7 +2030,7 @@ if (_photoRefId) {
 list.replaceChildren(_entityFrag);
 }
 
-function filterEntityManagementHistory() {
+export function filterEntityManagementHistory() {
 const term = document.getElementById('entity-trans-search').value.toLowerCase();
 const items = document.querySelectorAll('#entityManagementHistoryList .cust-history-item');
 items.forEach(item => {
@@ -2030,7 +2040,7 @@ item.style.display = item.style.flexDirection === 'column' ? 'flex' : 'flex';
 });
 }
 
-async function _toggleEntityTxnPanel(btn, panelId, txnId, expenseId) {
+export async function _toggleEntityTxnPanel(btn, panelId, txnId, expenseId) {
   const photoKey = expenseId ? 'expense:' + expenseId : null;
   if (photoKey) {
     try {
@@ -2042,7 +2052,7 @@ async function _toggleEntityTxnPanel(btn, panelId, txnId, expenseId) {
   showToast('No photo attached to this transaction', 'warning', 2000);
 }
 
-async function _restorePayableFromDeletedTransaction(tx, allTransactions, allInventory) {
+export async function _restorePayableFromDeletedTransaction(tx, allTransactions, allInventory) {
 if (!tx || !tx.isPayable) return false;
 const factoryInventoryData = allInventory || ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentTransactions = allTransactions || ensureArray(await sqliteStore.get('payment_transactions'));
@@ -2098,7 +2108,7 @@ return true;
 return false;
 }
 
-async function deleteEntityTransaction(id) {
+export async function deleteEntityTransaction(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
@@ -2176,7 +2186,7 @@ showToast('Failed to delete transaction. Please try again.', 'error');
 }
 }
 
-async function deleteCurrentEntity() {
+export async function deleteCurrentEntity() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
@@ -2271,7 +2281,7 @@ showToast('Failed to delete entity. Please try again.', 'error');
 }
 }
 
-async function exportEntityData() {
+export async function exportEntityData() {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 let csvContent = "data:text/csv;charset=utf-8,";
 csvContent += "Entity Name,Type,Phone,Net Balance (),Status\n";
@@ -2294,7 +2304,7 @@ document.body.removeChild(link);
 showToast("Entity list exported", "success");
 }
 
-function _pdfMergedPeriodLabel(record) {
+export function _pdfMergedPeriodLabel(record) {
   const ms = record.mergedSummary;
   const dr = ms && ms.dateRange;
   if (dr && dr.from && dr.to) {
@@ -2317,12 +2327,12 @@ function _pdfMergedPeriodLabel(record) {
   return 'Prev. Year';
 }
 
-function _pdfMergedCountLabel(record) {
+export function _pdfMergedCountLabel(record) {
   const cnt = record.mergedRecordCount || (record.mergedSummary && record.mergedSummary.recordCount);
   return cnt ? `${cnt} txn${cnt !== 1 ? 's' : ''} merged` : 'year-end merge';
 }
 
-function _pdfDrawMergedSectionHeader(doc, yPos, pageW, label) {
+export function _pdfDrawMergedSectionHeader(doc, yPos, pageW, label) {
   const purpleLight = [245, 235, 255];
   const purpleDark  = [126, 34, 206];
   const purpleBorder= [175, 82, 222];
@@ -2339,11 +2349,11 @@ function _pdfDrawMergedSectionHeader(doc, yPos, pageW, label) {
   doc.setTextColor(80, 80, 80);
   return yPos + 16;
 }
-const PDF_MERGED_HDR_COLOR  = [126, 34, 206];
-const PDF_MERGED_ROW_COLOR  = [245, 235, 255];
-const PDF_MERGED_TEXT_COLOR = [126, 34, 206];
+export const PDF_MERGED_HDR_COLOR  = [126, 34, 206];
+export const PDF_MERGED_ROW_COLOR  = [245, 235, 255];
+export const PDF_MERGED_TEXT_COLOR = [126, 34, 206];
 
-async function _exportDocAsImageAndOpenWhatsApp(doc, phone, filenameBase) {
+export async function _exportDocAsImageAndOpenWhatsApp(doc, phone, filenameBase) {
   const PDFJS_CDN  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
   const PDFJS_WRKR = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   if (!window.pdfjsLib) {
@@ -2404,7 +2414,7 @@ async function _exportDocAsImageAndOpenWhatsApp(doc, phone, filenameBase) {
   }
 }
 
-async function exportEntityToPDF() {
+export async function exportEntityToPDF() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -2800,7 +2810,7 @@ showToast("Error generating PDF: " + error.message, "error");
 }
 }
 
-async function exportCustomerToPDF() {
+export async function exportCustomerToPDF() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -3150,18 +3160,18 @@ if (pageCount === 1) {
 showToast("Error generating PDF: " + error.message, "error");
 }
 }
-const SCRIPT_INTEGRITY = {
+export const SCRIPT_INTEGRITY = {
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js':
     'sha256-4C8gBRoAE0XFxW0C7SsQ+X/TBkHSFM3YMwVaF4F8hk=',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js':
     'sha256-0ZQJSA5vPBL+6L5uyIjovZ/m7VBpAOUGc7BHOH/RBHE='
 };
-const _scriptLoadPromises = {};
+export const _scriptLoadPromises = {};
 
-let _photoCaptureTarget = null;
-let _photoCaptureStream = null;
+export let _photoCaptureTarget = null;
+export let _photoCaptureStream = null;
 
-function _photoIds(prefix) {
+export function _photoIds(prefix) {
   return {
     preview: prefix + '-photo-preview',
     placeholder: prefix + '-photo-placeholder',
@@ -3171,7 +3181,7 @@ function _photoIds(prefix) {
   };
 }
 
-function handlePersonPhotoFile(event, prefix) {
+export function handlePersonPhotoFile(event, prefix) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -3180,7 +3190,7 @@ function handlePersonPhotoFile(event, prefix) {
   event.target.value = '';
 }
 
-function applyPersonPhoto(prefix, dataUrl) {
+export function applyPersonPhoto(prefix, dataUrl) {
   const ids = _photoIds(prefix);
   const ph = document.getElementById(ids.placeholder);
   const img = document.getElementById(ids.img);
@@ -3192,7 +3202,7 @@ function applyPersonPhoto(prefix, dataUrl) {
   if (preview) preview.dataset.pendingPhoto = dataUrl;
 }
 
-function clearPersonPhoto(prefix) {
+export function clearPersonPhoto(prefix) {
   const ids = _photoIds(prefix);
   const ph = document.getElementById(ids.placeholder);
   const img = document.getElementById(ids.img);
@@ -3204,7 +3214,7 @@ function clearPersonPhoto(prefix) {
   if (preview) { preview.dataset.pendingPhoto = ''; preview.dataset.existingPhotoKey = ''; }
 }
 
-async function loadPersonPhotoIntoEditor(prefix, storageKey) {
+export async function loadPersonPhotoIntoEditor(prefix, storageKey) {
   const ids = _photoIds(prefix);
   const preview = document.getElementById(ids.preview);
   if (preview) { preview.dataset.pendingPhoto = ''; preview.dataset.existingPhotoKey = storageKey || ''; }
@@ -3218,7 +3228,7 @@ async function loadPersonPhotoIntoEditor(prefix, storageKey) {
   } catch(e) {}
 }
 
-async function savePersonPhoto(prefix, storageKey) {
+export async function savePersonPhoto(prefix, storageKey) {
   if (!storageKey) return;
   const ids = _photoIds(prefix);
   const preview = document.getElementById(ids.preview);
@@ -3248,7 +3258,7 @@ async function savePersonPhoto(prefix, storageKey) {
   } catch(e) { console.warn('Photo save failed', e); }
 }
 
-async function getPersonPhoto(storageKey) {
+export async function getPersonPhoto(storageKey) {
   if (!storageKey) return null;
   try {
     const stored = await sqliteStore.get('person_photos');
@@ -3257,7 +3267,7 @@ async function getPersonPhoto(storageKey) {
   } catch(e) { return null; }
 }
 
-async function _compressPhoto(dataUrl, maxDim, quality) {
+export async function _compressPhoto(dataUrl, maxDim, quality) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -3276,7 +3286,7 @@ async function _compressPhoto(dataUrl, maxDim, quality) {
   });
 }
 
-async function openPhotoCapture(prefix) {
+export async function openPhotoCapture(prefix) {
   _photoCaptureTarget = prefix;
   const modal = document.getElementById('photo-capture-modal');
   const video = document.getElementById('photo-capture-video');
@@ -3304,7 +3314,7 @@ async function openPhotoCapture(prefix) {
   }
 }
 
-function closePhotoCapture() {
+export function closePhotoCapture() {
   const modal = document.getElementById('photo-capture-modal');
   const video = document.getElementById('photo-capture-video');
   if (modal) modal.style.display = 'none';
@@ -3321,7 +3331,7 @@ function closePhotoCapture() {
   _photoCaptureTarget = null;
 }
 
-async function toggleTorch() {
+export async function toggleTorch() {
   if (!_photoCaptureStream) return;
   const track = _photoCaptureStream.getVideoTracks()[0];
   if (!track) return;
@@ -3340,7 +3350,7 @@ async function toggleTorch() {
   }
 }
 
-function capturePhotoFromCamera() {
+export function capturePhotoFromCamera() {
   const video = document.getElementById('photo-capture-video');
   const canvas = document.getElementById('photo-capture-canvas');
   if (!video || !canvas || !_photoCaptureTarget) return;
@@ -3365,11 +3375,11 @@ function capturePhotoFromCamera() {
 
 window._expensePendingPhoto = null;
 
-function openExpensePhotoCapture() {
+export function openExpensePhotoCapture() {
   openPhotoCapture('expense');
 }
 
-function handleExpensePhotoFile(event) {
+export function handleExpensePhotoFile(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -3378,7 +3388,7 @@ function handleExpensePhotoFile(event) {
   event.target.value = '';
 }
 
-function _applyExpensePendingPhoto(dataUrl) {
+export function _applyExpensePendingPhoto(dataUrl) {
   window._expensePendingPhoto = dataUrl;
   const dot = document.getElementById('expense-photo-dot');
   const btn = document.getElementById('expense-photo-btn');
@@ -3389,7 +3399,7 @@ function _applyExpensePendingPhoto(dataUrl) {
   }
 }
 
-function renderPersonAvatarHTML(photoDataUrl, size) {
+export function renderPersonAvatarHTML(photoDataUrl, size) {
   const sz = size || 44;
   if (photoDataUrl) {
     const safe = photoDataUrl.replace(/'/g, '&#39;');
@@ -3592,7 +3602,7 @@ function renderPersonAvatarHTML(photoDataUrl, size) {
   }
 })();
 
-function previewPhotoClick(prefix) {
+export function previewPhotoClick(prefix) {
   const img = document.getElementById(prefix + '-photo-img');
   if (img && img.style.display !== 'none' && img.src && img.src !== window.location.href) {
     openPhotoLightbox(img.src);
@@ -3601,7 +3611,7 @@ function previewPhotoClick(prefix) {
   }
 }
 
-function loadScript(url, integrity) {
+export function loadScript(url, integrity) {
   const existing = document.querySelector('script[src="' + url + '"]');
   if (existing && !existing.dataset.failed) {
     if (_scriptLoadPromises[url]) return _scriptLoadPromises[url];
@@ -3639,7 +3649,7 @@ function loadScript(url, integrity) {
   });
   return _scriptLoadPromises[url];
 }
-const SarimChart = (() => {
+export const SarimChart = (() => {
   function _esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
@@ -3838,3 +3848,113 @@ const SarimChart = (() => {
   }
   return SarimChart;
 })();
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.toggleDarkMode = toggleDarkMode;
+window.syncState = syncState;
+window.OfflineQueue = OfflineQueue;
+window.updateOfflineBanner = updateOfflineBanner;
+window._setCloudConnectionState = _setCloudConnectionState;
+window._setSlowConnectionState = _setSlowConnectionState;
+window.notifyDataChange = notifyDataChange;
+window.autoSyncTimeout = autoSyncTimeout;
+window.AUTO_SYNC_DELAY = AUTO_SYNC_DELAY;
+window.invalidateAllCaches = invalidateAllCaches;
+window.triggerAutoSync = triggerAutoSync;
+window.updateSettingTimestamp = updateSettingTimestamp;
+window._tabSyncInProgress = _tabSyncInProgress;
+window.processSync = processSync;
+window.getCurrentActiveTab = getCurrentActiveTab;
+window.syncCoreDisplays = syncCoreDisplays;
+window.syncCalculatorTab = syncCalculatorTab;
+window.syncFactoryTab = syncFactoryTab;
+window.syncPaymentsTab = syncPaymentsTab;
+window.syncProductionTab = syncProductionTab;
+window.syncSalesTab = syncSalesTab;
+window.syncRepTab = syncRepTab;
+window.stopPeriodicSync = stopPeriodicSync;
+window.RefreshDebouncer = RefreshDebouncer;
+window.reloadDataFromStorage = reloadDataFromStorage;
+window.defaultSettings = defaultSettings;
+window.mfgBarChart = mfgBarChart;
+window.mfgPieChart = mfgPieChart;
+window.salesPerfChart = salesPerfChart;
+window.salesCompChart = salesCompChart;
+window.custSalesChart = custSalesChart;
+window.custPaymentChart = custPaymentChart;
+window.storeComparisonChart = storeComparisonChart;
+window.indPerformanceChart = indPerformanceChart;
+window._UI_STATE_KEY = _UI_STATE_KEY;
+window._UI_DEFAULTS = _UI_DEFAULTS;
+window._uiState = _uiState;
+window.getUI = getUI;
+window.setUI = setUI;
+window.loadUIState = loadUIState;
+window.splashQuotes = splashQuotes;
+window.initSplashScreen = initSplashScreen;
+window.updatePaymentStatusVisibility = updatePaymentStatusVisibility;
+window.recordEntry = recordEntry;
+window._dedupDeletionRecordsLocal = _dedupDeletionRecordsLocal;
+window.registerDeletion = registerDeletion;
+window._captureRecordSnapshot = _captureRecordSnapshot;
+window.uploadDeletionToCloud = uploadDeletionToCloud;
+window.cleanupOldDeletions = cleanupOldDeletions;
+window._buildPreclosePanel = _buildPreclosePanel;
+window._togglePreclosePanel = _togglePreclosePanel;
+window.openEntityDetailsOverlay = openEntityDetailsOverlay;
+window.closeEntityDetailsOverlay = closeEntityDetailsOverlay;
+window.openEditEntityFromDetails = openEditEntityFromDetails;
+window.renderEntityOverlayContent = renderEntityOverlayContent;
+window.filterEntityManagementHistory = filterEntityManagementHistory;
+window._toggleEntityTxnPanel = _toggleEntityTxnPanel;
+window._restorePayableFromDeletedTransaction = _restorePayableFromDeletedTransaction;
+window.deleteEntityTransaction = deleteEntityTransaction;
+window.deleteCurrentEntity = deleteCurrentEntity;
+window.exportEntityData = exportEntityData;
+window._pdfMergedPeriodLabel = _pdfMergedPeriodLabel;
+window._pdfMergedCountLabel = _pdfMergedCountLabel;
+window._pdfDrawMergedSectionHeader = _pdfDrawMergedSectionHeader;
+window.PDF_MERGED_HDR_COLOR = PDF_MERGED_HDR_COLOR;
+window.PDF_MERGED_ROW_COLOR = PDF_MERGED_ROW_COLOR;
+window.PDF_MERGED_TEXT_COLOR = PDF_MERGED_TEXT_COLOR;
+window._exportDocAsImageAndOpenWhatsApp = _exportDocAsImageAndOpenWhatsApp;
+window.exportEntityToPDF = exportEntityToPDF;
+window.exportCustomerToPDF = exportCustomerToPDF;
+window.SCRIPT_INTEGRITY = SCRIPT_INTEGRITY;
+window._scriptLoadPromises = _scriptLoadPromises;
+window._photoCaptureTarget = _photoCaptureTarget;
+window._photoCaptureStream = _photoCaptureStream;
+window._photoIds = _photoIds;
+window.handlePersonPhotoFile = handlePersonPhotoFile;
+window.applyPersonPhoto = applyPersonPhoto;
+window.clearPersonPhoto = clearPersonPhoto;
+window.loadPersonPhotoIntoEditor = loadPersonPhotoIntoEditor;
+window.savePersonPhoto = savePersonPhoto;
+window.getPersonPhoto = getPersonPhoto;
+window._compressPhoto = _compressPhoto;
+window.openPhotoCapture = openPhotoCapture;
+window.closePhotoCapture = closePhotoCapture;
+window.toggleTorch = toggleTorch;
+window.capturePhotoFromCamera = capturePhotoFromCamera;
+window.openExpensePhotoCapture = openExpensePhotoCapture;
+window.handleExpensePhotoFile = handleExpensePhotoFile;
+window._applyExpensePendingPhoto = _applyExpensePendingPhoto;
+window.renderPersonAvatarHTML = renderPersonAvatarHTML;
+window.previewPhotoClick = previewPhotoClick;
+window.loadScript = loadScript;
+window.SarimChart = SarimChart;
+
+// Setters for module-level state that other modules need to write to.
+// (plain `import { x }` bindings are read-only in real ES modules,
+// so cross-file writes have to go through a function instead.)
+export function _set_autoSyncTimeout(v) { autoSyncTimeout = v; }
+export function _set_custPaymentChart(v) { custPaymentChart = v; }
+export function _set_custSalesChart(v) { custSalesChart = v; }
+export function _set_defaultSettings(v) { defaultSettings = v; }
+export function _set_indPerformanceChart(v) { indPerformanceChart = v; }
+export function _set_mfgBarChart(v) { mfgBarChart = v; }
+export function _set_mfgPieChart(v) { mfgPieChart = v; }
+export function _set_salesCompChart(v) { salesCompChart = v; }
+export function _set_salesPerfChart(v) { salesPerfChart = v; }
+export function _set_storeComparisonChart(v) { storeComparisonChart = v; }

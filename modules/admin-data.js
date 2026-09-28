@@ -1,4 +1,13 @@
-async function updateDeltaSyncStatsDisplay() {
+// Auto-migrated to an ES module. Source: admin-data.js
+import { CryptoEngine, _safeErr, _triggerFileDownload, compareRecordVersions, ensureArray, ensureRecordIntegrity, fmtAmt, generateUUID, getDeviceId, sqliteStore, validateUUID } from './business.js';
+import { _commitMergedBatch, emitSyncUpdate, performOneClickSync, pushDataToCloud, sanitizeForFirestore } from './sync.js';
+import { defaultSettings } from './utilities-core.js';
+import { DeltaSync, UUIDSyncRegistry, trackFirestoreWrite, verifyAccountPassword } from './utilities-sales.js';
+import { refreshAllDisplays } from './utilities-payments.js';
+import { calculateSalesCostPerKg, getEffectiveSalePriceForCustomer, getSalePriceForStore } from './factory.js';
+import { showGlassConfirm, showToast } from './customers.js';
+
+export async function updateDeltaSyncStatsDisplay() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -34,7 +43,7 @@ async function updateDeltaSyncStatsDisplay() {
   }
 }
 
-async function showDeltaSyncDetails() {
+export async function showDeltaSyncDetails() {
 if (!firebaseDB || !currentUser) {
   showToast('Please log in to view database structure', 'warning', 3000);
   return;
@@ -485,14 +494,14 @@ if (typeof pendingFirestoreYearClose === 'undefined') var pendingFirestoreYearCl
 if (typeof pendingFirestoreRestore === 'undefined') var pendingFirestoreRestore = false;
 
 if (typeof _hasMergeCommitFailure === 'undefined') var _hasMergeCommitFailure = false;
-function _storeCodeToLabel(c) {
+export function _storeCodeToLabel(c) {
   if (c === 'STORE_A') return 'ZUBAIR';
   if (c === 'STORE_B') return 'MAHMOOD';
   if (c === 'STORE_C') return 'ASAAN';
   return c;
 }
 
-async function showCloseFinancialYearDialog() {
+export async function showCloseFinancialYearDialog() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -917,7 +926,7 @@ setTimeout(() => {
 }, 80);
 }
 
-function validateCloseYearInput(value) {
+export function validateCloseYearInput(value) {
 const confirmBtn = document.getElementById('close-year-confirm-btn');
 const errEl = document.getElementById('close-year-pwd-error');
 if (!confirmBtn) return;
@@ -937,7 +946,7 @@ if (value.trim().length > 0) {
 if (errEl) errEl.style.display = 'none';
 }
 
-async function verifyAndExecuteCloseYear() {
+export async function verifyAndExecuteCloseYear() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -979,7 +988,7 @@ _fyVerifiedPassword = pwd;
 executeCloseFinancialYear();
 }
 
-function closeCloseYearDialog() {
+export function closeCloseYearDialog() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('close-financial-year-screen');
 const _cyScreen = document.getElementById('close-financial-year-screen');
 const _cyBody = _cyScreen ? _cyScreen.querySelector('.screen-body') : null;
@@ -991,7 +1000,7 @@ closeYearAbortController = null;
 closeYearInProgress = false;
 }
 
-function updateCloseYearProgress(stage, percent) {
+export function updateCloseYearProgress(stage, percent) {
 const stageEl = document.getElementById('close-year-stage');
 const progressBar = document.getElementById('close-year-progress-bar');
 const pctEl = document.getElementById('cy-progress-pct');
@@ -1040,7 +1049,7 @@ if (procSubtitle && procSubtitle.textContent.includes('will be compacted')) {
 }
 }
 
-async function generateCloseYearSummary() {
+export async function generateCloseYearSummary() {
   const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -1248,7 +1257,7 @@ const html = '<div style="display:grid;gap:4px;">' + rows + '</div>';
 return { html, rowsHtml, summary: S };
 }
 
-async function createMergeBackup() {
+export async function createMergeBackup() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
@@ -1283,7 +1292,7 @@ async function createMergeBackup() {
   }
 }
 
-async function restoreFromBackup(backupTimestamp) {
+export async function restoreFromBackup(backupTimestamp) {
   try {
     const backup = await sqliteStore.get('close_year_backup_' + backupTimestamp);
     if (!backup) {
@@ -1360,7 +1369,7 @@ async function restoreFromBackup(backupTimestamp) {
   }
 }
 
-async function verifyMergeConsistency(snap) {
+export async function verifyMergeConsistency(snap) {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
@@ -1415,7 +1424,7 @@ async function verifyMergeConsistency(snap) {
   };
 }
 
-async function executeCloseFinancialYear() {
+export async function executeCloseFinancialYear() {
 
   let fyMeta = null;
 
@@ -1790,7 +1799,7 @@ closeYearAbortController = null;
 }
 }
 
-function _markRowSyncWarning(rowId, commitResult) {
+export function _markRowSyncWarning(rowId, commitResult) {
 
   _hasMergeCommitFailure = true;
   try {
@@ -1815,7 +1824,7 @@ function _markRowSyncWarning(rowId, commitResult) {
   } catch (e) {   }
 }
 
-function _buildMergedBase(id, mergeEpoch, nowISODate, nowTime, extra = {}) {
+export function _buildMergedBase(id, mergeEpoch, nowISODate, nowTime, extra = {}) {
 return {
   id,
   date: nowISODate,
@@ -1830,7 +1839,7 @@ return {
 };
 }
 
-async function mergeProductionData(signal, closeEpoch) {
+export async function mergeProductionData(signal, closeEpoch) {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 updateCloseYearProgress('Merging Production Data...', 10);
 if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -1965,7 +1974,7 @@ emitSyncUpdate({ mfg_pro_pkr: null});
 updateCloseYearProgress('Production Data Merged', 20);
 }
 
-async function mergeSalesData(signal, closeEpoch) {
+export async function mergeSalesData(signal, closeEpoch) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 updateCloseYearProgress('Merging Sales Data...', 30);
@@ -2112,7 +2121,7 @@ emitSyncUpdate({ customer_sales: null});
 updateCloseYearProgress('Sales Data Merged', 40);
 }
 
-async function mergeCalculatorData(signal, closeEpoch) {
+export async function mergeCalculatorData(signal, closeEpoch) {
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 updateCloseYearProgress('Merging Calculator Data...', 50);
 if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -2218,7 +2227,7 @@ emitSyncUpdate({ noman_history: null});
 updateCloseYearProgress('Calculator Data Merged', 60);
 }
 
-async function mergePaymentData(signal, closeEpoch) {
+export async function mergePaymentData(signal, closeEpoch) {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 updateCloseYearProgress('Merging Payment Data...', 70);
@@ -2299,7 +2308,7 @@ emitSyncUpdate({ payment_transactions: null});
 updateCloseYearProgress('Payment Data Merged', 80);
 }
 
-async function mergeFactoryData(signal, closeEpoch) {
+export async function mergeFactoryData(signal, closeEpoch) {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_production_history'));
 updateCloseYearProgress('Merging Factory Data...', 85);
@@ -2374,7 +2383,7 @@ emitSyncUpdate({ factory_production_history: null});
 updateCloseYearProgress('Factory Data Merged', 90);
 }
 
-async function mergeRepSalesData(signal, closeEpoch) {
+export async function mergeRepSalesData(signal, closeEpoch) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
 updateCloseYearProgress('Merging Rep Sales Data...', 88);
@@ -2523,7 +2532,7 @@ emitSyncUpdate({ rep_sales: null});
 updateCloseYearProgress('Rep Sales Data Merged', 92);
 }
 
-async function mergeExpensesData(signal, closeEpoch) {
+export async function mergeExpensesData(signal, closeEpoch) {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
 updateCloseYearProgress('Merging Expenses...', 94);
@@ -2624,7 +2633,7 @@ emitSyncUpdate({ expenses: null});
 updateCloseYearProgress('Expenses Merged', 97);
 }
 
-async function mergeStockReturnsData(signal, closeEpoch) {
+export async function mergeStockReturnsData(signal, closeEpoch) {
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 updateCloseYearProgress('Merging Stock Returns...', 98);
 if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -2703,7 +2712,7 @@ emitSyncUpdate({ stock_returns: null});
 updateCloseYearProgress('Stock Returns Merged', 100);
 }
 
-async function verifyTimestampConsistency() {
+export async function verifyTimestampConsistency() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -2836,7 +2845,7 @@ showToast('Timestamp consistency check passed — all records healthy.', 'succes
 return report;
 }
 
-async function deduplicateAllData() {
+export async function deduplicateAllData() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -2965,7 +2974,7 @@ showToast(' No duplicates found! Data is clean.', 'success');
 }
 return results;
 }
-function dbvShowTab(i) {
+export function dbvShowTab(i) {
   [0,1,2,3].forEach(j => {
     const p = document.getElementById('dbv-pane-'+j);
     const t = document.getElementById('dbv-tab-'+j);
@@ -2981,7 +2990,7 @@ window.dbvShowTab = dbvShowTab;
 window.showDeltaSyncDetails = showDeltaSyncDetails;
 window.verifyTimestampConsistency = verifyTimestampConsistency;
 window.deduplicateAllData = deduplicateAllData;
-async function verifyCompleteTimestampConsistency() {
+export async function verifyCompleteTimestampConsistency() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -3221,7 +3230,7 @@ showToast('Full system verification passed — all data is consistent.', 'succes
 return report;
 }
 
-function extractTimestampValue(record) {
+export function extractTimestampValue(record) {
 if (!record) return 0;
 let ts = record.updatedAt || record.timestamp || record.createdAt || 0;
 if (typeof ts === 'number') return ts;
@@ -3241,7 +3250,7 @@ if (!isNaN(time)) return time;
 return 0;
 }
 window.verifyCompleteTimestampConsistency = verifyCompleteTimestampConsistency;
-async function runUnifiedCleanup() {
+export async function runUnifiedCleanup() {
   const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
   const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
   const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -3390,3 +3399,52 @@ window.runUnifiedCleanup = runUnifiedCleanup;
 window._showDeltaSyncDetails = showDeltaSyncDetails;
 window._runUnifiedCleanup = runUnifiedCleanup;
 window._showCloseFinancialYearDialog = showCloseFinancialYearDialog;
+
+// var declarations that live inside a nested block (define-once guards) —
+// still hoisted to module scope, exported explicitly since `export` can't
+// be written inline inside the block.
+export { closeYearInProgress, closeYearAbortController, _fyVerifiedPassword, pendingFirestoreYearClose, pendingFirestoreRestore, _hasMergeCommitFailure };
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.updateDeltaSyncStatsDisplay = updateDeltaSyncStatsDisplay;
+window.showDeltaSyncDetails = showDeltaSyncDetails;
+window.closeYearInProgress = closeYearInProgress;
+window.closeYearAbortController = closeYearAbortController;
+window._fyVerifiedPassword = _fyVerifiedPassword;
+window.pendingFirestoreYearClose = pendingFirestoreYearClose;
+window.pendingFirestoreRestore = pendingFirestoreRestore;
+window._hasMergeCommitFailure = _hasMergeCommitFailure;
+window._storeCodeToLabel = _storeCodeToLabel;
+window.showCloseFinancialYearDialog = showCloseFinancialYearDialog;
+window.validateCloseYearInput = validateCloseYearInput;
+window.verifyAndExecuteCloseYear = verifyAndExecuteCloseYear;
+window.closeCloseYearDialog = closeCloseYearDialog;
+window.updateCloseYearProgress = updateCloseYearProgress;
+window.generateCloseYearSummary = generateCloseYearSummary;
+window.createMergeBackup = createMergeBackup;
+window.restoreFromBackup = restoreFromBackup;
+window.verifyMergeConsistency = verifyMergeConsistency;
+window.executeCloseFinancialYear = executeCloseFinancialYear;
+window._markRowSyncWarning = _markRowSyncWarning;
+window._buildMergedBase = _buildMergedBase;
+window.mergeProductionData = mergeProductionData;
+window.mergeSalesData = mergeSalesData;
+window.mergeCalculatorData = mergeCalculatorData;
+window.mergePaymentData = mergePaymentData;
+window.mergeFactoryData = mergeFactoryData;
+window.mergeRepSalesData = mergeRepSalesData;
+window.mergeExpensesData = mergeExpensesData;
+window.mergeStockReturnsData = mergeStockReturnsData;
+window.verifyTimestampConsistency = verifyTimestampConsistency;
+window.deduplicateAllData = deduplicateAllData;
+window.dbvShowTab = dbvShowTab;
+window.verifyCompleteTimestampConsistency = verifyCompleteTimestampConsistency;
+window.extractTimestampValue = extractTimestampValue;
+window.runUnifiedCleanup = runUnifiedCleanup;
+
+// Setters for module-level state that other modules need to write to.
+// (plain `import { x }` bindings are read-only in real ES modules,
+// so cross-file writes have to go through a function instead.)
+export function _set_pendingFirestoreRestore(v) { pendingFirestoreRestore = v; }
+export function _set_pendingFirestoreYearClose(v) { pendingFirestoreYearClose = v; }

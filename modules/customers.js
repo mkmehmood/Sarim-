@@ -1,4 +1,13 @@
-function selectCustomer(name) {
+// Auto-migrated to an ES module. Source: customers.js
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { unifiedDelete, unifiedSave } from './sync.js';
+import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
+import { calculateCashTracker, calculateNetCash, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
+import { formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML, refreshEntityBalances, refreshPaymentTab, safeValue } from './utilities-payments.js';
+import { calculatePaymentSummaries, getEffectiveSalePriceForCustomer, getSaleTransactionValue, updateUnitsAvailableIndicator } from './factory.js';
+import { renderRepCustomerTable, renderRepCustomerTransactions } from './rep-sales.js';
+
+export function selectCustomer(name) {
 const input = document.getElementById('cust-name');
 const resultsDiv = document.getElementById('customer-search-results');
 if(input) {
@@ -12,7 +21,7 @@ calculateCustomerStatsForDisplay(name);
 }
 }
 window._selectCustomerBase = selectCustomer;
-async function calculateCustomerStatsForDisplay(name) {
+export async function calculateCustomerStatsForDisplay(name) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
@@ -58,7 +67,7 @@ updateCollectionPreview();
 }
 }
 
-async function renderCustomersTable(page = 1) {
+export async function renderCustomersTable(page = 1) {
 const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
 const _rctAlive = (item) => item && item.id && !deletedRecordIds.has(String(item.id));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales')).filter(_rctAlive);
@@ -201,9 +210,9 @@ _setCustH('customers-total-credit', `${fmtAmt(totalOutstanding)}`);
 _setCustH('customers-total-quantity', safeNumber(totalGlobalQty, 0).toFixed(2) + ' kg');
 }
 
-let currentManagingCustomer = null;
-let currentManagingRepCustomer = null;
-async function openCustomerManagement(customerName) {
+export let currentManagingCustomer = null;
+export let currentManagingRepCustomer = null;
+export async function openCustomerManagement(customerName) {
 currentManagingCustomer = customerName;
 const _setMCT = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setMCT('manageCustomerTitle', customerName);
@@ -211,7 +220,7 @@ if (typeof openStandaloneScreen === 'function') openStandaloneScreen('customer-m
 await renderCustomerTransactions(customerName);
 }
 
-function closeCustomerManagement() {
+export function closeCustomerManagement() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('customer-management-screen');
 currentManagingCustomer = null;
 setTimeout(async () => {
@@ -226,7 +235,7 @@ if (typeof renderCustomersTable === 'function') renderCustomersTable();
 }, 100);
 }
 
-async function deleteCurrentCustomer() {
+export async function deleteCurrentCustomer() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 if (!currentManagingCustomer) return;
@@ -270,7 +279,7 @@ showToast('Failed to delete customer. Please try again.', 'error');
 }
 }
 
-async function renderCustomerTransactions(name) {
+export async function renderCustomerTransactions(name) {
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
@@ -491,7 +500,7 @@ _custFrag.appendChild(item);
 list.replaceChildren(_custFrag);
 }
 
-async function toggleSingleTransactionStatus(id) {
+export async function toggleSingleTransactionStatus(id) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const record = customerSales.find(s => s.id === id);
 if (record?.isMerged) {
@@ -519,7 +528,7 @@ showToast('Failed to update transaction status. Please try again.', 'error');
 }
 }
 
-async function toggleRepTransactionStatus(id) {
+export async function toggleRepTransactionStatus(id) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const record = repSales.find(s => s.id === id);
 if (record?.isMerged) {
@@ -547,7 +556,7 @@ showToast('Failed to update transaction status. Please try again.', 'error');
 }
 }
 
-async function deleteTransactionFromOverlay(id) {
+export async function deleteTransactionFromOverlay(id) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 if (!id || !validateUUID(id)) {
@@ -635,7 +644,7 @@ showToast('Failed to delete transaction. Please try again.', 'error');
 }
 }
 
-async function deleteRepTransactionFromOverlay(id) {
+export async function deleteRepTransactionFromOverlay(id) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 if (!id || !validateUUID(id)) {
 showToast('Invalid transaction ID', 'error');
@@ -717,38 +726,38 @@ showToast('Failed to delete transaction. Please try again.', 'error');
 }
 }
 
-function filterCustomerManagementHistory() {
+export function filterCustomerManagementHistory() {
 const term = document.getElementById('cust-trans-search').value.toLowerCase();
 document.querySelectorAll('#customerManagementHistoryList .cust-history-item').forEach(item => {
 item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'none';
 });
 }
 
-function filterRepCustomerManagementHistory() {
+export function filterRepCustomerManagementHistory() {
 const term = document.getElementById('rep-cust-trans-search').value.toLowerCase();
 document.querySelectorAll('#repCustomerManagementHistoryList .cust-history-item').forEach(item => {
 item.style.display = item.innerText.toLowerCase().includes(term) ? 'flex' : 'none';
 });
 }
 
-function refreshAllCalculations() {
+export function refreshAllCalculations() {
 calculateCashTracker();
 calculateNetCash();
 calculatePaymentSummaries();
 refreshEntityBalances();
 updateUnitsAvailableIndicator();
 }
-const toastContainer = document.createElement('div');
+export const toastContainer = document.createElement('div');
 toastContainer.className = 'toast-container';
 document.body.appendChild(toastContainer);
-function _ensureToastOnTop() {
+export function _ensureToastOnTop() {
   if (document.body.lastElementChild !== toastContainer) {
     document.body.appendChild(toastContainer);
   }
 }
-const _toastQueue = [];
-let _toastActive = false;
-function _playNextToast() {
+export const _toastQueue = [];
+export let _toastActive = false;
+export function _playNextToast() {
 if (_toastActive || _toastQueue.length === 0) return;
 _toastActive = true;
 const { message, type, duration } = _toastQueue.shift();
@@ -801,7 +810,7 @@ setTimeout(dismiss, duration);
 toast.addEventListener('click', dismiss, { once: true });
 }
 
-function showToast(message, type = 'info', duration = 3000) {
+export function showToast(message, type = 'info', duration = 3000) {
 const typeMap = { danger: 'error', warn: 'warning', ok: 'success' };
 type = typeMap[type] || (['success','warning','error','info'].includes(type) ? type : 'info');
 _toastQueue.push({ message, type, duration });
@@ -809,7 +818,7 @@ _playNextToast();
 }
 window.showToast = showToast;
 
-const _gcIcons = {
+export const _gcIcons = {
   delete:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11 L10 31 A2 2 0 0 0 12 33 H24 A2 2 0 0 0 26 31 L28 11 Z" fill="var(--danger)" fill-opacity="0.12" stroke="var(--danger)" stroke-width="1.5" stroke-linejoin="round"/><line x1="6" y1="11" x2="30" y2="11" stroke="var(--danger)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 8 H22 M14 8 A1 1 0 0 1 15 7 H21 A1 1 0 0 1 22 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/><line x1="14" y1="17" x2="14" y2="27" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.6"/><line x1="22" y1="17" x2="22" y2="27" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.6"/></svg>',
   remove:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="13" fill="var(--danger)" fill-opacity="0.12" stroke="var(--danger)" stroke-width="1.5"/><line x1="13" y1="13" x2="23" y2="23" stroke="var(--danger)" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="13" x2="13" y2="23" stroke="var(--danger)" stroke-width="2" stroke-linecap="round"/></svg>',
   warning:  '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M27 10 H33 L29 17 H31 L27 24 H33 L29 17 H31 Z" fill="var(--warning)" opacity="0.6" stroke="var(--warning)" stroke-width="1" stroke-linejoin="round"/><rect x="5" y="10" width="18" height="18" rx="2.5" fill="var(--warning)" fill-opacity="0.12" stroke="var(--warning)" stroke-width="1.4"/><line x1="14" y1="15" x2="14" y2="21" stroke="var(--warning)" stroke-width="1.4" stroke-linecap="round"/><circle cx="14" cy="24" r="1" fill="var(--warning)"/></svg>',
@@ -823,7 +832,7 @@ const _gcIcons = {
   credit:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="10" width="28" height="18" rx="3" fill="var(--accent-gold)" fill-opacity="0.10" stroke="var(--accent-gold)" stroke-width="1.5"/><line x1="4" y1="17" x2="32" y2="17" stroke="var(--accent-gold)" stroke-width="1.4"/><rect x="8" y="21" width="8" height="3" rx="1" fill="var(--accent-gold)" opacity="0.55"/><ellipse cx="28" cy="16" rx="4" ry="1.5" fill="var(--accent-gold)" opacity="0.4" stroke="var(--accent-gold)" stroke-width="1"/></svg>',
   confirm:  '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="13" fill="var(--success)" fill-opacity="0.15" stroke="var(--success)" stroke-width="1.5"/><polyline points="10,18 15,23 26,12" stroke="var(--success)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
 };
-function _gcPickIcon(title, confirmText, danger) {
+export function _gcPickIcon(title, confirmText, danger) {
   const t = (title || '').toLowerCase();
   const c = (confirmText || '').toLowerCase();
   if (t.includes('delete') || c.includes('delete')) return _gcIcons.delete;
@@ -840,7 +849,7 @@ function _gcPickIcon(title, confirmText, danger) {
   return _gcIcons.confirm;
 }
 
-function showGlassConfirm(message, {
+export function showGlassConfirm(message, {
 title = 'Confirm',
 confirmText = 'Confirm',
 cancelText = 'Cancel',
@@ -898,13 +907,13 @@ if (typeof window._onShowGlassConfirmReady === 'function') {
 window._onShowGlassConfirmReady();
 }
 
-async function filterCustomers() {
+export async function filterCustomers() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 renderCustomersTable();
 }
 
-async function openCustomerEditModal(customerName) {
+export async function openCustomerEditModal(customerName) {
 customerName = customerName || '';
 const isAddMode = !customerName;
 const titleEl = document.getElementById('cust-edit-screen-title');
@@ -964,11 +973,11 @@ await loadPersonPhotoIntoEditor('cust', 'cust:' + customerName.toLowerCase());
 if (typeof openStandaloneScreen === 'function') openStandaloneScreen('customer-edit-screen');
 }
 
-function closeCustomerEditModal() {
+export function closeCustomerEditModal() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('customer-edit-screen');
 }
 
-async function saveCustomerDetails() {
+export async function saveCustomerDetails() {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 const nameInput = document.getElementById('edit-cust-name');
@@ -1111,7 +1120,7 @@ showToast('Failed to save customer details. Please try again.', 'error');
 }
 }
 
-async function fetchDeviceLocation() {
+export async function fetchDeviceLocation() {
 const statusDiv = document.getElementById('location-status');
 const addressInput = document.getElementById('edit-cust-address');
 const btn = document.querySelector('button[onclick="fetchDeviceLocation()"]');
@@ -1216,3 +1225,41 @@ gpsOptions
 setTimeout(() => { if (!settled && best) finish(best); }, GPS_MAX_WAIT_MS);
 });
 }
+
+// --- Back-compat: keep every top-level export reachable as window.X ---
+// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
+window.selectCustomer = selectCustomer;
+window.calculateCustomerStatsForDisplay = calculateCustomerStatsForDisplay;
+window.renderCustomersTable = renderCustomersTable;
+window.currentManagingCustomer = currentManagingCustomer;
+window.currentManagingRepCustomer = currentManagingRepCustomer;
+window.openCustomerManagement = openCustomerManagement;
+window.closeCustomerManagement = closeCustomerManagement;
+window.deleteCurrentCustomer = deleteCurrentCustomer;
+window.renderCustomerTransactions = renderCustomerTransactions;
+window.toggleSingleTransactionStatus = toggleSingleTransactionStatus;
+window.toggleRepTransactionStatus = toggleRepTransactionStatus;
+window.deleteTransactionFromOverlay = deleteTransactionFromOverlay;
+window.deleteRepTransactionFromOverlay = deleteRepTransactionFromOverlay;
+window.filterCustomerManagementHistory = filterCustomerManagementHistory;
+window.filterRepCustomerManagementHistory = filterRepCustomerManagementHistory;
+window.refreshAllCalculations = refreshAllCalculations;
+window.toastContainer = toastContainer;
+window._ensureToastOnTop = _ensureToastOnTop;
+window._toastQueue = _toastQueue;
+window._toastActive = _toastActive;
+window._playNextToast = _playNextToast;
+window.showToast = showToast;
+window._gcIcons = _gcIcons;
+window._gcPickIcon = _gcPickIcon;
+window.showGlassConfirm = showGlassConfirm;
+window.filterCustomers = filterCustomers;
+window.openCustomerEditModal = openCustomerEditModal;
+window.closeCustomerEditModal = closeCustomerEditModal;
+window.saveCustomerDetails = saveCustomerDetails;
+window.fetchDeviceLocation = fetchDeviceLocation;
+
+// Setters for module-level state that other modules need to write to.
+// (plain `import { x }` bindings are read-only in real ES modules,
+// so cross-file writes have to go through a function instead.)
+export function _set_currentManagingRepCustomer(v) { currentManagingRepCustomer = v; }
