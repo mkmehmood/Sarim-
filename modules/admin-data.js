@@ -1,5 +1,5 @@
 // Auto-migrated to an ES module. Source: admin-data.js
-import { CryptoEngine, _safeErr, _triggerFileDownload, compareRecordVersions, ensureArray, ensureRecordIntegrity, fmtAmt, generateUUID, getDeviceId, sqliteStore, validateUUID } from './business.js';
+import { CryptoEngine, _safeErr, _triggerFileDownload, compareRecordVersions, currentUser, ensureArray, ensureRecordIntegrity, firebaseDB, fmtAmt, generateUUID, getDeviceId, sqliteStore, validateUUID } from './business.js';
 import { _commitMergedBatch, emitSyncUpdate, performOneClickSync, pushDataToCloud, sanitizeForFirestore } from './sync.js';
 import { defaultSettings } from './utilities-core.js';
 import { DeltaSync, UUIDSyncRegistry, trackFirestoreWrite, verifyAccountPassword } from './utilities-sales.js';

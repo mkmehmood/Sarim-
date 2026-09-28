@@ -1,8 +1,8 @@
 // Auto-migrated to an ES module. Source: customers.js
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
-import { calculateCashTracker, calculateNetCash, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
+import { calculateCashTracker, calculateNetCash, custTransactionMode, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
 import { formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML, refreshEntityBalances, refreshPaymentTab, safeValue } from './utilities-payments.js';
 import { calculatePaymentSummaries, getEffectiveSalePriceForCustomer, getSaleTransactionValue, updateUnitsAvailableIndicator } from './factory.js';
 import { renderRepCustomerTable, renderRepCustomerTransactions } from './rep-sales.js';

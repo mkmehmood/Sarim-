@@ -1,6 +1,6 @@
 // Auto-migrated to an ES module. Source: rep-sales.js
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, compareTimestamps, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
 import { _exportDocAsImageAndOpenWhatsApp, getPersonPhoto, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML } from './utilities-payments.js';
@@ -213,7 +213,7 @@ _reEnable();
 }
 
 export function setRepMode(mode) {
-repTransactionMode = mode;
+repTransactionMode = mode; window.repTransactionMode = repTransactionMode;
 const _setRep = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 const _btnSale = document.getElementById('btn-mode-sale'); if (_btnSale) _btnSale.className = `toggle-opt ${mode === 'sale' ? 'active' : ''}`;
 const _btnColl = document.getElementById('btn-mode-coll'); if (_btnColl) _btnColl.className = `toggle-opt ${mode === 'collection' ? 'active' : ''}`;
@@ -707,7 +707,7 @@ repMap.fitBounds(group.getBounds().pad(0.1));
 
 export function adminSwitchRepProfile(newProfile) {
 if (appMode !== 'admin') return;
-currentRepProfile = newProfile;
+_set_currentRepProfile(newProfile);
 refreshRepUI();
 setTimeout(() => {
 if (repMap) {
@@ -722,7 +722,7 @@ showToast(`Viewing dashboard for ${newProfile}`, 'info');
 }
 
 export function setRepAnalyticsMode(mode) {
-currentRepAnalyticsMode = mode;
+currentRepAnalyticsMode = mode; window.currentRepAnalyticsMode = currentRepAnalyticsMode;
 document.querySelectorAll('#admin-rep-analytics .toggle-group .toggle-opt').forEach(opt => {
 opt.classList.remove('active');
 });
@@ -1944,3 +1944,12 @@ window.fetchRepDeviceLocation = fetchRepDeviceLocation;
 window.exportRepCustomerToPDF = exportRepCustomerToPDF;
 window.renderRepHistory = renderRepHistory;
 window.refreshRepUI = refreshRepUI;
+
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let repTransactionMode;
+window.repTransactionMode = repTransactionMode;
+export function _set_repTransactionMode(v) { repTransactionMode = v; window.repTransactionMode = v; }
+export let currentRepAnalyticsMode;
+window.currentRepAnalyticsMode = currentRepAnalyticsMode;
+export function _set_currentRepAnalyticsMode(v) { currentRepAnalyticsMode = v; window.currentRepAnalyticsMode = v; }

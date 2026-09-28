@@ -1787,18 +1787,18 @@ _set_defaultSettings(loadedDefaultSettings);
 }
 const loadedAppMode = batchResults.get('appMode');
 if (_notFailed(loadedAppMode) && typeof loadedAppMode === 'string') {
-appMode = loadedAppMode;
+appMode = loadedAppMode; window.appMode = appMode;
 }
 const loadedRepProfile = batchResults.get('repProfile');
 if (_notFailed(loadedRepProfile) && typeof loadedRepProfile === 'string') {
-currentRepProfile = loadedRepProfile;
+currentRepProfile = loadedRepProfile; window.currentRepProfile = currentRepProfile;
 }
 const loadedExpenseCategories = batchResults.get('expense_categories');
 if (_notFailed(loadedExpenseCategories) && Array.isArray(loadedExpenseCategories)) {
 }
 const loadedSalesRepsList = batchResults.get('sales_reps_list');
 if (_notFailed(loadedSalesRepsList) && Array.isArray(loadedSalesRepsList) && loadedSalesRepsList.length > 0) {
-salesRepsList = loadedSalesRepsList;
+salesRepsList = loadedSalesRepsList; window.salesRepsList = salesRepsList;
 }
 const loadedAssignedManager = batchResults.get('assignedManager');
 if (_notFailed(loadedAssignedManager) && typeof loadedAssignedManager === 'string') {
@@ -2184,13 +2184,13 @@ const persistedManager = (persistedRoleType === 'production' || persistedRoleTyp
   ? (persistedRoleName || existing.assignedManager || existing.assignedRoleName || null)
   : null;
 if (persistedMode !== appMode) {
-appMode = persistedMode;
+appMode = persistedMode; window.appMode = appMode;
 const sqliteBatch = [
 ['appMode', appMode],
 ['appMode_timestamp', existing.appMode_timestamp || Date.now()]
 ];
 if (persistedMode === 'rep' && persistedRep) {
-currentRepProfile = persistedRep;
+currentRepProfile = persistedRep; window.currentRepProfile = currentRepProfile;
 sqliteBatch.push(['repProfile', persistedRep]);
 } else if (persistedMode === 'userrole') {
 const persistedUserManager = existing.assignedManager || existing.assignedRoleName || null;
@@ -2369,15 +2369,15 @@ setTimeout(() => {
 }, 5000);
 }
 window.initializeDeviceListeners = initializeDeviceListeners;
-window.currentUser = null;
-window.firebaseDB = null;
-window.database = null;
-window.auth = null;
-window.isSyncing = false;
-window.appMode = 'admin';
-window.currentRepProfile = 'admin';
-window.salesRepsList = ['NORAN SHAH', 'NOMAN SHAH'];
-window.userRolesList = [];
+currentUser = null; window.currentUser = currentUser;
+firebaseDB = null; window.firebaseDB = firebaseDB;
+database = null; window.database = database;
+auth = null; window.auth = auth;
+isSyncing = false; window.isSyncing = isSyncing;
+appMode = 'admin'; window.appMode = appMode;
+currentRepProfile = 'admin'; window.currentRepProfile = currentRepProfile;
+salesRepsList = ['NORAN SHAH', 'NOMAN SHAH']; window.salesRepsList = salesRepsList;
+userRolesList = []; window.userRolesList = userRolesList;
 export const _VALID_APP_MODES = new Set(['admin','rep','production','factory','userrole']);
 
 export const _MODE_CODES = {
@@ -2589,7 +2589,7 @@ window.generateUUID       = generateUUID;
 window.validateUUID       = validateUUID;
 window.extractUUIDMeta    = extractUUIDMeta;
 window.initUUIDSalts      = initUUIDSalts;
-window.deriveDeviceShard  = _deriveDeviceShard;
+deriveDeviceShard = _deriveDeviceShard; window.deriveDeviceShard = deriveDeviceShard;
 window._creatorBadgeHtml  = _creatorBadgeHtml;
 window._mergedBadgeHtml   = _mergedBadgeHtml;
 export function compareRecordVersions(a, b) {
@@ -2972,3 +2972,36 @@ window.cleanupOldTombstones = cleanupOldTombstones;
 window.scheduleAutomaticCleanup = scheduleAutomaticCleanup;
 window.validateAndFixRecords = validateAndFixRecords;
 window.validateAllDataOnStartup = validateAllDataOnStartup;
+
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let appMode;
+window.appMode = appMode;
+export function _set_appMode(v) { appMode = v; window.appMode = v; }
+export let currentRepProfile;
+window.currentRepProfile = currentRepProfile;
+export function _set_currentRepProfile(v) { currentRepProfile = v; window.currentRepProfile = v; }
+export let salesRepsList;
+window.salesRepsList = salesRepsList;
+export function _set_salesRepsList(v) { salesRepsList = v; window.salesRepsList = v; }
+export let currentUser;
+window.currentUser = currentUser;
+export function _set_currentUser(v) { currentUser = v; window.currentUser = v; }
+export let firebaseDB;
+window.firebaseDB = firebaseDB;
+export function _set_firebaseDB(v) { firebaseDB = v; window.firebaseDB = v; }
+export let database;
+window.database = database;
+export function _set_database(v) { database = v; window.database = v; }
+export let auth;
+window.auth = auth;
+export function _set_auth(v) { auth = v; window.auth = v; }
+export let isSyncing;
+window.isSyncing = isSyncing;
+export function _set_isSyncing(v) { isSyncing = v; window.isSyncing = v; }
+export let userRolesList;
+window.userRolesList = userRolesList;
+export function _set_userRolesList(v) { userRolesList = v; window.userRolesList = v; }
+export let deriveDeviceShard;
+window.deriveDeviceShard = deriveDeviceShard;
+export function _set_deriveDeviceShard(v) { deriveDeviceShard = v; window.deriveDeviceShard = v; }

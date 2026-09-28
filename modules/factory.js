@@ -1,8 +1,8 @@
 // Auto-migrated to an ES module. Source: factory.js
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
 import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
-import { calculateCashTracker, calculateNetCash, deleteStockTransfer, getAppStores, getStoreFormulaType, getStoreLabel, refreshFactoryTab, refreshUI, updateAllTabsWithFactoryCosts, updateFactorySummaryCard, updateFactoryUnitsAvailableStats } from './utilities-sales.js';
+import { _set_currentFactoryEntryStore, calculateCashTracker, calculateNetCash, currentFactoryEntryStore, deleteStockTransfer, getAppStores, getStoreFormulaType, getStoreLabel, refreshFactoryTab, refreshUI, updateAllTabsWithFactoryCosts, updateFactorySummaryCard, updateFactoryUnitsAvailableStats } from './utilities-sales.js';
 import { _filterFactoryHistoryByMode, formatCurrency, refreshPaymentTab, renderUnifiedTable, safeValue } from './utilities-payments.js';
 import { showGlassConfirm, showToast } from './customers.js';
 
@@ -158,7 +158,7 @@ closeStandaloneScreen('formula-asaan-screen');
 }
 
 export function selectFactoryStore(store, el) {
-currentFactorySettingsStore = store;
+currentFactorySettingsStore = store; window.currentFactorySettingsStore = currentFactorySettingsStore;
 document.querySelectorAll('.factory-store-opt').forEach(o => o.classList.remove('active'));
 if (el) el.classList.add('active');
 const container = document.getElementById('factoryRawMaterialsContainer');
@@ -549,7 +549,7 @@ if (_facInvT1) _facInvT1.innerText = 'Add Raw Material';
 const _delBtnHide = document.getElementById('deleteFactoryInventoryBtn');
 if (_delBtnHide) _delBtnHide.style.display = 'none';
 clearFactoryInventoryForm();
-editingFactoryInventoryId = null;
+editingFactoryInventoryId = null; window.editingFactoryInventoryId = editingFactoryInventoryId;
 const qtyInput = document.getElementById('factoryMaterialQuantity');
 const conversionInput = document.getElementById('factoryMaterialConversionFactor');
 const costInput = document.getElementById('factoryMaterialCost');
@@ -619,7 +619,7 @@ supplierTypeSelect.value = 'none';
 existingSupplierSection.classList.add('hidden');
 newSupplierSection.classList.add('hidden');
 }
-editingFactoryInventoryId = id;
+editingFactoryInventoryId = id; window.editingFactoryInventoryId = editingFactoryInventoryId;
 }
 
 export function updateFactoryKgCalculation() {
@@ -996,11 +996,11 @@ const container = document.getElementById('factory-formula-selector');
 if (container) container.querySelectorAll('.factory-store-opt').forEach(o => o.classList.remove('active'));
 if (el) el.classList.add('active');
 const representativeStore = (formulaType === 'asaan') ? 'STORE_C' : 'STORE_A';
-currentFactoryEntryStore = representativeStore;
+_set_currentFactoryEntryStore(representativeStore);
 calculateFactoryProduction();
 }
 export function selectFactoryEntryStore(store, el) {
-currentFactoryEntryStore = store;
+_set_currentFactoryEntryStore(store);
 const container = document.getElementById('factory-store-selector') || document.querySelector('.factory-store-selector');
 if (container) container.querySelectorAll('.factory-store-opt').forEach(o => o.classList.remove('active'));
 if (el) el.classList.add('active');
@@ -1208,7 +1208,7 @@ showToast(error.message || 'Failed to save production data. Please try again.', 
 }
 
 export function setFactorySummaryMode(mode, el) {
-currentFactorySummaryMode = mode;
+currentFactorySummaryMode = mode; window.currentFactorySummaryMode = currentFactorySummaryMode;
 document.querySelectorAll('#tab-factory .toggle-group .toggle-opt').forEach(opt => opt.classList.remove('active'));
 if (el) el.classList.add('active');
 updateFactorySummaryCard();
@@ -1546,7 +1546,7 @@ updateUnitsAvailableIndicator();
 export async function updateProductionCostOnStoreChange() {
 const store = document.getElementById('storeSelector').value;
 if (!store) return;
-currentStore = store;
+currentStore = store; window.currentStore = currentStore;
 const salePrice = await getSalePriceForStore(store);
 const _setStore = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setStore('production-sale-price-display', `${safeValue(salePrice).toFixed(2)}/kg`);
@@ -1669,3 +1669,18 @@ window.calculateDynamicProductionCost = calculateDynamicProductionCost;
 window.updateProductionCostOnStoreChange = updateProductionCostOnStoreChange;
 window.calcNet = calcNet;
 window.deleteProdEntry = deleteProdEntry;
+
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentFactorySettingsStore;
+window.currentFactorySettingsStore = currentFactorySettingsStore;
+export function _set_currentFactorySettingsStore(v) { currentFactorySettingsStore = v; window.currentFactorySettingsStore = v; }
+export let editingFactoryInventoryId;
+window.editingFactoryInventoryId = editingFactoryInventoryId;
+export function _set_editingFactoryInventoryId(v) { editingFactoryInventoryId = v; window.editingFactoryInventoryId = v; }
+export let currentFactorySummaryMode;
+window.currentFactorySummaryMode = currentFactorySummaryMode;
+export function _set_currentFactorySummaryMode(v) { currentFactorySummaryMode = v; window.currentFactorySummaryMode = v; }
+export let currentStore;
+window.currentStore = currentStore;
+export function _set_currentStore(v) { currentStore = v; window.currentStore = v; }

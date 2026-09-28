@@ -1,12 +1,12 @@
 // Auto-migrated to an ES module. Source: utilities-core.js
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, loadAllData, safeReplace, safeToFixed, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, generateUUID, getTimestamp, isSyncing, loadAllData, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
-import { DeltaSync, calculateCashTracker, calculateCustomerSale, calculateNetCash, getStoreFormulaType, getStoreLabel, refreshCustomerSales, refreshFactoryTab, refreshUI, renderEntityTable, trackFirestoreWrite, updateFactorySummaryCard, updateFactoryUnitsAvailableStats, updateMfgCharts } from './utilities-sales.js';
-import { _applyPaymentTransferPendingPhoto, autoFillTotalSoldQuantity, calculateEntityBalances, deletePaymentTransfer, editEntityBasicInfo, formatCurrency, formatDisplayDate, formatDisplayDateTime, loadSalesData, phoneActionHTML, refreshPaymentTab, renderUnifiedTable, toSafeDate } from './utilities-payments.js';
-import { calculateDynamicCost, getEffectiveSalePriceForCustomer, getSalePriceForStore, getSaleTransactionValue, renderFactoryHistory, renderFactoryInventory, syncFactoryProductionStats, updateUnitsAvailableIndicator, validateFormulaAvailability } from './factory.js';
+import { DeltaSync, calculateCashTracker, calculateCustomerSale, calculateNetCash, currentActiveTab, currentCashTrackerMode, currentCustomerChartMode, currentFactoryDate, currentFactoryEntryStore, currentIndMetric, currentIndMode, currentMfgMode, currentOverviewMode, currentProductionView, currentStoreComparisonMetric, custTransactionMode, getStoreFormulaType, getStoreLabel, refreshCustomerSales, refreshFactoryTab, refreshUI, renderEntityTable, trackFirestoreWrite, updateFactorySummaryCard, updateFactoryUnitsAvailableStats, updateMfgCharts } from './utilities-sales.js';
+import { _applyPaymentTransferPendingPhoto, autoFillTotalSoldQuantity, calculateEntityBalances, currentCompMode, currentExpenseOverlayName, currentPerfOverviewMode, currentSalesSummaryMode, deletePaymentTransfer, editEntityBasicInfo, editingEntityId, entityViewMode, formatCurrency, formatDisplayDate, formatDisplayDateTime, loadSalesData, phoneActionHTML, refreshPaymentTab, renderUnifiedTable, selectedEntityId, toSafeDate } from './utilities-payments.js';
+import { calculateDynamicCost, currentFactorySettingsStore, currentFactorySummaryMode, currentStore, editingFactoryInventoryId, getEffectiveSalePriceForCustomer, getSalePriceForStore, getSaleTransactionValue, renderFactoryHistory, renderFactoryInventory, syncFactoryProductionStats, updateUnitsAvailableIndicator, validateFormulaAvailability } from './factory.js';
 import { showGlassConfirm, showToast } from './customers.js';
-import { calculateRepAnalytics, refreshRepUI, renderRepCustomerTable } from './rep-sales.js';
+import { calculateRepAnalytics, currentRepAnalyticsMode, refreshRepUI, renderRepCustomerTable, repTransactionMode } from './rep-sales.js';
 
 export async function toggleDarkMode() {
 const html = document.documentElement;
@@ -570,7 +570,7 @@ console.warn('Failed to disable network.', _safeErr(e));
 }
 }
 if (typeof isSyncing !== 'undefined' && isSyncing) {
-isSyncing = false;
+_set_isSyncing(false);
 }
 showToast('Offline — changes will be saved locally', 'warning', 4000);
 });
@@ -1877,7 +1877,7 @@ export async function openEntityDetailsOverlay(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
-currentEntityId = id;
+currentEntityId = id; window.currentEntityId = currentEntityId;
 const entity = paymentEntities.find(e => String(e.id) === String(id));
 if (!entity) return;
 await renderEntityOverlayContent(entity);
@@ -1886,7 +1886,7 @@ if (typeof openStandaloneScreen === 'function') openStandaloneScreen('entity-det
 
 export function closeEntityDetailsOverlay() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('entity-details-screen');
-currentEntityId = null;
+currentEntityId = null; window.currentEntityId = currentEntityId;
 refreshPaymentTab();
 }
 
@@ -3436,20 +3436,20 @@ export function renderPersonAvatarHTML(photoDataUrl, size) {
     _lbTransY = Math.max(-maxY, Math.min(maxY, _lbTransY));
   }
 
-  window._lbZoom = function(dir) {
+  _lbZoom = function(dir) {
     const step = 0.5;
     _lbScale = Math.max(_lbMinScale, Math.min(_lbMaxScale, _lbScale + dir * step));
     if (_lbScale === _lbMinScale) { _lbTransX = 0; _lbTransY = 0; }
     _lbClamp();
     _lbApply(true);
-  };
+  }; window._lbZoom = _lbZoom;
 
-  window._lbResetZoom = function() {
+  _lbResetZoom = function() {
     _lbScale = 1; _lbTransX = 0; _lbTransY = 0;
     _lbApply(true);
-  };
+  }; window._lbResetZoom = _lbResetZoom;
 
-  window.openPhotoLightbox = function(src) {
+  openPhotoLightbox = function(src) {
     const modal = document.getElementById('photo-lightbox-modal');
     const img   = document.getElementById('photo-lightbox-img');
     if (!modal || !img) return;
@@ -3462,9 +3462,9 @@ export function renderPersonAvatarHTML(photoDataUrl, size) {
     const lbl = document.getElementById('photo-lb-zoom-label');
     if (lbl) lbl.textContent = '1×';
     _lbBindEvents(modal, img);
-  };
+  }; window.openPhotoLightbox = openPhotoLightbox;
 
-  window.closePhotoLightbox = function() {
+  closePhotoLightbox = function() {
     const modal = document.getElementById('photo-lightbox-modal');
     if (modal) {
       modal.style.display = 'none';
@@ -3472,7 +3472,7 @@ export function renderPersonAvatarHTML(photoDataUrl, size) {
     }
     document.body.style.overflow = '';
     _lbScale = 1; _lbTransX = 0; _lbTransY = 0;
-  };
+  }; window.closePhotoLightbox = closePhotoLightbox;
 
   function _onWheel(e) {
     e.preventDefault();
@@ -3958,3 +3958,21 @@ export function _set_mfgPieChart(v) { mfgPieChart = v; }
 export function _set_salesCompChart(v) { salesCompChart = v; }
 export function _set_salesPerfChart(v) { salesPerfChart = v; }
 export function _set_storeComparisonChart(v) { storeComparisonChart = v; }
+
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentEntityId;
+window.currentEntityId = currentEntityId;
+export function _set_currentEntityId(v) { currentEntityId = v; window.currentEntityId = v; }
+export let _lbZoom;
+window._lbZoom = _lbZoom;
+export function _set__lbZoom(v) { _lbZoom = v; window._lbZoom = v; }
+export let _lbResetZoom;
+window._lbResetZoom = _lbResetZoom;
+export function _set__lbResetZoom(v) { _lbResetZoom = v; window._lbResetZoom = v; }
+export let openPhotoLightbox;
+window.openPhotoLightbox = openPhotoLightbox;
+export function _set_openPhotoLightbox(v) { openPhotoLightbox = v; window.openPhotoLightbox = v; }
+export let closePhotoLightbox;
+window.closePhotoLightbox = closePhotoLightbox;
+export function _set_closePhotoLightbox(v) { closePhotoLightbox = v; window.closePhotoLightbox = v; }

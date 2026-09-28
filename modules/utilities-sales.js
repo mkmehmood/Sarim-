@@ -1,16 +1,16 @@
 // Auto-migrated to an ES module. Source: utilities-sales.js
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
-import { CryptoEngine, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, compareRecordVersions, compareTimestamps, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { CryptoEngine, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, compareRecordVersions, compareTimestamps, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { SarimChart, _restorePayableFromDeletedTransaction, _set_custPaymentChart, _set_custSalesChart, _set_defaultSettings, _set_indPerformanceChart, _set_mfgBarChart, _set_mfgPieChart, _set_storeComparisonChart, custPaymentChart, custSalesChart, defaultSettings, indPerformanceChart, invalidateAllCaches, loadScript, mfgBarChart, mfgPieChart, notifyDataChange, storeComparisonChart, syncCalculatorTab, syncFactoryTab, syncPaymentsTab, syncProductionTab, syncRepTab, syncSalesTab, triggerAutoSync } from './utilities-core.js';
-import { _filterHistoryByPeriod, calculateComparisonData, calculateEntityBalances, deletePaymentTransfer, formatCurrency, formatDisplayDate, formatDisplayDateTime, getCalcCycleSelection, getMetricLabel, getMetricValue, loadSalesData, phoneActionHTML, processExpiredToChora, processReturnToProduction, refreshAllDisplays, refreshPaymentTab, renderUnifiedTable, safeValue, selectReturnStore, setSalesSummaryMode, updateSalesCharts } from './utilities-payments.js';
-import { calculateFactoryProduction, getCostPerUnit, getCostPriceForStore, getEffectiveSalePriceForCustomer, getSalePriceForStore, getSaleTransactionValue, renderFactoryHistory, renderFactoryInventory, selectFactoryEntryStore, syncFactoryProductionStats, updateProductionCostOnStoreChange, updateUnitsAvailableIndicator } from './factory.js';
+import { _filterHistoryByPeriod, calculateComparisonData, calculateEntityBalances, currentCompMode, currentSalesSummaryMode, deletePaymentTransfer, formatCurrency, formatDisplayDate, formatDisplayDateTime, getCalcCycleSelection, getMetricLabel, getMetricValue, loadSalesData, phoneActionHTML, processExpiredToChora, processReturnToProduction, refreshAllDisplays, refreshPaymentTab, renderUnifiedTable, safeValue, selectReturnStore, setSalesSummaryMode, updateSalesCharts } from './utilities-payments.js';
+import { calculateFactoryProduction, currentFactorySummaryMode, currentStore, getCostPerUnit, getCostPriceForStore, getEffectiveSalePriceForCustomer, getSalePriceForStore, getSaleTransactionValue, renderFactoryHistory, renderFactoryInventory, selectFactoryEntryStore, syncFactoryProductionStats, updateProductionCostOnStoreChange, updateUnitsAvailableIndicator } from './factory.js';
 import { calculateCustomerStatsForDisplay, currentManagingCustomer, renderCustomerTransactions, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
 import { calculateRepAnalytics, calculateRepSalePreview, getPosition, refreshRepUI, renderRepCustomerTable, repMap, updateRepLiveMap } from './rep-sales.js';
 
 export function setCashTrackerMode(mode) {
-currentCashTrackerMode = mode;
+currentCashTrackerMode = mode; window.currentCashTrackerMode = currentCashTrackerMode;
 document.querySelectorAll('#tab-payments .toggle-group .toggle-opt').forEach(opt => {
 opt.classList.remove('active');
 });
@@ -1194,7 +1194,7 @@ showToast(' Failed to save sale. Please try again.', 'error');
 }
 
 export function setSaleMode(mode) {
-custTransactionMode = mode;
+custTransactionMode = mode; window.custTransactionMode = custTransactionMode;
 const isSale = mode === 'sale';
 const _el = id => document.getElementById(id);
 
@@ -2938,7 +2938,7 @@ const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
-currentIndMode = mode;
+currentIndMode = mode; window.currentIndMode = currentIndMode;
 document.getElementById('ind-week-btn').className = `toggle-opt ${mode === 'week' ? 'active' : ''}`;
 document.getElementById('ind-month-btn').className = `toggle-opt ${mode === 'month' ? 'active' : ''}`;
 document.getElementById('ind-year-btn').className = `toggle-opt ${mode === 'year' ? 'active' : ''}`;
@@ -2951,7 +2951,7 @@ const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
-currentIndMetric = metric;
+currentIndMetric = metric; window.currentIndMetric = currentIndMetric;
 await updateIndChart();
 }
 
@@ -3084,7 +3084,7 @@ export function setStoreComparisonMetric(metric, event) {
 if (event) {
 event.preventDefault();
 }
-currentStoreComparisonMetric = metric;
+currentStoreComparisonMetric = metric; window.currentStoreComparisonMetric = currentStoreComparisonMetric;
 document.querySelectorAll('.metric-btn').forEach(btn => {
 btn.classList.remove('active');
 });
@@ -4664,7 +4664,7 @@ let factoryUnitTracking = (await sqliteStore.get('factory_unit_tracking')) || {}
 }
 
 export async function showTab(tab) {
-currentActiveTab = tab;
+currentActiveTab = tab; window.currentActiveTab = currentActiveTab;
 requestAnimationFrame(() => {
 const tabs = ['tab-prod', 'tab-sales', 'tab-calc', 'tab-factory', 'tab-payments', 'tab-rep'];
 tabs.forEach(id => {
@@ -4969,7 +4969,7 @@ calculateRepAnalytics();
 }
 
 export function setMfgChartMode(mode) {
-currentMfgMode = mode;
+currentMfgMode = mode; window.currentMfgMode = currentMfgMode;
 document.getElementById('mfg-week-btn').className = `toggle-opt ${mode === 'week' ? 'active' : ''}`;
 document.getElementById('mfg-month-btn').className = `toggle-opt ${mode === 'month' ? 'active' : ''}`;
 document.getElementById('mfg-year-btn').className = `toggle-opt ${mode === 'year' ? 'active' : ''}`;
@@ -5479,9 +5479,9 @@ const factoryDateInput = document.getElementById('factory-date');
 if (!factoryDateInput.value) {
 const today = new Date().toISOString().split('T')[0];
 factoryDateInput.value = today;
-currentFactoryDate = today;
+currentFactoryDate = today; window.currentFactoryDate = currentFactoryDate;
 } else {
-currentFactoryDate = factoryDateInput.value;
+currentFactoryDate = factoryDateInput.value; window.currentFactoryDate = currentFactoryDate;
 }
 updateFactoryUnitsAvailableStats();
 updateFactorySummaryCard();
@@ -5514,9 +5514,9 @@ const factoryDateInput = document.getElementById('factory-date');
 if (!factoryDateInput.value) {
 const today = new Date().toISOString().split('T')[0];
 factoryDateInput.value = today;
-currentFactoryDate = today;
+currentFactoryDate = today; window.currentFactoryDate = currentFactoryDate;
 }
-currentFactoryEntryStore = 'STORE_A';
+currentFactoryEntryStore = 'STORE_A'; window.currentFactoryEntryStore = currentFactoryEntryStore;
 const formulaSelector = document.getElementById('factory-formula-selector');
 if (formulaSelector) {
 formulaSelector.querySelectorAll('.factory-store-opt').forEach((opt, i) => {
@@ -5532,7 +5532,7 @@ refreshFactoryTab();
 }
 
 export function setProductionView(view, event) {
-currentProductionView = view;
+currentProductionView = view; window.currentProductionView = currentProductionView;
 document.querySelectorAll('.production-toggle-btn').forEach(btn => btn.classList.remove('active'));
 if (event && event.target) event.target.classList.add('active');
 const entrySection = document.getElementById('production-entry-section');
@@ -5568,7 +5568,7 @@ const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
-currentOverviewMode = mode;
+currentOverviewMode = mode; window.currentOverviewMode = currentOverviewMode;
 const selectedDate = document.getElementById('sys-date').value;
 const selectedDateObj = new Date(selectedDate);
 const selectedYear = selectedDateObj.getFullYear();
@@ -5829,7 +5829,7 @@ updateStoreComparisonChart(mode);
 }
 
 export function setCustomerChartMode(mode) {
-currentCustomerChartMode = mode;
+currentCustomerChartMode = mode; window.currentCustomerChartMode = currentCustomerChartMode;
 document.getElementById('cust-week-btn').className = `toggle-opt ${mode === 'week' ? 'active' : ''}`;
 document.getElementById('cust-month-btn').className = `toggle-opt ${mode === 'month' ? 'active' : ''}`;
 document.getElementById('cust-year-btn').className = `toggle-opt ${mode === 'year' ? 'active' : ''}`;
@@ -6666,3 +6666,42 @@ window.updateStockTransferAvailability = updateStockTransferAvailability;
 window.saveStockTransfer = saveStockTransfer;
 window.renderStockTransferHistory = renderStockTransferHistory;
 window.deleteStockTransfer = deleteStockTransfer;
+
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentCashTrackerMode;
+window.currentCashTrackerMode = currentCashTrackerMode;
+export function _set_currentCashTrackerMode(v) { currentCashTrackerMode = v; window.currentCashTrackerMode = v; }
+export let custTransactionMode;
+window.custTransactionMode = custTransactionMode;
+export function _set_custTransactionMode(v) { custTransactionMode = v; window.custTransactionMode = v; }
+export let currentIndMode;
+window.currentIndMode = currentIndMode;
+export function _set_currentIndMode(v) { currentIndMode = v; window.currentIndMode = v; }
+export let currentIndMetric;
+window.currentIndMetric = currentIndMetric;
+export function _set_currentIndMetric(v) { currentIndMetric = v; window.currentIndMetric = v; }
+export let currentStoreComparisonMetric;
+window.currentStoreComparisonMetric = currentStoreComparisonMetric;
+export function _set_currentStoreComparisonMetric(v) { currentStoreComparisonMetric = v; window.currentStoreComparisonMetric = v; }
+export let currentActiveTab;
+window.currentActiveTab = currentActiveTab;
+export function _set_currentActiveTab(v) { currentActiveTab = v; window.currentActiveTab = v; }
+export let currentMfgMode;
+window.currentMfgMode = currentMfgMode;
+export function _set_currentMfgMode(v) { currentMfgMode = v; window.currentMfgMode = v; }
+export let currentFactoryDate;
+window.currentFactoryDate = currentFactoryDate;
+export function _set_currentFactoryDate(v) { currentFactoryDate = v; window.currentFactoryDate = v; }
+export let currentFactoryEntryStore;
+window.currentFactoryEntryStore = currentFactoryEntryStore;
+export function _set_currentFactoryEntryStore(v) { currentFactoryEntryStore = v; window.currentFactoryEntryStore = v; }
+export let currentProductionView;
+window.currentProductionView = currentProductionView;
+export function _set_currentProductionView(v) { currentProductionView = v; window.currentProductionView = v; }
+export let currentOverviewMode;
+window.currentOverviewMode = currentOverviewMode;
+export function _set_currentOverviewMode(v) { currentOverviewMode = v; window.currentOverviewMode = v; }
+export let currentCustomerChartMode;
+window.currentCustomerChartMode = currentCustomerChartMode;
+export function _set_currentCustomerChartMode(v) { currentCustomerChartMode = v; window.currentCustomerChartMode = v; }

@@ -1,6 +1,6 @@
 // Auto-migrated to an ES module. Source: sync.js
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { OfflineAuth, SQLiteCrypto, _clearDeviceIdStorage, _safeErr, compareRecordVersions, ensureArray, ensureRecordIntegrity, esc, getDeviceId, getTimestamp, initDeviceShard, loadAllData, refreshDeviceIdAnchors, registerDevice, sqliteStore, validateAllDataOnStartup, validateUUID } from './business.js';
+import { OfflineAuth, SQLiteCrypto, _clearDeviceIdStorage, _safeErr, _set_auth, _set_currentRepProfile, _set_currentUser, _set_database, _set_firebaseDB, _set_isSyncing, _set_salesRepsList, _set_userRolesList, appMode, auth, compareRecordVersions, currentRepProfile, currentUser, database, ensureArray, ensureRecordIntegrity, esc, firebaseDB, getDeviceId, getTimestamp, initDeviceShard, isSyncing, loadAllData, refreshDeviceIdAnchors, registerDevice, salesRepsList, sqliteStore, userRolesList, validateAllDataOnStartup, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, closeYearInProgress, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { OfflineQueue, _setCloudConnectionState, _set_autoSyncTimeout, _set_defaultSettings, autoSyncTimeout, defaultSettings, invalidateAllCaches, syncState, triggerAutoSync } from './utilities-core.js';
 import { DeltaSync, UUIDSyncRegistry, _invalidateStoresCache, firebaseConfig, trackFirestoreRead, trackFirestoreWrite } from './utilities-sales.js';
@@ -340,11 +340,11 @@ experimentalForceLongPolling: false,
 merge: true
 });
 } catch (_fsPre) {  }
-database = firebase.firestore();
-firebaseDB = database;
+_set_database(firebase.firestore());
+_set_firebaseDB(database);
 try { database.disableNetwork().catch(() => {}); } catch(_dnErr) {}
 window._firestoreNetworkDisabled = true;
-auth = firebase.auth();
+_set_auth(firebase.auth());
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 .catch((error) => {
 });
@@ -415,12 +415,12 @@ if ('serviceWorker' in navigator) {
 
 auth.onAuthStateChanged(async (user) => {
 if (user) {
-currentUser = {
+_set_currentUser({
 id: user.uid,
 uid: user.uid,
 email: user.email,
 displayName: user.displayName
-};
+});
 
 if (!window._sessionStartMs) {
   const _lsStart = parseInt(localStorage.getItem('_gznd_session_start') || '0', 10);
@@ -562,7 +562,7 @@ if (typeof performOneClickSync === 'function' && !isSyncing) {
 } catch (e) { console.warn('[Sync] Auto-sync on login error:', _safeErr(e)); }
 }, 1500);
 } else {
-currentUser = null;
+_set_currentUser(null);
 
 stopSWTokenRefresh();
 clearTokenForSW().catch(() => {});
@@ -1765,7 +1765,7 @@ export async function subscribeToRealtime() {
           const ct = cloudSettings.repProfile_timestamp || 0;
           const lt = (await sqliteStore.get('repProfile_timestamp')) || 0;
           if (ct > lt) {
-            currentRepProfile = cloudSettings.repProfile;
+            _set_currentRepProfile(cloudSettings.repProfile);
             await sqliteStore.setBatch([
               ['current_rep_profile', currentRepProfile],
               ['repProfile_timestamp', ct],
@@ -1778,7 +1778,7 @@ export async function subscribeToRealtime() {
           const ct = cloudSettings.sales_reps_timestamp || 0;
           const lt = (await sqliteStore.get('sales_reps_list_timestamp')) || 0;
           if (ct > lt) {
-            salesRepsList = cloudSettings.sales_reps;
+            _set_salesRepsList(cloudSettings.sales_reps);
             await sqliteStore.setBatch([
               ['sales_reps_list', salesRepsList],
               ['sales_reps_list_timestamp', ct || Date.now()],
@@ -2101,13 +2101,13 @@ export async function subscribeToRealtime() {
         let changed = false;
         if (Array.isArray(teamData.sales_reps) && teamData.sales_reps.length > 0) {
           const prev = JSON.stringify(salesRepsList);
-          salesRepsList = teamData.sales_reps;
+          _set_salesRepsList(teamData.sales_reps);
           await sqliteStore.set('sales_reps_list', salesRepsList);
           if (JSON.stringify(salesRepsList) !== prev) changed = true;
         }
         if (Array.isArray(teamData.user_roles)) {
           const prev2 = JSON.stringify(userRolesList);
-          userRolesList = teamData.user_roles;
+          _set_userRolesList(teamData.user_roles);
           await sqliteStore.set('user_roles_list', userRolesList);
           if (JSON.stringify(userRolesList) !== prev2) changed = true;
         }
@@ -2892,7 +2892,7 @@ export async function _syncSettings(cloudData) {
       const ct = sd.repProfile_timestamp || 0;
       const lt = (await sqliteStore.get('repProfile_timestamp')) || 0;
       if (ct >= lt) {
-        currentRepProfile = sd.repProfile;
+        _set_currentRepProfile(sd.repProfile);
         await sqliteStore.setBatch([
           ['repProfile', currentRepProfile],
           ['current_rep_profile', currentRepProfile],
@@ -2905,7 +2905,7 @@ export async function _syncSettings(cloudData) {
       const ct = sd.sales_reps_timestamp || 0;
       const lt = (await sqliteStore.get('sales_reps_list_timestamp')) || 0;
       if (ct >= lt) {
-        salesRepsList = sd.sales_reps;
+        _set_salesRepsList(sd.sales_reps);
         await sqliteStore.setBatch([
           ['sales_reps_list', salesRepsList],
           ['sales_reps_list_timestamp', ct || Date.now()],
@@ -3235,7 +3235,7 @@ export async function _doOneClickSync(silent = false) {
     return;
   }
 
-  isSyncing = true;
+  _set_isSyncing(true);
   const btn = document.getElementById('sync-btn');
   const originalText = btn ? btn.innerHTML : '';
   if (!silent && btn) btn.innerHTML = 'Syncing…';
@@ -3334,7 +3334,7 @@ export async function _doOneClickSync(silent = false) {
     if (!silent) showToast(' Sync error - will retry automatically', 'warning');
     return { down: 0, up: 0, error: true };
   } finally {
-    isSyncing = false;
+    _set_isSyncing(false);
     if (!silent && btn) btn.innerHTML = originalText;
     _flushSyncLockQueue().catch(err => console.warn('[SyncLock] Flush error', _safeErr(err)));
   }
@@ -3350,10 +3350,10 @@ export async function _doPushDataToCloud(silent = false) {
     return;
   }
 
-  isSyncing = true;
+  _set_isSyncing(true);
   let btn = null, originalText = '';
   const pushTimeout = setTimeout(() => {
-    isSyncing = false;
+    _set_isSyncing(false);
     _flushSyncLockQueue().catch(() => {});
     if (!silent) {
       showToast(' Upload timeout - Please try again', 'warning');
@@ -3421,7 +3421,7 @@ export async function _doPushDataToCloud(silent = false) {
     if (!silent) showToast(` Backup failed: ${error.message}`, 'error');
   } finally {
     clearTimeout(pushTimeout);
-    isSyncing = false;
+    _set_isSyncing(false);
     if (btn) { btn.innerText = originalText || 'Backup to Cloud'; btn.disabled = false; }
     _flushSyncLockQueue().catch(() => {});
   }
@@ -3438,7 +3438,7 @@ export async function _doPullDataFromCloud(silent = false, forceDownload = false
     return;
   }
 
-  isSyncing = true;
+  _set_isSyncing(true);
   try {
     if (!silent) showToast('Downloading cloud data...', 'info');
     await sqliteStore.init();
@@ -3527,7 +3527,7 @@ export async function _doPullDataFromCloud(silent = false, forceDownload = false
       if (typeof refreshAllDisplays === 'function') refreshAllDisplays().catch(() => {});
     });
   } finally {
-    isSyncing = false;
+    _set_isSyncing(false);
     _flushSyncLockQueue().catch(() => {});
   }
 }
@@ -3640,7 +3640,7 @@ showToast("Cloud system not initialized. Check internet.", "error");
 return;
 }
 if (isSyncing) {
-isSyncing = false;
+_set_isSyncing(false);
 }
 if (!currentUser) {
 closeDataMenu();
@@ -3875,12 +3875,12 @@ if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
 return;
 }
 const _googleKeyMaterial = user.uid;
-currentUser = {
+_set_currentUser({
 id: user.uid, uid: user.uid,
 email: user.email, displayName: check.displayName || user.displayName || '',
 photoURL: user.photoURL || null, googleAuth: true,
 role: check.role || 'user'
-};
+});
 sqliteStore.setUserPrefix(user.uid);
 await SQLiteCrypto.setSessionKey(user.email, _googleKeyMaterial, user.uid);
 await SQLiteCrypto.sessionSet('login', {
@@ -4099,7 +4099,7 @@ try { firebase.initializeApp(firebaseConfig); } catch(initErr) { console.warn('F
 }
 if (!auth && typeof firebase !== 'undefined' && firebase.apps.length) {
 try {
-auth = firebase.auth();
+_set_auth(firebase.auth());
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
 } catch(authInitErr) { console.warn('Auth init on sign-in:', _safeErr(authInitErr)); }
 }
@@ -4153,12 +4153,12 @@ messageDiv.textContent = 'Incorrect email or password.';
 messageDiv.style.color = 'var(--danger)';
 return;
 }
-currentUser = {
+_set_currentUser({
 id: email.replace(/[^a-zA-Z0-9]/g, '_'),
 uid: email.replace(/[^a-zA-Z0-9]/g, '_'),
 email: email,
 offlineMode: true
-};
+});
 sqliteStore.setUserPrefix(currentUser.uid);
 await SQLiteCrypto.setSessionKey(email, password, currentUser.uid);
 sqliteStore.reEncryptAll().catch(() => {});
@@ -4202,7 +4202,7 @@ else if (error.code === 'auth/too-many-requests') errorMessage = 'Too many attem
 else if (error.code === 'auth/network-request-failed') {
 const valid = await OfflineAuth.verifyCredentials(email, password).catch(() => false);
 if (valid) {
-currentUser = { id: email.replace(/[^a-zA-Z0-9]/g, '_'), uid: email.replace(/[^a-zA-Z0-9]/g, '_'), email, offlineMode: true };
+_set_currentUser({ id: email.replace(/[^a-zA-Z0-9]/g, '_'), uid: email.replace(/[^a-zA-Z0-9]/g, '_'), email, offlineMode: true });
 sqliteStore.setUserPrefix(currentUser.uid);
 await SQLiteCrypto.setSessionKey(email, password, currentUser.uid);
 try { localStorage.setItem('_gznd_session_active', '1'); sessionStorage.setItem('_gznd_session_active', '1'); } catch(e) {}
@@ -4438,7 +4438,7 @@ if (window._perfMonitorInterval) { clearInterval(window._perfMonitorInterval); w
 if (typeof syncState !== 'undefined' && syncState.syncInterval) { clearInterval(syncState.syncInterval); syncState.syncInterval = null; }
 if (auth) {
 await auth.signOut();
-currentUser = null;
+_set_currentUser(null);
 SQLiteCrypto.clearSessionKey();
 await sqliteStore.clearUserData().catch(() => {});
 await OfflineAuth.clearCredentials().catch(() => {});
@@ -4487,7 +4487,7 @@ if (_savedAppMode && _savedAppMode.length && !window._forceLogoutSignOut) {
 window._forceLogoutSignOut = false;
 showToast(' Signed out successfully', 'success');
 } else {
-currentUser = null;
+_set_currentUser(null);
 SQLiteCrypto.clearSessionKey();
 await sqliteStore.clearUserData().catch(() => {});
 await OfflineAuth.clearCredentials().catch(() => {});

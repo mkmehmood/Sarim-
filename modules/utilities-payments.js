@@ -1,10 +1,10 @@
 // Auto-migrated to an ES module. Source: utilities-payments.js
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { CryptoEngine, SQLiteCrypto, _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _triggerFileDownload, compareRecordVersions, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, loadAllData, registerDevice, safeNumber, scheduleAutomaticCleanup, sqliteStore, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
+import { CryptoEngine, SQLiteCrypto, _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
-import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
-import { DeltaSync, calculateCashTracker, calculateNetCash, calculateSales, closeEntityTransactions, getAvailableCashInHand, getStoreFormulaType, getStoreLabel, initFactoryTab, loadFirestoreStats, promptVerifiedBackupPassword, refreshCustomerSales, refreshUI, renderEntityTable, revertRepSalesEntries, setProductionView, showTab, syncSuppliersToEntities, trackFirestoreWrite, updateAllStoresOverview, updateAllTabsWithFactoryCosts, updateCustomerCharts, updateIndChart } from './utilities-sales.js';
-import { calculatePaymentSummaries, closeFactoryInventoryModal, getCostPriceForStore, getSalePriceForStore, renderFactoryInventory, syncFactoryProductionStats, unlinkSupplierFromMaterial, updateFactoryInventoryDisplay } from './factory.js';
+import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, currentEntityId, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
+import { DeltaSync, _set_currentFactoryDate, _set_currentOverviewMode, calculateCashTracker, calculateNetCash, calculateSales, closeEntityTransactions, currentOverviewMode, getAvailableCashInHand, getStoreFormulaType, getStoreLabel, initFactoryTab, loadFirestoreStats, promptVerifiedBackupPassword, refreshCustomerSales, refreshUI, renderEntityTable, revertRepSalesEntries, setProductionView, showTab, syncSuppliersToEntities, trackFirestoreWrite, updateAllStoresOverview, updateAllTabsWithFactoryCosts, updateCustomerCharts, updateIndChart } from './utilities-sales.js';
+import { calculatePaymentSummaries, closeFactoryInventoryModal, editingFactoryInventoryId, getCostPriceForStore, getSalePriceForStore, renderFactoryInventory, syncFactoryProductionStats, unlinkSupplierFromMaterial, updateFactoryInventoryDisplay } from './factory.js';
 import { calculateCustomerStatsForDisplay, currentManagingRepCustomer, openCustomerEditModal, refreshAllCalculations, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
 import { calculateRepCustomerStatsForDisplay, checkBiometricLock, disableBiometricLock, openRepCustomerEditModal, refreshRepUI, renderRepCustomerTable, renderRepCustomerTransactions, renderRepHistory } from './rep-sales.js';
 
@@ -316,7 +316,7 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
-currentCompMode = compMode;
+currentCompMode = compMode; window.currentCompMode = currentCompMode;
 ['week', 'month', 'year', 'all'].forEach(m => {
 const btn = document.getElementById(`comp-${m}-btn`);
 if(btn) btn.className = `toggle-opt ${m === compMode ? 'active' : ''}`;
@@ -872,7 +872,7 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
     if (el) el.value = today;
   });
   updateCalcRangeLabel();
-  currentFactoryDate = today;
+  _set_currentFactoryDate(today);
   if (await sqliteStore.get('bio_enabled') === 'true') {
     const bioBtn = document.getElementById('bio-toggle-btn');
     if (bioBtn) {
@@ -885,7 +885,7 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
   const factoryDateEl = document.getElementById('factory-date');
   if (factoryDateEl) {
     factoryDateEl.addEventListener('change', function() {
-      currentFactoryDate = this.value;
+      _set_currentFactoryDate(this.value);
     });
   }
   const sellerSelect = document.getElementById('sellerSelect');
@@ -990,7 +990,7 @@ card.style.display = show ? '' : 'none';
 }
 
 export function setSalesSummaryMode(mode) {
-currentSalesSummaryMode = mode;
+currentSalesSummaryMode = mode; window.currentSalesSummaryMode = currentSalesSummaryMode;
 const labels = { day:'Daily', week:'Weekly', month:'Monthly', year:'Yearly', all:'All Time' };
 const prefixes = ['day','week','month','year','all'];
 prefixes.forEach(p => {
@@ -1020,7 +1020,7 @@ _filterHistoryByPeriod('#custHistoryList', refDate, mode);
 }
 
 export function setPerfOverviewMode(mode) {
-currentPerfOverviewMode = mode;
+currentPerfOverviewMode = mode; window.currentPerfOverviewMode = currentPerfOverviewMode;
 const prefixes = ['day','week','month','year','all'];
 prefixes.forEach(p => {
 const btn = document.getElementById(`po-${p}-btn`);
@@ -1035,7 +1035,7 @@ _filterHistoryByPeriod('#historyList', refDate, mode);
 }
 
 export function setOverviewMode(mode) {
-currentOverviewMode = mode;
+_set_currentOverviewMode(mode);
 const buttons = ['day', 'week', 'month', 'year', 'all'];
 buttons.forEach(btnMode => {
 const btn = document.getElementById(`overview-${btnMode}-btn`);
@@ -1172,12 +1172,12 @@ export function toggleEntityViewMode() {
 const toggleBtn = document.getElementById('entityViewModeToggle');
 const entityGrid = document.getElementById('entityCardsGrid');
 if (entityViewMode === 'detailed') {
-entityViewMode = 'compact';
+entityViewMode = 'compact'; window.entityViewMode = entityViewMode;
 entityGrid.classList.add('compact');
 toggleBtn.title = "Switch to Detailed View";
 toggleBtn.textContent = '';
 } else {
-entityViewMode = 'detailed';
+entityViewMode = 'detailed'; window.entityViewMode = entityViewMode;
 entityGrid.classList.remove('compact');
 toggleBtn.title = "Switch to Compact View";
 toggleBtn.textContent = '';
@@ -1297,7 +1297,7 @@ card.style.display = 'none';
 }
 
 export function openEntityManagement() {
-editingEntityId = null;
+editingEntityId = null; window.editingEntityId = editingEntityId;
 const _en = document.getElementById('entityName'); if (_en) _en.value = '';
 const _ep = document.getElementById('entityPhone'); if (_ep) _ep.value = '';
 const _ew = document.getElementById('entityWallet'); if (_ew) _ew.value = '';
@@ -1392,7 +1392,7 @@ export async function editEntityBasicInfo(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
 const entity = paymentEntities.find(e => String(e.id) === String(id));
 if (entity) {
-editingEntityId = id;
+editingEntityId = id; window.editingEntityId = editingEntityId;
 document.getElementById('entityName').value = entity.name;
 document.getElementById('entityPhone').value = entity.phone || '';
 document.getElementById('entityWallet').value = entity.wallet || '';
@@ -1564,7 +1564,7 @@ showToast('Payment transaction failed.', 'error');
 
 export async function selectEntity(id) {
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
-selectedEntityId = id;
+selectedEntityId = id; window.selectedEntityId = selectedEntityId;
 const entity = paymentEntities.find(e => String(e.id) === String(id));
 const entityInput = document.getElementById('paymentEntity');
 if (entity && entityInput) {
@@ -3224,7 +3224,7 @@ showToast('Entity not found for this expense', 'warning');
 
 export async function openOperatingExpenseOverlay(expenseName) {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
-currentExpenseOverlayName = expenseName;
+currentExpenseOverlayName = expenseName; window.currentExpenseOverlayName = currentExpenseOverlayName;
 const labelEl = document.getElementById('quickExpenseNameLabel');
 if (labelEl) labelEl.textContent = expenseName;
 const qAmount = document.getElementById('quickExpenseAmount');
@@ -3241,7 +3241,7 @@ renderExpenseOverlayContent();
 
 export function closeExpenseDetailsOverlay() {
 if (typeof closeStandaloneScreen === 'function') closeStandaloneScreen('expense-details-screen');
-currentExpenseOverlayName = null;
+currentExpenseOverlayName = null; window.currentExpenseOverlayName = currentExpenseOverlayName;
 refreshPaymentTab();
 }
 
@@ -4771,7 +4771,7 @@ return;
 }
 const _utcMsg = `Upload this device's local data to the cloud database?\n\n• Existing cloud records will NOT be deleted\n• Where duplicates exist, the newer version wins\n• Deleted records (tombstones) are respected\n• Other devices will receive your changes on their next sync\n\nThis is a one-way push — cloud records newer than yours are preserved.`;
 if (!(await showGlassConfirm(_utcMsg, { title: 'Upload Local Data to Cloud', confirmText: 'Upload', cancelText: 'Cancel' }))) return;
-isSyncing = true;
+_set_isSyncing(true);
 showToast('Uploading to cloud...', 'info');
 const normalized = {
 mfg_pro_pkr: data.mfg || data.mfg_pro_pkr || [],
@@ -5137,7 +5137,7 @@ showToast('Upload Complete! ' + total + ' records merged to cloud.', 'success');
 } catch (err) {
 showToast('Upload failed: ' + err.message, 'error');
 } finally {
-isSyncing = false;
+_set_isSyncing(false);
 }
 }
 export const BiometricAuth = {
@@ -5457,21 +5457,21 @@ window._modeLockEnforced = true;
 try {
 const storedMode = await sqliteStore.get('appMode');
 if (storedMode === 'rep') {
-appMode = 'rep';
-currentRepProfile = await sqliteStore.get('repProfile') || (salesRepsList[0] || 'NORAN SHAH');
+_set_appMode('rep');
+_set_currentRepProfile(await sqliteStore.get('repProfile') || (salesRepsList[0] || 'NORAN SHAH'));
 lockToRepMode();
 } else if (storedMode === 'userrole') {
-appMode = 'userrole';
+_set_appMode('userrole');
 window._assignedManagerName = await sqliteStore.get('assignedManager') || null;
 window._assignedUserTabs = await sqliteStore.get('assignedUserTabs') || [];
 window._userRoleAllowedTabs = window._assignedUserTabs;
 lockToUserRoleMode();
 } else if (storedMode === 'production') {
-appMode = 'production';
+_set_appMode('production');
 window._assignedManagerName = await sqliteStore.get('assignedManager') || null;
 lockToProductionMode();
 } else if (storedMode === 'factory') {
-appMode = 'factory';
+_set_appMode('factory');
 window._assignedManagerName = await sqliteStore.get('assignedManager') || null;
 lockToFactoryMode();
 }
@@ -5555,12 +5555,12 @@ btn.style.display = 'none';
 }
 
 export async function unlockAdminMode() {
-appMode = 'admin';
+_set_appMode('admin');
 updateSystemName();
 window._assignedManagerName = null;
 window._assignedUserTabs = [];
 window._userRoleAllowedTabs = [];
-currentRepProfile = null;
+_set_currentRepProfile(null);
 const timestamp = Date.now();
 await sqliteStore.set('appMode', 'admin');
 await sqliteStore.set('appMode_timestamp', timestamp);
@@ -6156,7 +6156,7 @@ updateConnectionStatus();
 try {
 await originalSync(silent);
 } finally {
-isSyncing = false;
+_set_isSyncing(false);
 updateConnectionStatus();
 }
 };
@@ -6331,13 +6331,13 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const stored = await sqliteStore.get('sales_reps_list', null);
 if (Array.isArray(stored) && stored.length > 0) {
-salesRepsList = stored;
+_set_salesRepsList(stored);
 } else {
-salesRepsList = ['NORAN SHAH', 'NOMAN SHAH'];
+_set_salesRepsList(['NORAN SHAH', 'NOMAN SHAH']);
 await sqliteStore.set('sales_reps_list', salesRepsList);
 }
 const storedUserRoles = await sqliteStore.get('user_roles_list', null);
-if (Array.isArray(storedUserRoles)) userRolesList = storedUserRoles;
+if (Array.isArray(storedUserRoles)) _set_userRolesList(storedUserRoles);
 if (firebaseDB && currentUser) {
 try {
 const userRef = firebaseDB.collection('users').doc(currentUser.uid);
@@ -6348,11 +6348,11 @@ const cloudTs = teamData.updated_at || 0;
 const localTs = (await sqliteStore.get('team_list_timestamp')) || 0;
 if (cloudTs >= localTs) {
 if (Array.isArray(teamData.sales_reps) && teamData.sales_reps.length > 0) {
-salesRepsList = teamData.sales_reps;
+_set_salesRepsList(teamData.sales_reps);
 await sqliteStore.set('sales_reps_list', salesRepsList);
 }
 if (Array.isArray(teamData.user_roles)) {
-userRolesList = teamData.user_roles;
+_set_userRolesList(teamData.user_roles);
 await sqliteStore.set('user_roles_list', userRolesList);
 }
 if (cloudTs > localTs) await sqliteStore.set('team_list_timestamp', cloudTs);
@@ -6419,7 +6419,7 @@ const prev = adminSel.value;
 adminSel.innerHTML = salesRepsList.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
 if (salesRepsList.includes(prev)) adminSel.value = prev;
 else if (salesRepsList.includes(currentRepProfile)) adminSel.value = currentRepProfile;
-else if (salesRepsList.length > 0) { adminSel.value = salesRepsList[0]; currentRepProfile = salesRepsList[0]; }
+else if (salesRepsList.length > 0) { adminSel.value = salesRepsList[0]; _set_currentRepProfile(salesRepsList[0]); }
 }
 const sellerSel = document.getElementById('sellerSelect');
 if (sellerSel) {
@@ -6577,7 +6577,7 @@ danger: true
 if (!confirmed) return;
 salesRepsList.splice(index, 1);
 if (currentRepProfile === name) {
-currentRepProfile = salesRepsList[0];
+_set_currentRepProfile(salesRepsList[0]);
 await sqliteStore.set('repProfile', currentRepProfile);
 }
 await saveSalesRepsList();
@@ -6666,7 +6666,7 @@ const teamDoc = await firebaseDB.collection('users').doc(currentUser.uid)
 if (teamDoc.exists) {
 const data = teamDoc.data();
 if (Array.isArray(data.user_roles) && data.user_roles.length > 0) {
-userRolesList = data.user_roles;
+_set_userRolesList(data.user_roles);
 await sqliteStore.set('user_roles_list', userRolesList).catch(() => {});
 }
 }
@@ -7205,10 +7205,10 @@ window.getDeviceName = getDeviceName;
 window.registerDevice = registerDevice;
 export function _applyModeFromData(modeStr, ts, assignedRep, assignedManager, assignedUserTabs, remoteApplied) {
   const previousMode = appMode;
-  appMode = modeStr;
+  _set_appMode(modeStr);
   const modeBatch = [['appMode', appMode], ['appMode_timestamp', ts]];
   if (modeStr === 'rep' && assignedRep) {
-    currentRepProfile = assignedRep;
+    _set_currentRepProfile(assignedRep);
     modeBatch.push(['repProfile', currentRepProfile], ['repProfile_timestamp', ts]);
   } else if (modeStr === 'userrole' && assignedManager) {
     window._assignedManagerName = assignedManager;
@@ -7400,11 +7400,11 @@ if (targetMode === 'admin') return;
 if (targetMode === 'rep' && currentRepProfile === repName) return;
 if (targetMode === 'userrole' && previousManager === repName && previousTabs === JSON.stringify(userTabs || [])) return;
 }
-appMode = targetMode;
+_set_appMode(targetMode);
 const nowMs = Date.now();
 const batchData = [['appMode', appMode], ['appMode_timestamp', nowMs]];
 if (targetMode === 'rep' && repName) {
-currentRepProfile = repName;
+_set_currentRepProfile(repName);
 batchData.push(['repProfile', repName], ['repProfile_timestamp', nowMs]);
 if (!salesRepsList.includes(repName)) {
 salesRepsList.push(repName);
@@ -7868,3 +7868,27 @@ window.handlePaymentTransferPhotoFile = handlePaymentTransferPhotoFile;
 window._applyPaymentTransferPendingPhoto = _applyPaymentTransferPendingPhoto;
 window.renderPaymentTransferHistory = renderPaymentTransferHistory;
 window.deletePaymentTransfer = deletePaymentTransfer;
+
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentCompMode;
+window.currentCompMode = currentCompMode;
+export function _set_currentCompMode(v) { currentCompMode = v; window.currentCompMode = v; }
+export let currentSalesSummaryMode;
+window.currentSalesSummaryMode = currentSalesSummaryMode;
+export function _set_currentSalesSummaryMode(v) { currentSalesSummaryMode = v; window.currentSalesSummaryMode = v; }
+export let currentPerfOverviewMode;
+window.currentPerfOverviewMode = currentPerfOverviewMode;
+export function _set_currentPerfOverviewMode(v) { currentPerfOverviewMode = v; window.currentPerfOverviewMode = v; }
+export let entityViewMode;
+window.entityViewMode = entityViewMode;
+export function _set_entityViewMode(v) { entityViewMode = v; window.entityViewMode = v; }
+export let editingEntityId;
+window.editingEntityId = editingEntityId;
+export function _set_editingEntityId(v) { editingEntityId = v; window.editingEntityId = v; }
+export let selectedEntityId;
+window.selectedEntityId = selectedEntityId;
+export function _set_selectedEntityId(v) { selectedEntityId = v; window.selectedEntityId = v; }
+export let currentExpenseOverlayName;
+window.currentExpenseOverlayName = currentExpenseOverlayName;
+export function _set_currentExpenseOverlayName(v) { currentExpenseOverlayName = v; window.currentExpenseOverlayName = v; }
