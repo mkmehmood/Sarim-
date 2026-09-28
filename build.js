@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   readFileSync, writeFileSync, copyFileSync,
-  mkdirSync, unlinkSync, existsSync,
+  mkdirSync, unlinkSync, existsSync, cpSync,
 } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,6 +75,10 @@ for (const t of [coreTmp, coreMinTmp, factoryMinTmp, repMinTmp, cssMinTmp]) rm(t
 for (const f of ['manifest.json','192.png','512.png']) {
   copyFileSync(join(ROOT, f), join(DIST, f));
 }
+
+// Hosting files that must be published alongside the app (GitHub Pages / Android app links).
+if (existsSync(join(ROOT, '.nojekyll'))) copyFileSync(join(ROOT, '.nojekyll'), join(DIST, '.nojekyll'));
+if (existsSync(join(ROOT, '.well-known'))) cpSync(join(ROOT, '.well-known'), join(DIST, '.well-known'), { recursive: true });
 
 // Files that keep their module path in dist (referenced by runtime code / plain script tags).
 const STATIC_MODULE_FILES = [
