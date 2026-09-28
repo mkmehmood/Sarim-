@@ -540,6 +540,13 @@ const SQLiteCrypto = (() => {
     isReady() { return _sessionKey !== null; },
     async encrypt(plainValue) {
       if (!_sessionKey) {
+        // Self-heal: the page may have just been reloaded after the OS/browser
+        // discarded it in the background, wiping this module's in-memory state.
+        // Try to recover the wrapped key from persistent storage before ever
+        // falling back to writing plaintext.
+        await this.restoreSessionKeyFromStorage().catch(() => {});
+      }
+      if (!_sessionKey) {
         return plainValue;
       }
       try {
@@ -596,6 +603,48 @@ const SQLiteCrypto = (() => {
 })();
 
 SQLiteCrypto.preWarm();
+
+// --- Keep the encryption key alive across backgrounding / foregrounding ---
+//
+// On Android especially, backgrounding an installed PWA (or just switching
+// apps for a while) can lead the browser/WebView to reclaim memory by
+// discarding the page. When the user comes back, the page is reloaded from
+// scratch: every module-level variable (including SQLiteCrypto's in-memory
+// _sessionKey) is gone, even though the wrapped key on disk (OPFS/localStorage)
+// is untouched. `preWarm()` above already re-derives it, but that happens
+// once at initial script load — if the OS killed and relaunched the page
+// while backgrounded, or if the browser restored the page from the
+// back/forward cache instead of truly reloading it, nothing re-triggers the
+// restore. These listeners cover both cases so the key comes back the same
+// way whether the app was active or backgrounded when it was interrupted.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !SQLiteCrypto.isReady()) {
+      SQLiteCrypto.restoreSessionKeyFromStorage().catch(() => {});
+    }
+  });
+}
+if (typeof window !== 'undefined') {
+  // Fires on normal loads AND on bfcache restores (event.persisted === true).
+  // In the bfcache case the module state was actually frozen, not wiped, so
+  // this is a cheap no-op guard; in the killed-and-relaunched case it's the
+  // thing that saves you.
+  window.addEventListener('pageshow', () => {
+    if (!SQLiteCrypto.isReady()) {
+      SQLiteCrypto.restoreSessionKeyFromStorage().catch(() => {});
+    }
+  });
+  // Ask the browser not to evict this origin's storage under memory/storage
+  // pressure. Without this, localStorage/OPFS are "best-effort": on Android,
+  // low storage or long idle/background periods can make the browser clear
+  // them, which deletes the wrapped key and device entropy this whole scheme
+  // depends on — a real key loss, not just a slow restore. This is a request,
+  // not a guarantee (the browser may still prompt or silently decline), but
+  // it materially reduces eviction risk on Chrome/Android.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+}
 
 const USE_IDB_ONLY = true;
 function safeNumber(value, defaultValue = 0) {
@@ -1384,6 +1433,19 @@ const sqliteStore = (() => {
               } catch {}
             }
           });
+
+          // `beforeunload` is unreliable on mobile — Android routinely
+          // backgrounds or kills a page's process without ever firing it, so
+          // relying on it alone means up to PERSIST_LAZY_MS (8s) of pending
+          // writes can be lost the moment the app is backgrounded. `visibilitychange`
+          // (hidden) and `pagehide` are the events that actually fire when the
+          // app leaves the foreground on mobile, so flush immediately there
+          // instead of waiting on the debounce timer.
+          const _flushOnBackground = () => { _flushPersist().catch(() => {}); };
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') _flushOnBackground();
+          });
+          window.addEventListener('pagehide', _flushOnBackground);
 
           return _sqlDB;
         } catch (e) {
