@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, balanceAfterHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
 import { _exportDocAsImageAndOpenWhatsApp, getPersonPhoto, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML } from './utilities-payments.js';
@@ -375,7 +375,7 @@ return;
 const totalValue = qty * salePrice;
 const computedProfit = totalValue - (qty * costPerKg);
 if(computedProfit < 0) {
-showToast(` This sale would result in a loss of ${fmtAmt ? fmtAmt(Math.abs(computedProfit)) : Math.abs(computedProfit).toFixed(2)}. Check sale price vs cost price in Factory Formulas.`, "warning", 6000);
+showToast(` This sale would result in a loss of ${fmtAmt ? fmtAmt(Math.abs(computedProfit)) : fmtNum(Math.abs(computedProfit))}. Check sale price vs cost price in Factory Formulas.`, "warning", 6000);
 restoreBtn();
 return;
 }
@@ -519,7 +519,7 @@ document.getElementById('rep-amount-collected').value = '';
 if(repTransactionMode === 'sale') {
 const _custName = document.getElementById('rep-cust-name'); if (_custName) _custName.value = '';
 const _custInfo = document.getElementById('rep-customer-info-display'); if (_custInfo) _custInfo.classList.add('hidden');
-const _repTV1 = document.getElementById('rep-total-value'); if (_repTV1) _repTV1.innerText = '0.00';
+const _repTV1 = document.getElementById('rep-total-value'); if (_repTV1) _repTV1.innerText = '0';
 } else {
 const _custName2 = document.getElementById('rep-cust-name'); if (_custName2) _custName2.value = '';
 const _custInfo2 = document.getElementById('rep-customer-info-display'); if (_custInfo2) _custInfo2.classList.add('hidden');
@@ -675,7 +675,7 @@ const lng = txn.gps.lng;
 latLngs.push([lat, lng]);
 let color = '#3b82f6';
 let typeStr = 'Cash Sale';
-let detailStr = `${safeToFixed(txn.quantity, 2)} kg`;
+let detailStr = `${fmtNum(txn.quantity)} kg`;
 if (txn.paymentType === 'COLLECTION') {
 color = '#10b981';
 typeStr = 'Collection';
@@ -683,7 +683,7 @@ detailStr = `${fmtAmt(txn.totalValue)}`;
 } else if (txn.paymentType === 'CREDIT') {
 color = '#f59e0b';
 typeStr = 'Credit Sale';
-detailStr = `${safeToFixed(txn.quantity, 2)} kg (Credit)`;
+detailStr = `${fmtNum(txn.quantity)} kg (Credit)`;
 }
 const marker = L.circleMarker([lat, lng], {
 radius: 8,
@@ -1183,7 +1183,7 @@ itemContent = `
 <div class="txn-card-row">
   <div class="cust-history-info">
     <div class="u-fs-sm2 u-text-muted">${formatDisplayDateTime(t.date, t.time || null)}${_mergedBadgeHtml(t, {inline:true})}</div>
-    <div style="font-size:0.75rem;color:var(--text-muted);">${safeToFixed(t.quantity, 2)} kg @ ${await formatCurrency(_repDisplayUnitPrice)} = ${await formatCurrency(t.totalValue)}</div>
+    <div style="font-size:0.75rem;color:var(--text-muted);">${fmtNum(t.quantity)} kg @ ${await formatCurrency(_repDisplayUnitPrice)} = ${await formatCurrency(t.totalValue)}</div>
     ${hasPartialPayment ? `<div style="font-size:0.7rem;color:var(--accent-emerald);margin-top:2px;">Paid: ${await formatCurrency(partialPaid)}</div>` : ''}
   </div>
   <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
@@ -1356,7 +1356,7 @@ await unifiedSave('rep_sales', salesArray, null, renamedRecords.map(r => r.id));
 }
 }
 const message = nameChanged ? `Rep customer renamed to "${name}" and details updated`
-: oldDebit > 0 ? `Rep customer updated with old debt of ₨${oldDebit.toLocaleString()}`
+: oldDebit > 0 ? `Rep customer updated with old debt of ₨${fmtNum(oldDebit)}`
 : (oldDebit === 0 && previousOldDebit > 0) ? 'Rep customer updated and old debt cleared'
 : 'Rep customer details updated successfully';
 const _repPhotoKeyOld = 'rep-cust:' + (currentRepProfile || '') + ':' + originalName.toLowerCase();
@@ -1814,11 +1814,11 @@ typeIcon = '';
 typeColor = 'var(--warning)';
 qtyAmount = item.transactionType === 'OLD_DEBT'
 ? `Previous Balance: ${fmtAmt(item.totalValue)}`
-: `${safeToFixed(item.quantity, 2)} kg - ${fmtAmt(item.totalValue)}`;
+: `${fmtNum(item.quantity)} kg - ${fmtAmt(item.totalValue)}`;
 } else {
 typeIcon = '';
 typeColor = 'var(--accent)';
-qtyAmount = `${safeToFixed(item.quantity, 2)} kg - ${fmtAmt(item.totalValue)}`;
+qtyAmount = `${fmtNum(item.quantity)} kg - ${fmtAmt(item.totalValue)}`;
 }
 tableHTML += `
 <div style="

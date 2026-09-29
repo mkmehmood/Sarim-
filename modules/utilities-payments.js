@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { CryptoEngine, SQLiteCrypto, _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
+import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, currentEntityId, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
 import { DeltaSync, _set_currentFactoryDate, _set_currentOverviewMode, calculateCashTracker, calculateNetCash, calculateSales, closeEntityTransactions, currentOverviewMode, getAvailableCashInHand, getStoreFormulaType, getStoreLabel, initFactoryTab, loadFirestoreStats, promptVerifiedBackupPassword, refreshCustomerSales, refreshUI, renderEntityTable, revertRepSalesEntries, setProductionView, showTab, syncSuppliersToEntities, trackFirestoreWrite, updateAllStoresOverview, updateAllTabsWithFactoryCosts, updateCustomerCharts, updateIndChart } from './utilities-sales.js';
@@ -139,12 +139,12 @@ const mergedBadge = isMerged ? _mergedBadgeHtml({ isMerged: true, mergedRecordCo
 const highlightClass = isHighlight ? 'highlight-card' : '';
 const dateAttr = (isHistory && data._rawDate) ? ` data-date="${data._rawDate}"` : '';
 let html = `<div class="card liquid-card ${highlightClass}"${dateAttr}>${badge}<h4>${esc(title)}${mergedBadge}</h4>
-<p><span>Total Sold:</span> <span class="qty-val">${safeValue(data.sold).toFixed(2)}</span></p>
-<p><span>Returned:</span> <span class="qty-val">${safeValue(data.ret).toFixed(2)}</span></p>
-${safeValue(data.expired) > 0 ? `<p><span>Expired (→ CHORA):</span> <span class="cost-val">${safeValue(data.expired).toFixed(2)}</span></p>` : ''}
-${safeValue(data.shared) > 0 ? `<p><span>Shared (Deduction):</span> <span class="cost-val">${safeValue(data.shared).toFixed(2)}</span></p>` : ''}
-<p><span>Cash Qty:</span> <span class="qty-val">${safeValue(data.cash).toFixed(2)}</span></p>
-<p><span>Credit Qty:</span> <span class="qty-val">${safeValue(data.cred).toFixed(2)}</span></p>
+<p><span>Total Sold:</span> <span class="qty-val">${fmtNum(safeValue(data.sold))}</span></p>
+<p><span>Returned:</span> <span class="qty-val">${fmtNum(safeValue(data.ret))}</span></p>
+${safeValue(data.expired) > 0 ? `<p><span>Expired (→ CHORA):</span> <span class="cost-val">${fmtNum(safeValue(data.expired))}</span></p>` : ''}
+${safeValue(data.shared) > 0 ? `<p><span>Shared (Deduction):</span> <span class="cost-val">${fmtNum(safeValue(data.shared))}</span></p>` : ''}
+<p><span>Cash Qty:</span> <span class="qty-val">${fmtNum(safeValue(data.cash))}</span></p>
+<p><span>Credit Qty:</span> <span class="qty-val">${fmtNum(safeValue(data.cred))}</span></p>
 <hr>
 <p><span>Revenue:</span> <span class="rev-val">${fmtAmt(safeValue(data.revenue))}</span></p>
 <p><span>Profit:</span> <span class="profit-val">${fmtAmt(safeValue(data.profit))}</span></p>
@@ -154,7 +154,7 @@ ${safeValue(data.shared) > 0 ? `<p><span>Shared (Deduction):</span> <span class=
 <hr>
 ${safeValue(data.fieldExp) > 0 ? `<p><span>Field Expenses:</span> <span class="cost-val">${fmtAmt(safeValue(data.fieldExp))}</span></p>` : ''}
 <p><span>Expected Cash:</span> <span class="qty-val" style="color:var(--text-main);">${fmtAmt(expected)}</span></p>
-<p><span>Received Cash:</span> <span class="qty-val" style="font-weight:800; color:var(--text-main);">${safeNumber(received, 0).toFixed(2)}</span></p>
+<p><span>Received Cash:</span> <span class="qty-val" style="font-weight:800; color:var(--text-main);">${fmtNum(safeNumber(received, 0))}</span></p>
 <p><span>Discrepancy:</span> <span class="${discClass}">${discText}</span></p>
 ${safeValue(data.commissionPaid) > 0 ? `<hr>
 <p><span>Commission Paid:</span> <span class="profit-val">${fmtAmt(safeValue(data.commissionPaid))}</span></p>` : ''}
@@ -443,9 +443,9 @@ if (typeof setPerfOverviewMode === 'function') setPerfOverviewMode(currentPerfOv
 const _saleDate = (document.getElementById('sale-date') || {}).value || new Date().toISOString().split('T')[0];
 _filterHistoryByPeriod('#historyList', _saleDate, currentPerfOverviewMode || 'day');
 const _setLt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_setLt('ltCredit', "" + safeValue(ltCr).toFixed(2));
-_setLt('ltCollected', "" + safeValue(ltCl).toFixed(2));
-_setLt('ltBalance', "" + safeValue(ltCr - ltCl).toFixed(2));
+_setLt('ltCredit', "" + fmtNum(safeValue(ltCr)));
+_setLt('ltCollected', "" + fmtNum(safeValue(ltCl)));
+_setLt('ltBalance', "" + fmtNum(safeValue(ltCr - ltCl)));
 if(isCombined) {
 const comp = await calculateComparisonData();
 updateSalesCharts(comp);
@@ -723,9 +723,7 @@ notifyDataChange('factory');
 }
 
 export function formatCurrency(num) {
-if (typeof num !== 'number') num = parseFloat(num) || 0;
-if (isNaN(num) || !isFinite(num)) num = 0;
-return String(num.toFixed(2));
+return fmtNum(num, 2);
 }
 
 export function safeValue(value) {
@@ -1035,7 +1033,7 @@ const cashEl = document.getElementById('cust-active-cash');
 const creditEl = document.getElementById('cust-active-credit');
 const profitEl = document.getElementById('cust-active-profit');
 if (titleEl) titleEl.textContent = `${labels[mode]} Sales`;
-if (qtyEl) qtyEl.textContent = (s.q !== undefined ? s.q.toFixed(2) + ' kg' : '0.00 kg');
+if (qtyEl) qtyEl.textContent = (s.q !== undefined ? s.q.toFixed(2) + ' kg' : '0 kg');
 if (valueEl) valueEl.textContent = fmtAmt(s.v !== undefined ? s.v : 0);
 if (cashEl) cashEl.textContent = fmtAmt(s.cash !== undefined ? s.cash : 0);
 if (creditEl) creditEl.textContent = fmtAmt(s.credit !== undefined ? s.credit : 0);
@@ -2402,8 +2400,8 @@ filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
 const totalItems = filteredExpenses.length;
 if (!filteredExpenses || !Array.isArray(filteredExpenses)) {
 tbody.innerHTML = `<tr><td class="u-empty-state-danger" colspan="4" >Invalid expense data</td></tr>`;
-if (totalEl) totalEl.textContent = '0.00';
-if (totalAllEl) totalAllEl.textContent = '0.00';
+if (totalEl) totalEl.textContent = '0';
+if (totalAllEl) totalAllEl.textContent = '0';
 return;
 }
 if (totalEl) totalEl.textContent = `${fmtAmt(periodTotal)}`;
@@ -2756,7 +2754,7 @@ return b.date - a.date;
 const totalItems = rows.length;
 if (!rows || !Array.isArray(rows)) {
 tbody.innerHTML = `<tr><td class="u-empty-state-danger" colspan="4" >Invalid data format</td></tr>`;
-if (totalSpan) totalSpan.textContent = '0.00';
+if (totalSpan) totalSpan.textContent = '0';
 return;
 }
 if (rows.length === 0) {
@@ -2766,7 +2764,7 @@ tbody.innerHTML = `
 No records found matching your filters
 </td>
 </tr>`;
-if (totalSpan) totalSpan.textContent = '0.00';
+if (totalSpan) totalSpan.textContent = '0';
 return;
 }
 
@@ -4234,11 +4232,11 @@ export async function renderRecycleBin(filterCollection = 'all') {
         if (col === 'sales') {
           r.displayName   = s.customerName || s.name || null;
           r.displayDetail = r.displayDetail || [s.supplyStore || s.store || '', s.paymentType || '', s.date || ''].filter(Boolean).join(' · ');
-          r.displayAmount = r.displayAmount || (s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null);
+          r.displayAmount = r.displayAmount || (s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null);
         } else if (col === 'rep_sales') {
           r.displayName   = s.customerName || s.name || null;
           r.displayDetail = r.displayDetail || [s.salesRep ? `Rep: ${s.salesRep}` : '', s.paymentType || '', s.date || ''].filter(Boolean).join(' · ');
-          r.displayAmount = r.displayAmount || (s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null);
+          r.displayAmount = r.displayAmount || (s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null);
         } else if (col === 'transactions') {
           if (s.isTransfer === true) {
             r.displayName   = `Transfer – ${s.entityName || '?'} ${s.type === 'OUT' ? '→' : '←'} ${s.transferPeerEntityName || '?'}`;
@@ -4246,11 +4244,11 @@ export async function renderRecycleBin(filterCollection = 'all') {
             r.displayName   = s.entityName || s.name || s.description || null;
           }
           r.displayDetail = r.displayDetail || [s.type === 'IN' ? '↓ IN' : s.type === 'OUT' ? '↑ OUT' : (s.type || ''), s.date || ''].filter(Boolean).join(' · ');
-          r.displayAmount = r.displayAmount || (s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null);
+          r.displayAmount = r.displayAmount || (s.amount != null ? `₨${fmtNum(s.amount)}` : null);
         } else if (col === 'expenses') {
           r.displayName   = s.name || s.description || null;
           r.displayDetail = r.displayDetail || [s.category || '', s.date || ''].filter(Boolean).join(' · ');
-          r.displayAmount = r.displayAmount || (s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null);
+          r.displayAmount = r.displayAmount || (s.amount != null ? `₨${fmtNum(s.amount)}` : null);
         } else if (col === 'production') {
           if (s.isTransfer === true) {
             const _dir  = s.transferDirection === 'out' ? 'Transfer Out' : 'Transfer In';
@@ -4273,7 +4271,7 @@ export async function renderRecycleBin(filterCollection = 'all') {
           r.displayName   = s.name || null;
         } else {
           r.displayName   = s.name || s.customerName || s.entityName || s.description || null;
-          r.displayAmount = r.displayAmount || ((s.amount ?? s.totalValue) != null ? `₨${Number(s.amount ?? s.totalValue).toLocaleString()}` : null);
+          r.displayAmount = r.displayAmount || ((s.amount ?? s.totalValue) != null ? `₨${fmtNum(s.amount ?? s.totalValue)}` : null);
         }
       }
 
@@ -4348,7 +4346,7 @@ export async function renderRecycleBin(filterCollection = 'all') {
           if (col === 'sales' || col === 'rep_sales') {
             displayName   = s.customerName || s.name || null;
             displayDetail = [s.supplyStore || s.store || '', s.paymentType || '', s.date || ''].filter(Boolean).join(' · ');
-            displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null;
+            displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null;
           } else if (col === 'transactions') {
             if (s.isTransfer === true) {
               displayName = `Transfer – ${s.entityName || '?'} ${s.type === 'OUT' ? '→' : '←'} ${s.transferPeerEntityName || '?'}`;
@@ -4356,11 +4354,11 @@ export async function renderRecycleBin(filterCollection = 'all') {
               displayName = s.entityName || s.description || s.name || null;
             }
             displayDetail = [s.type === 'IN' ? '↓ IN' : s.type === 'OUT' ? '↑ OUT' : (s.type || ''), s.date || ''].filter(Boolean).join(' · ');
-            displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+            displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
           } else if (col === 'expenses') {
             displayName   = s.name || s.description || null;
             displayDetail = [s.category || '', s.date || ''].filter(Boolean).join(' · ');
-            displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+            displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
           } else if (col === 'production') {
             if (s.isTransfer === true) {
               const _dir  = s.transferDirection === 'out' ? 'Transfer Out' : 'Transfer In';
@@ -4384,10 +4382,10 @@ export async function renderRecycleBin(filterCollection = 'all') {
           } else if (col === 'calculator_history') {
             displayName   = s.customerName || s.customer || s.name || 'Calculator Entry';
             displayDetail = s.supplyStore || s.store || '';
-            displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null;
+            displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null;
           } else {
             displayName = s.customerName || s.entityName || s.name || s.description || null;
-            displayAmount = (s.amount ?? s.totalValue) != null ? `₨${Number(s.amount ?? s.totalValue).toLocaleString()}` : null;
+            displayAmount = (s.amount ?? s.totalValue) != null ? `₨${fmtNum(s.amount ?? s.totalValue)}` : null;
           }
         }
       }

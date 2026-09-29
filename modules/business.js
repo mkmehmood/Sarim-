@@ -641,22 +641,24 @@ export function safeToFixed(value, decimals = 2) {
 return safeNumber(value, 0).toFixed(decimals);
 }
 
-export function formatIndianCurrency(value) {
-const num = Math.round(safeNumber(value, 0));
-if (isNaN(num)) return '0';
-const isNeg = num < 0;
-const abs = Math.abs(num);
-const s = abs.toString();
-let result;
-if (s.length <= 3) {
-result = s;
-} else {
-const last3 = s.slice(-3);
-const rest = s.slice(0, s.length - 3);
-const restFormatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
-result = restFormatted + ',' + last3;
+export function fmtNum(value, maxDecimals = 2) {
+  const n = safeNumber(value, 0);
+  if (!isFinite(n)) return '0';
+  const p = Math.pow(10, maxDecimals);
+  const rounded = Math.round((Math.abs(n) + Number.EPSILON) * p) / p;
+  const [intPart, fracRaw = ''] = rounded.toFixed(maxDecimals).split('.');
+  const frac = fracRaw.replace(/0+$/, '');
+  let grouped = intPart;
+  if (intPart.length > 3) {
+    grouped = intPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + intPart.slice(-3);
+  }
+  const body = frac ? grouped + '.' + frac : grouped;
+  return n < 0 && rounded !== 0 ? '-' + body : body;
 }
-return isNeg ? '-' + result : result;
+window.fmtNum = fmtNum;
+
+export function formatIndianCurrency(value) {
+  return fmtNum(value, 2);
 }
 
 export function fmtAmt(value) {

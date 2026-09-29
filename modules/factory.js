@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
 import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
 import { _set_currentFactoryEntryStore, calculateCashTracker, calculateNetCash, currentFactoryEntryStore, deleteStockTransfer, getAppStores, getStoreFormulaType, getStoreLabel, refreshFactoryTab, refreshUI, updateAllTabsWithFactoryCosts, updateFactorySummaryCard, updateFactoryUnitsAvailableStats } from './utilities-sales.js';
@@ -245,7 +245,7 @@ const perUnitCost = totalRawCost + additionalCost;
 const salesCostPerKg = adjustmentFactor > 0 ? perUnitCost / adjustmentFactor : perUnitCost;
 const safeTotalWeight = parseFloat(totalWeight) || 0;
 const _setFS1 = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_setFS1('factorySettingsUnitWeight', safeNumber(safeTotalWeight, 0).toFixed(2) + ' kg');
+_setFS1('factorySettingsUnitWeight', fmtNum(safeNumber(safeTotalWeight, 0)) + ' kg');
 _setFS1('factorySettingsRawCostPerUnit', await formatCurrency(totalRawCost));
 _setFS1('factorySettingsPerUnit', await formatCurrency(perUnitCost));
 _setFS1('factorySettingsAvailableUnits', available);
@@ -274,7 +274,7 @@ const asaanAvailable = factoryUnitTracking['asaan']?.available || 0;
 const asaanPerUnit = asaanRawCost + asaanAdditionalCost;
 const asaanSalesCostPerKg = asaanAdjustmentFactor > 0 ? asaanPerUnit / asaanAdjustmentFactor : asaanPerUnit;
 const safeAsaanWeight = parseFloat(asaanWeight) || 0;
-_setFS1('factorySettingsUnitWeightAsaan', safeNumber(safeAsaanWeight, 0).toFixed(2) + ' kg');
+_setFS1('factorySettingsUnitWeightAsaan', fmtNum(safeNumber(safeAsaanWeight, 0)) + ' kg');
 _setFS1('factorySettingsRawCostPerUnitAsaan', await formatCurrency(asaanRawCost));
 _setFS1('factorySettingsPerUnitAsaan', await formatCurrency(asaanPerUnit));
 _setFS1('factorySettingsAvailableUnitsAsaan', asaanAvailable);
@@ -431,7 +431,7 @@ const available = factoryUnitTracking[currentFactorySettingsStore]?.available ||
 const salesCostPerKg = adjustmentFactor > 0 ? perUnitCost / adjustmentFactor : perUnitCost;
 const safeTotalWeight = parseFloat(totalWeight) || 0;
 const _setFS = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_setFS('factorySettingsUnitWeight', safeNumber(safeTotalWeight, 0).toFixed(2) + ' kg');
+_setFS('factorySettingsUnitWeight', fmtNum(safeNumber(safeTotalWeight, 0)) + ' kg');
 _setFS('factorySettingsRawCostPerUnit', await formatCurrency(totalRawCost));
 _setFS('factorySettingsPerUnit', await formatCurrency(perUnitCost));
 _setFS('factorySettingsAvailableUnits', available);
@@ -648,7 +648,7 @@ const totalKg = qty * conversionFactor;
 const totalAmount = qty * cost;
 const kgDisplayElement = document.getElementById('factoryCalculatedKg');
 const amountDisplayElement = document.getElementById('factoryCalculatedAmount');
-if (kgDisplayElement) kgDisplayElement.textContent = safeNumber(totalKg, 0).toFixed(2) + ' kg';
+if (kgDisplayElement) kgDisplayElement.textContent = fmtNum(safeNumber(totalKg, 0)) + ' kg';
 if (amountDisplayElement) amountDisplayElement.textContent = fmtAmt(totalAmount);
 }
 
@@ -842,18 +842,18 @@ let supplierHtml = '';
 if (item.supplierName) {
 const remainingPayable = item.totalPayable || 0;
 const isFullyPaid = item.paymentStatus === 'paid' || remainingPayable <= 0;
-const payableDisplay = isFullyPaid ? `<span class="u-text-emerald">0.00</span>` : `<span style="font-weight:600;color:var(--accent);">${safeNumber(remainingPayable, 0).toFixed(2)}</span>`;
+const payableDisplay = isFullyPaid ? `<span class="u-text-emerald">0</span>` : `<span style="font-weight:600;color:var(--accent);">${fmtNum(safeNumber(remainingPayable, 0))}</span>`;
 supplierHtml = `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;"><div class="supplier-name-badge">${String(item.supplierName).replace(/'/g, "&#39;").replace(/"/g, "&quot;")}</div><div style="margin-top:3px;font-size:0.7rem;">${payableDisplay}</div></div>`;
 } else {
 supplierHtml = `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;opacity:0.6;">No supplier linked</div>`;
 }
 let quantityHtml = '';
 if (item.purchaseQuantity && item.purchaseUnitName && item.conversionFactor && item.conversionFactor !== 1) {
-quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${(item.purchaseQuantity || 0).toFixed(2)}</div><div class="u-fs-sm u-text-muted">${esc(item.purchaseUnitName)}</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">(${(item.quantity || 0).toFixed(2)})</div></div>`;
+quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${fmtNum(item.purchaseQuantity || 0)}</div><div class="u-fs-sm u-text-muted">${esc(item.purchaseUnitName)}</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">(${fmtNum(item.quantity || 0)})</div></div>`;
 } else if (item.purchaseQuantity && item.conversionFactor && item.conversionFactor !== 1) {
-quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${(item.purchaseQuantity || 0).toFixed(2)}</div><div class="u-fs-sm u-text-muted">units</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">(${(item.quantity || 0).toFixed(2)})</div></div>`;
+quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${fmtNum(item.purchaseQuantity || 0)}</div><div class="u-fs-sm u-text-muted">units</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">(${fmtNum(item.quantity || 0)})</div></div>`;
 } else {
-quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${(item.quantity || 0).toFixed(2)}</div><div class="u-fs-sm u-text-muted">kg</div></div>`;
+quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${fmtNum(item.quantity || 0)}</div><div class="u-fs-sm u-text-muted">kg</div></div>`;
 }
 let costHtml = '';
 if (item.purchaseCost && item.purchaseUnitName && item.conversionFactor && item.conversionFactor !== 1) {
@@ -896,7 +896,7 @@ if (!material.supplierId) { showToast('No supplier linked', 'warning'); return; 
 const linkedTransactions = paymentTransactions.filter(t => t.materialId === materialId && t.entityId === material.supplierId && t.isPayable === true);
 const _us2Total = linkedTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 let confirmMsg = `Unlink ${material.supplierName} from "${material.name}"?`;
-confirmMsg += `\nCurrent Stock: ${(material.quantity || 0).toFixed(2)} kg`;
+confirmMsg += `\nCurrent Stock: ${fmtNum(material.quantity || 0)} kg`;
 if (material.totalPayable) confirmMsg += `\nOutstanding Payable: ${fmtAmt(material.totalPayable || 0)}`;
 if (linkedTransactions.length > 0) confirmMsg += `\n\n↩ ${linkedTransactions.length} payment transaction${linkedTransactions.length !== 1 ? 's' : ''} totaling ${fmtAmt(_us2Total)} will be reversed and the material reverted to "Pending Payable" status.`;
 confirmMsg += `\n\nThe material will be available to link with a different supplier.\n\nThis cannot be undone.`;
@@ -1085,7 +1085,7 @@ for (const i of settings) {
 const lineTotal = i.cost * i.quantity * units;
 baseCost += lineTotal;
 rawMaterialsUsed += i.quantity * units;
-html += `<div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:2px;"><span>${i.name} (${(i.quantity * units).toFixed(2)} kg)</span><span>${await formatCurrency(lineTotal)}</span></div>`;
+html += `<div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:2px;"><span>${i.name} (${fmtNum(i.quantity * units)} kg)</span><span>${await formatCurrency(lineTotal)}</span></div>`;
 }
 const totalAdditionalCost = additionalCost * units;
 if (totalAdditionalCost > 0) {
@@ -1163,7 +1163,7 @@ inventoryItem.purchaseQuantity = inventoryItem.quantity / inventoryItem.conversi
 inventoryItem.updatedAt = getTimestamp();
 inventoryUpdated = true;
 } else {
-throw new Error(`Insufficient "${inventoryItem.name}" in inventory! Available: ${inventoryItem.quantity.toFixed(2)} kg, Required: ${materialUsed.toFixed(2)} kg`);
+throw new Error(`Insufficient "${inventoryItem.name}" in inventory! Available: ${fmtNum(inventoryItem.quantity)} kg, Required: ${fmtNum(materialUsed)} kg`);
 }
 }
 }
@@ -1285,7 +1285,7 @@ const rowsHtml = formula.map(f => {
 let inv = factoryInventoryData.find(i => String(i.id) === String(f.id));
 if (!inv && f.name) inv = factoryInventoryData.find(i => i.name && i.name.trim().toLowerCase() === f.name.trim().toLowerCase());
 const matName = esc(inv?.name || f.name || 'Material');
-const qtyUsed = (f.quantity * entry.units).toFixed(2);
+const qtyUsed = fmtNum(f.quantity * entry.units);
 const unitCost = inv ? inv.cost : (f.cost || 0);
 const matCost = (unitCost * f.quantity * entry.units);
 return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--glass-border);">
@@ -1336,7 +1336,7 @@ ${_mergedBadgeHtml(entry)}
 ${totalAdditionalCost > 0 ? `<div class="factory-summary-row"><span class="factory-summary-label">Additional Cost</span><span class="cost-val">${await formatCurrency(totalAdditionalCost)}</span></div>` : ''}
 <div class="factory-summary-row"><span class="factory-summary-label">Per Unit Cost</span><span class="cost-val">${await formatCurrency(perUnitCost)}</span></div>
 <div class="factory-summary-row"><span class="factory-summary-label">Total Cost</span><span class="rev-val">${await formatCurrency(entry.totalCost)}</span></div>
-<div class="factory-summary-row"><span class="factory-summary-label">Raw Materials Used</span><span class="qty-val">${safeNumber(entry.rawMaterialsUsed, 0).toFixed(2)} kg</span></div>
+<div class="factory-summary-row"><span class="factory-summary-label">Raw Materials Used</span><span class="qty-val">${fmtNum(safeNumber(entry.rawMaterialsUsed, 0))} kg</span></div>
 ${matsBreakdownHtml}
 ${entry.isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="deleteFactoryEntry('${entry.id}')">Delete & Restore Inventory</button>`}`;
 _fhFrag.appendChild(div);
@@ -1360,7 +1360,7 @@ const _feMatsDetail = _feFormula.length > 0
 ? _feFormula.map(f => {
 let inv = factoryInventoryData.find(i => i.id === f.id);
 if (!inv && f.name) inv = factoryInventoryData.find(i => i.name && i.name.trim().toLowerCase() === f.name.trim().toLowerCase());
-return ` • ${inv?.name || f.name || 'Material'}: ${(f.quantity * entry.units).toFixed(2)} kg restored`;
+return ` • ${inv?.name || f.name || 'Material'}: ${fmtNum(f.quantity * entry.units)} kg restored`;
 }).join('\n')
 : '';
 let _feMsg = `Delete this factory production batch permanently?`;
@@ -1405,7 +1405,7 @@ calculateNetCash();
 calculateCashTracker();
 notifyDataChange('factory');
 if (restoredMaterials.length > 0) {
-showToast(` Entry deleted! Raw materials restored: ${restoredMaterials.map(m => `${m.name}: +${safeToFixed(m.quantity, 2)} kg`).join(', ')}`, 'success');
+showToast(` Entry deleted! Raw materials restored: ${restoredMaterials.map(m => `${m.name}: +${fmtNum(m.quantity)} kg`).join(', ')}`, 'success');
 } else {
 showToast(' Entry deleted and inventory restored.', 'success');
 }
@@ -1534,7 +1534,7 @@ const warning = document.getElementById('insufficientUnitsWarning');
 let indicatorClass = 'units-available-good';
 if (available < 10) indicatorClass = 'units-available-warning';
 if (available <= 0) indicatorClass = 'units-available-danger';
-if (indicator) { indicator.className = `units-available-indicator ${indicatorClass}`; indicator.textContent = `${(available || 0).toFixed(2)} units available`; }
+if (indicator) { indicator.className = `units-available-indicator ${indicatorClass}`; indicator.textContent = `${fmtNum(available || 0)} units available`; }
 const requestedUnits = parseFloat(document.getElementById('formula-units')?.value) || 0;
 if (warning) {
 if (requestedUnits > available) warning.classList.remove('hidden');
@@ -1552,10 +1552,10 @@ const salePrice = await getSalePriceForStore(store);
 const _setProd = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setProd('formula-unit-cost-display', `${fmtAmt(safeValue(costData.costPerUnit))}/unit`);
 _setProd('total-formula-cost-display', `${fmtAmt(safeValue(costData.totalFormulaCost))}`);
-_setProd('dynamic-cost-per-kg', `${safeValue(costData.dynamicCostPerKg).toFixed(2)}/kg`);
-_setProd('factory-cost-price', `${safeValue(costData.dynamicCostPerKg).toFixed(2)}/kg`);
-_setProd('production-sale-price-display', `${safeValue(salePrice).toFixed(2)}/kg`);
-_setProd('profit-sale-price', `${safeValue(salePrice).toFixed(2)}/kg`);
+_setProd('dynamic-cost-per-kg', `${fmtNum(safeValue(costData.dynamicCostPerKg))}/kg`);
+_setProd('factory-cost-price', `${fmtNum(safeValue(costData.dynamicCostPerKg))}/kg`);
+_setProd('production-sale-price-display', `${fmtNum(safeValue(salePrice))}/kg`);
+_setProd('profit-sale-price', `${fmtNum(safeValue(salePrice))}/kg`);
 _setProd('display-cost-value', `${fmtAmt(safeValue(net * costData.dynamicCostPerKg))}`);
 _setProd('profit-per-kg', `${fmtAmt(safeValue(salePrice - costData.dynamicCostPerKg))}`);
 updateUnitsAvailableIndicator();
@@ -1567,8 +1567,8 @@ if (!store) return;
 currentStore = store; window.currentStore = currentStore;
 const salePrice = await getSalePriceForStore(store);
 const _setStore = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_setStore('production-sale-price-display', `${safeValue(salePrice).toFixed(2)}/kg`);
-_setStore('profit-sale-price', `${safeValue(salePrice).toFixed(2)}/kg`);
+_setStore('production-sale-price-display', `${fmtNum(safeValue(salePrice))}/kg`);
+_setStore('profit-sale-price', `${fmtNum(safeValue(salePrice))}/kg`);
 calculateDynamicProductionCost();
 updatePaymentStatusVisibility();
 if (typeof refreshUI === 'function') refreshUI();
@@ -1605,7 +1605,7 @@ if (_dpSalesOnDate > 0) confirmMsg += ` ${_dpSalesOnDate} sale${_dpSalesOnDate !
 } else {
 confirmMsg = `Permanently delete this production record?`;
 confirmMsg += `\nStore: ${_dpStoreLabel}\nDate: ${entryToDelete.date}\nNet Qty: ${entryToDelete.net} kg`;
-if (entryToDelete.gross) confirmMsg += `\nGross / Tare: ${entryToDelete.gross} / ${((entryToDelete.gross || 0) - (entryToDelete.net || 0)).toFixed(2)} kg`;
+if (entryToDelete.gross) confirmMsg += `\nGross / Tare: ${entryToDelete.gross} / ${fmtNum((entryToDelete.gross || 0) - (entryToDelete.net || 0))} kg`;
 confirmMsg += `\n\n↩ ${entryToDelete.net} kg will be removed from ${entryToDelete.date} inventory.`;
 if (_dpSalesOnDate > 0) confirmMsg += `\n\n ${_dpSalesOnDate} sale${_dpSalesOnDate !== 1 ? 's' : ''} on this date for ${_dpStoreLabel} will remain on record, but available stock will drop.`;
 }

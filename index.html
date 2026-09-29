@@ -985,7 +985,7 @@ input:checked + .theme-toggle-track::before { transform: translateX(22px); }
         </div>
         <div class="u-inline-divider">
           <span class="u-fs-sm2 u-text-muted">Total Amount:</span>
-          <span class="u-emerald-num" id="factoryCalculatedAmount">0.00</span>
+          <span class="u-emerald-num" id="factoryCalculatedAmount">0</span>
         </div>
       </div>
     </div>
@@ -1065,11 +1065,11 @@ input:checked + .theme-toggle-track::before { transform: translateX(22px); }
     <div id="factoryRawMaterialsContainer"></div>
     <button class="btn btn-theme u-add-row-btn" onclick="addFactoryMaterialRow()">+ Add Ingredient Row</button>
     <div class="u-bg-accent-5 u-p-10 u-rounded-8 u-mb-15" style="margin-top:12px;">
-      <div class="factory-summary-row"><span class="factory-summary-label">Unit Weight:</span><span class="qty-val" id="factorySettingsUnitWeight">0.00 kg</span></div>
-      <div class="factory-summary-row"><span class="factory-summary-label">Raw Material Cost per Unit:</span><span class="cost-val" id="factorySettingsRawCostPerUnit">0.00</span></div>
-      <div class="factory-summary-row"><span class="factory-summary-label">Total Cost per Unit:</span><span class="cost-val" id="factorySettingsPerUnit">0.00</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Unit Weight:</span><span class="qty-val" id="factorySettingsUnitWeight">0 kg</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Raw Material Cost per Unit:</span><span class="cost-val" id="factorySettingsRawCostPerUnit">0</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Total Cost per Unit:</span><span class="cost-val" id="factorySettingsPerUnit">0</span></div>
       <div class="factory-summary-row"><span class="factory-summary-label">Available Units:</span><span class="qty-val" id="factorySettingsAvailableUnits">0</span></div>
-      <div class="factory-summary-row"><span class="factory-summary-label">Cost per kg (Sales/Calc):</span><span class="cost-val" id="factorySettingsSalesCostPerKg">0.00</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Cost per kg (Sales/Calc):</span><span class="cost-val" id="factorySettingsSalesCostPerKg">0</span></div>
     </div>
     <button class="btn btn-noman" style="width:100%;" onclick="(async()=>{await saveFactoryFormulas()})()">Save Standard Formula</button>
   </div>
@@ -1100,11 +1100,11 @@ input:checked + .theme-toggle-track::before { transform: translateX(22px); }
     <div id="factoryRawMaterialsContainerAsaan"></div>
     <button class="btn btn-theme u-add-row-btn" onclick="addFactoryMaterialRowAsaan()">+ Add Ingredient Row</button>
     <div class="u-bg-accent-5 u-p-10 u-rounded-8 u-mb-15" style="margin-top:12px;">
-      <div class="factory-summary-row"><span class="factory-summary-label">Unit Weight:</span><span class="qty-val" id="factorySettingsUnitWeightAsaan">0.00 kg</span></div>
-      <div class="factory-summary-row"><span class="factory-summary-label">Raw Material Cost per Unit:</span><span class="cost-val" id="factorySettingsRawCostPerUnitAsaan">0.00</span></div>
-      <div class="factory-summary-row"><span class="factory-summary-label">Total Cost per Unit:</span><span class="cost-val" id="factorySettingsPerUnitAsaan">0.00</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Unit Weight:</span><span class="qty-val" id="factorySettingsUnitWeightAsaan">0 kg</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Raw Material Cost per Unit:</span><span class="cost-val" id="factorySettingsRawCostPerUnitAsaan">0</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Total Cost per Unit:</span><span class="cost-val" id="factorySettingsPerUnitAsaan">0</span></div>
       <div class="factory-summary-row"><span class="factory-summary-label">Available Units:</span><span class="qty-val" id="factorySettingsAvailableUnitsAsaan">0</span></div>
-      <div class="factory-summary-row"><span class="factory-summary-label">Cost per kg (Sales/Calc):</span><span class="cost-val" id="factorySettingsSalesCostPerKgAsaan">0.00</span></div>
+      <div class="factory-summary-row"><span class="factory-summary-label">Cost per kg (Sales/Calc):</span><span class="cost-val" id="factorySettingsSalesCostPerKgAsaan">0</span></div>
     </div>
     <button class="btn btn-noman" style="width:100%;" onclick="(async()=>{await saveFactoryFormulasAsaan()})()">Save Asaan Formula</button>
   </div>
@@ -1273,7 +1273,7 @@ window._showLogoutConfirmDialog = async function() {
   <div class="screen-topbar">
     <div style="flex:1;min-width:0;">
       <div class="screen-title" id="manageEntityTitle" style="font-size:0.88rem;">Entity Name</div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;" id="manageEntityStats">Current Balance: 0.00</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;" id="manageEntityStats">Current Balance: 0</div>
     </div>
   </div>
   <div class="screen-body">
@@ -2468,7 +2468,7 @@ Select a store...
 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
 <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
 <span style="color: var(--text-muted); font-weight: 600;">Total Inventory Value:</span>
-<span class="rev-val" id="factoryTotalInventoryValue" style="color: var(--accent); font-weight: 700;">0.00</span>
+<span class="rev-val" id="factoryTotalInventoryValue" style="color: var(--accent); font-weight: 700;">0</span>
 </div>
 </div>
 </div>
@@ -2498,19 +2498,19 @@ Select a store...
 <div style="height:1px;background:var(--glass-border);margin:2px 0;"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Avg Add. Cost/Day</span>
-<span class="cost-val" id="factorySumCostPerDay" style="font-size:0.88rem;font-weight:600;">0.00</span>
+<span class="cost-val" id="factorySumCostPerDay" style="font-size:0.88rem;font-weight:600;">0</span>
 </div>
 </div>
 <div style="background:var(--glass-raised); border-radius:18px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; border:1px solid var(--glass-border);">
 <span style="font-size:0.62rem;font-weight:700;color:var(--accent-purple);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Output</span>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Quantity</span>
-<span class="qty-val" id="factorySumOutput" style="font-size:1.05rem;font-weight:700;">0.00 kg</span>
+<span class="qty-val" id="factorySumOutput" style="font-size:1.05rem;font-weight:700;">0 kg</span>
 </div>
 <div style="height:1px;background:var(--glass-border);margin:2px 0;"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Raw Used</span>
-<span class="qty-val" id="factorySumRawUsed" style="font-size:0.88rem;font-weight:600;">0.00 kg</span>
+<span class="qty-val" id="factorySumRawUsed" style="font-size:0.88rem;font-weight:600;">0 kg</span>
 </div>
 <div id="factorySumRawBreakdown"></div>
 </div>
@@ -2518,28 +2518,28 @@ Select a store...
 <span style="font-size:0.62rem;font-weight:700;color:var(--warning);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Cost</span>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Per Unit</span>
-<span class="cost-val" id="factorySumUnitCost" style="font-size:1.05rem;font-weight:700;">0.00</span>
+<span class="cost-val" id="factorySumUnitCost" style="font-size:1.05rem;font-weight:700;">0</span>
 </div>
 <div style="height:1px;background:var(--glass-border);margin:2px 0;"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Total</span>
-<span class="rev-val" id="factorySumTotalCost" style="font-size:0.88rem;font-weight:600;">0.00</span>
+<span class="rev-val" id="factorySumTotalCost" style="font-size:0.88rem;font-weight:600;">0</span>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Materials</span>
-<span class="cost-val" id="factorySumMatVal" style="font-size:0.88rem;font-weight:600;">0.00</span>
+<span class="cost-val" id="factorySumMatVal" style="font-size:0.88rem;font-weight:600;">0</span>
 </div>
 </div>
 <div style="background:var(--glass-raised); border-radius:18px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; border:1px solid rgba(102,187,106,0.3);">
 <span style="font-size:0.62rem;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Profit</span>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Total</span>
-<span class="profit-val" id="factorySumProfit" style="font-size:1.05rem;font-weight:700;">0.00</span>
+<span class="profit-val" id="factorySumProfit" style="font-size:1.05rem;font-weight:700;">0</span>
 </div>
 <div style="height:1px;background:var(--glass-border);margin:2px 0;"></div>
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <span style="font-size:0.75rem;color:var(--text-muted);">Per kg</span>
-<span class="profit-val" id="factorySumProfitUnit" style="font-size:0.88rem;font-weight:600;">0.00</span>
+<span class="profit-val" id="factorySumProfitUnit" style="font-size:0.88rem;font-weight:600;">0</span>
 </div>
 </div>
 </div>
@@ -3290,11 +3290,11 @@ async function _loadFormulaScreen(store) {
       var perUnitCost    = totalRawCost + asaanAddlCost;
       var salesCostPerKg = asaanFactor > 0 ? perUnitCost / asaanFactor : perUnitCost;
       var _set = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val; };
-      _set('factorySettingsUnitWeightAsaan',    (parseFloat(totalWeight) || 0).toFixed(2) + ' kg');
-      _set('factorySettingsRawCostPerUnitAsaan', totalRawCost.toFixed(2));
-      _set('factorySettingsPerUnitAsaan',        perUnitCost.toFixed(2));
+      _set('factorySettingsUnitWeightAsaan',    window.fmtNum(parseFloat(totalWeight) || 0) + ' kg');
+      _set('factorySettingsRawCostPerUnitAsaan', window.fmtNum(totalRawCost));
+      _set('factorySettingsPerUnitAsaan',        window.fmtNum(perUnitCost));
       _set('factorySettingsAvailableUnitsAsaan', asaanAvailable);
-      _set('factorySettingsSalesCostPerKgAsaan', salesCostPerKg.toFixed(2));
+      _set('factorySettingsSalesCostPerKgAsaan', window.fmtNum(salesCostPerKg));
     } catch(e) {
       console.error('[_loadFormulaScreen asaan]', e);
     }
@@ -3336,11 +3336,11 @@ async function _loadFormulaScreen(store) {
       var perUnitCost    = totalRawCost + stdAddlCost;
       var salesCostPerKg = stdAdj > 0 ? perUnitCost / stdAdj : perUnitCost;
       var _setS = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val; };
-      _setS('factorySettingsUnitWeight',      (parseFloat(totalWeight) || 0).toFixed(2) + ' kg');
-      _setS('factorySettingsRawCostPerUnit',  totalRawCost.toFixed(2));
-      _setS('factorySettingsPerUnit',         perUnitCost.toFixed(2));
+      _setS('factorySettingsUnitWeight',      window.fmtNum(parseFloat(totalWeight) || 0) + ' kg');
+      _setS('factorySettingsRawCostPerUnit',  window.fmtNum(totalRawCost));
+      _setS('factorySettingsPerUnit',         window.fmtNum(perUnitCost));
       _setS('factorySettingsAvailableUnits',  stdAvailable);
-      _setS('factorySettingsSalesCostPerKg',  salesCostPerKg.toFixed(2));
+      _setS('factorySettingsSalesCostPerKg',  window.fmtNum(salesCostPerKg));
     } catch(e) {
       console.error('[_loadFormulaScreen standard]', e);
     }
@@ -3438,10 +3438,10 @@ window.updateFactoryFormulasSummaryAsaan = function() {
   var perUnitCost      = rawCost + additionalCost;
   var salesCostPerKg   = adjustmentFactor > 0 ? perUnitCost / adjustmentFactor : perUnitCost;
   var setVal = function(id, val) { var el = document.getElementById(id); if (el) el.innerText = val; };
-  setVal('factorySettingsUnitWeightAsaan',    weight.toFixed(2) + ' kg');
-  setVal('factorySettingsRawCostPerUnitAsaan', rawCost.toFixed(2));
-  setVal('factorySettingsPerUnitAsaan',        perUnitCost.toFixed(2));
-  setVal('factorySettingsSalesCostPerKgAsaan', salesCostPerKg.toFixed(2));
+  setVal('factorySettingsUnitWeightAsaan',    window.fmtNum(weight) + ' kg');
+  setVal('factorySettingsRawCostPerUnitAsaan', window.fmtNum(rawCost));
+  setVal('factorySettingsPerUnitAsaan',        window.fmtNum(perUnitCost));
+  setVal('factorySettingsSalesCostPerKgAsaan', window.fmtNum(salesCostPerKg));
 };
 
 window.openManageRepsModal = function() {

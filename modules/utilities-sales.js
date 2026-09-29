@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
-import { CryptoEngine, balanceAfterHtml, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, compareRecordVersions, compareTimestamps, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, OfflineAuth, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { SarimChart, _restorePayableFromDeletedTransaction, _set_custPaymentChart, _set_custSalesChart, _set_defaultSettings, _set_indPerformanceChart, _set_mfgBarChart, _set_mfgPieChart, _set_storeComparisonChart, custPaymentChart, custSalesChart, defaultSettings, indPerformanceChart, invalidateAllCaches, loadScript, mfgBarChart, mfgPieChart, notifyDataChange, storeComparisonChart, syncCalculatorTab, syncFactoryTab, syncPaymentsTab, syncProductionTab, syncRepTab, syncSalesTab, triggerAutoSync } from './utilities-core.js';
@@ -540,7 +540,7 @@ return;
 const _dpEntity = _dpTx ? paymentEntities.find(e => String(e.id) === String(_dpTx.entityId)) : null;
 const _dpEntityName = _dpEntity ? _dpEntity.name : 'Unknown Entity';
 const _dpTypeLabel = _dpTx?.type === 'IN' ? 'Payment Received (IN)' : 'Payment Made (OUT)';
-const _dpAmount = (parseFloat(_dpTx?.amount) || 0).toFixed(2);
+const _dpAmount = fmtNum(parseFloat(_dpTx?.amount) || 0);
 const _dpDate = _dpTx?.date || 'Unknown date';
 let _dpMsg = `Delete this ${_dpTypeLabel}?`;
 _dpMsg += `\n\nEntity: ${_dpEntityName}`;
@@ -1115,7 +1115,7 @@ return;
 }
 const remainingAfterSale = storeAvailableInventory - quantity;
 if (remainingAfterSale < 0) {
-showToast(` Insufficient stock! Available: ${safeNumber(storeAvailableInventory, 0).toFixed(2)} kg, Requested: ${safeNumber(quantity, 0).toFixed(2)} kg. Shortage: ${safeNumber(Math.abs(remainingAfterSale), 0).toFixed(2)} kg`, 'error', 6000);
+showToast(` Insufficient stock! Available: ${fmtNum(safeNumber(storeAvailableInventory, 0))} kg, Requested: ${fmtNum(safeNumber(quantity, 0))} kg. Shortage: ${fmtNum(safeNumber(Math.abs(remainingAfterSale), 0))} kg`, 'error', 6000);
 return;
 }
 const costData = await calculateSalesCost(store, quantity);
@@ -1241,7 +1241,7 @@ renderCustomersTable();
 if (typeof refreshCustomerSales === 'function') {
 refreshCustomerSales();
 }
-showToast(` Sale recorded successfully! ${name} - ${safeNumber(quantity, 0).toFixed(2)} kg`, "success");
+showToast(` Sale recorded successfully! ${name} - ${fmtNum(safeNumber(quantity, 0))} kg`, "success");
 } catch (error) {
 customerSales.length = 0;
 customerSales.push(...salesSnapshot);
@@ -1657,17 +1657,17 @@ const totalAvailable = storeProduction + storeReturns;
 const availableInventory = totalAvailable - storeSales;
 const inventoryWarning = document.getElementById('inventory-warning') || createInventoryWarningElement();
 if (quantity > availableInventory) {
-inventoryWarning.innerHTML = ` Warning: Only ${safeNumber(availableInventory, 0).toFixed(2)} kg available.<br><small>Production: ${safeNumber(storeProduction, 0).toFixed(2)} kg + Returns: ${safeNumber(storeReturns, 0).toFixed(2)} kg = ${safeNumber(totalAvailable, 0).toFixed(2)} kg total</small>`;
+inventoryWarning.innerHTML = ` Warning: Only ${fmtNum(safeNumber(availableInventory, 0))} kg available.<br><small>Production: ${fmtNum(safeNumber(storeProduction, 0))} kg + Returns: ${fmtNum(safeNumber(storeReturns, 0))} kg = ${fmtNum(safeNumber(totalAvailable, 0))} kg total</small>`;
 inventoryWarning.style.display = 'block';
 inventoryWarning.style.color = 'var(--danger)';
 inventoryWarning.style.background = 'rgba(220, 38, 38, 0.1)';
 } else if (availableInventory < (quantity * 1.5)) {
-inventoryWarning.innerHTML = ` Inventory: ${safeNumber(availableInventory, 0).toFixed(2)} kg available (${safeNumber(availableInventory - quantity, 0).toFixed(2)} kg remaining)<br><small>Production: ${safeNumber(storeProduction, 0).toFixed(2)} kg + Returns: ${safeNumber(storeReturns, 0).toFixed(2)} kg</small>`;
+inventoryWarning.innerHTML = ` Inventory: ${fmtNum(safeNumber(availableInventory, 0))} kg available (${fmtNum(safeNumber(availableInventory - quantity, 0))} kg remaining)<br><small>Production: ${fmtNum(safeNumber(storeProduction, 0))} kg + Returns: ${fmtNum(safeNumber(storeReturns, 0))} kg</small>`;
 inventoryWarning.style.display = 'block';
 inventoryWarning.style.color = 'var(--warning)';
 inventoryWarning.style.background = 'rgba(245, 158, 11, 0.1)';
 } else {
-inventoryWarning.innerHTML = ` Inventory: ${safeNumber(availableInventory, 0).toFixed(2)} kg available<br><small>Production: ${safeNumber(storeProduction, 0).toFixed(2)} kg + Returns: ${safeNumber(storeReturns, 0).toFixed(2)} kg = ${safeNumber(totalAvailable, 0).toFixed(2)} kg total</small>`;
+inventoryWarning.innerHTML = ` Inventory: ${fmtNum(safeNumber(availableInventory, 0))} kg available<br><small>Production: ${fmtNum(safeNumber(storeProduction, 0))} kg + Returns: ${fmtNum(safeNumber(storeReturns, 0))} kg = ${fmtNum(safeNumber(totalAvailable, 0))} kg total</small>`;
 inventoryWarning.style.display = 'block';
 inventoryWarning.style.color = 'var(--accent-emerald)';
 inventoryWarning.style.background = 'rgba(5, 150, 105, 0.1)';
@@ -1792,7 +1792,7 @@ if (_dcIsPaid) _dcMsg += `\n\n\u2714 This sale is already marked PAID. Deleting 
 else if (_dcPartialPaid > 0) _dcMsg += `\n\n\u26a0 ${fmtAmt(_dcPartialPaid)} partially collected. Deleting will erase the sale and partial payment.`;
 else _dcMsg += `\n\n\u26a0 This credit sale is UNPAID. Deleting removes the outstanding balance of ${fmtAmt(recordToDelete.totalValue||0)}.`;
 } else {
-_dcMsg += `\n\n\u21a9 ${(recordToDelete.quantity||0).toFixed(2)} kg will be restored to ${recordDate} inventory.`;
+_dcMsg += `\n\n\u21a9 ${fmtNum(recordToDelete.quantity||0)} kg will be restored to ${recordDate} inventory.`;
 }
 }
 _dcMsg += `\n\nThis cannot be undone.`;
@@ -3385,7 +3385,7 @@ if (item.date) div.setAttribute('data-date', item.date);
 let returnsByStoreHtml = '';
 if (item.isMerged && item.isReturn && item.returnsByStore && Object.keys(item.returnsByStore).length > 1) {
   returnsByStoreHtml = Object.entries(item.returnsByStore).map(([s,q]) =>
-    `<p><span style="color:var(--text-muted);">${esc(typeof getStoreLabel === 'function' ? getStoreLabel(s) : s)}:</span> <span class="qty-val">${safeValue(q).toFixed(2)} kg</span></p>`
+    `<p><span style="color:var(--text-muted);">${esc(typeof getStoreLabel === 'function' ? getStoreLabel(s) : s)}:</span> <span class="qty-val">${fmtNum(safeValue(q))} kg</span></p>`
   ).join('');
 }
 if (item.isTransfer) {
@@ -3398,7 +3398,7 @@ ${currentProductionView === 'combined' ? `<span class="store-badge ${storeBadgeC
 ${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(item) : ''}
 </div>
 <p style="color:${isOutSide ? 'var(--danger)' : 'var(--accent-emerald)'};font-size:0.75rem;font-style:italic;">${isOutSide ? `Stock Transfer Out &rarr; ${esc(peerLabel)}` : `Stock Transfer In &larr; ${esc(peerLabel)}`}</p>
-<p><span>Quantity:</span> <span class="qty-val">${safeValue(Math.abs(item.net)).toFixed(2)} kg</span></p>
+<p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(Math.abs(item.net)))} kg</span></p>
 ${item.transferNote ? `<p><span>Note:</span> <span style="color:var(--text-muted);">${esc(item.transferNote)}</span></p>` : ''}
 <button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>
 `;
@@ -3413,20 +3413,20 @@ ${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(
 </div>
 ${item.isReturn ? `
 <p style="color:var(--accent-emerald);font-size:0.75rem;font-style:italic;">${item.isMerged ? 'Merged returns by' : 'Returned by'} ${esc(item.returnedBy || 'Representative')}</p>
-<p><span>Returned:</span> <span class="qty-val">${safeValue(item.net).toFixed(2)} kg</span></p>
+<p><span>Returned:</span> <span class="qty-val">${fmtNum(safeValue(item.net))} kg</span></p>
 ${returnsByStoreHtml}
 ${item.isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`}
 ` : `
-${item.grossWt ? `<p><span>Gross Weight:</span> <span class="qty-val">${safeValue(item.grossWt).toFixed(2)} kg</span></p>` : ''}
-${item.contWt ? `<p><span>Container:</span> <span style="color:var(--text-muted);">${safeValue(item.contWt).toFixed(2)} kg</span></p>` : ''}
-<p><span>Net Weight:</span> <span class="qty-val">${safeValue(item.net).toFixed(2)} kg</span></p>
-<p><span>Cost Price:</span> <span class="cost-val">${safeValue(item.cp).toFixed(2)}/kg</span></p>
-<p><span>Sale Price:</span> <span class="rev-val">${safeValue(item.sp).toFixed(2)}/kg</span></p>
+${item.grossWt ? `<p><span>Gross Weight:</span> <span class="qty-val">${fmtNum(safeValue(item.grossWt))} kg</span></p>` : ''}
+${item.contWt ? `<p><span>Container:</span> <span style="color:var(--text-muted);">${fmtNum(safeValue(item.contWt))} kg</span></p>` : ''}
+<p><span>Net Weight:</span> <span class="qty-val">${fmtNum(safeValue(item.net))} kg</span></p>
+<p><span>Cost Price:</span> <span class="cost-val">${fmtNum(safeValue(item.cp))}/kg</span></p>
+<p><span>Sale Price:</span> <span class="rev-val">${fmtNum(safeValue(item.sp))}/kg</span></p>
 <hr>
 <p><span>Total Cost:</span> <span class="cost-val">${fmtAmt(safeValue(item.totalCost))}</span></p>
 <p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(item.totalSale))}</span></p>
 <p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(item.profit))}</span></p>
-${item.formulaUnits ? `<p><span>Formula Units:</span> <span class="qty-val">${safeValue(item.formulaUnits).toFixed(2)}</span></p>` : ''}
+${item.formulaUnits ? `<p><span>Formula Units:</span> <span class="qty-val">${fmtNum(safeValue(item.formulaUnits))}</span></p>` : ''}
 ${item.formulaCost ? `<p><span>Formula Cost:</span> <span class="cost-val">${fmtAmt(safeValue(item.formulaCost))}</span></p>` : ''}
 ${item.isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`}
 `}
@@ -3438,7 +3438,7 @@ histContainer.replaceChildren(fragment);
 }
 const updateStats = (idPrefix, statObj) => {
 const _st = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_st(`${idPrefix}-qty`, `${safeValue(statObj.q).toFixed(2)} kg`);
+_st(`${idPrefix}-qty`, `${fmtNum(safeValue(statObj.q))} kg`);
 _st(`${idPrefix}-value`, `${fmtAmt(safeValue(statObj.v))}`);
 _st(`${idPrefix}-cost`, `${fmtAmt(safeValue(statObj.c))}`);
 _st(`${idPrefix}-profit`, `${fmtAmt(safeValue(statObj.p))}`);
@@ -5269,12 +5269,12 @@ const stdWeightPerUnit = await getWeightPerUnit('standard');
 const stdRawMaterialsUsed = stdWeightPerUnit * stdUsedUnits;
 const stdMaterialsValue = stdProductionData.reduce((sum, item) => sum + (item.formulaCost || item.totalCost || 0), 0);
 const _setFac = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_setFac('factoryStdUnits', safeNumber(stdAvailableUnits, 0).toFixed(2));
-_setFac('factoryStdUsedUnits', safeNumber(stdUsedUnits, 0).toFixed(2));
+_setFac('factoryStdUnits', fmtNum(safeNumber(stdAvailableUnits, 0)));
+_setFac('factoryStdUsedUnits', fmtNum(safeNumber(stdUsedUnits, 0)));
 _setFac('factoryStdUnitCost', await formatCurrency(stdCostPerUnit));
 _setFac('factoryStdTotalVal', await formatCurrency(stdTotalCostValue));
-_setFac('factoryStdOutput', safeNumber(stdOutputQuantity, 0).toFixed(2) + ' kg');
-_setFac('factoryStdRawUsed', safeNumber(stdRawMaterialsUsed, 0).toFixed(2) + ' kg');
+_setFac('factoryStdOutput', fmtNum(safeNumber(stdOutputQuantity, 0)) + ' kg');
+_setFac('factoryStdRawUsed', fmtNum(safeNumber(stdRawMaterialsUsed, 0)) + ' kg');
 _setFac('factoryStdMatVal', await formatCurrency(stdMaterialsValue));
 _setFac('factoryStdProfit', await formatCurrency(stdTotalProfit));
 _setFac('factoryStdProfitUnit', await formatCurrency(stdProfitPerKg) + '/kg');
@@ -5288,12 +5288,12 @@ const asaanProfitPerKg = asaanOutputQuantity > 0 ? asaanTotalProfit / asaanOutpu
 const asaanWeightPerUnit = await getWeightPerUnit('asaan');
 const asaanRawMaterialsUsed = asaanWeightPerUnit * asaanUsedUnits;
 const asaanMaterialsValue = asaanProductionData.reduce((sum, item) => sum + (item.formulaCost || item.totalCost || 0), 0);
-_setFac('factoryAsaanUnits', safeNumber(asaanAvailableUnits, 0).toFixed(2));
-_setFac('factoryAsaanUsedUnits', safeNumber(asaanUsedUnits, 0).toFixed(2));
+_setFac('factoryAsaanUnits', fmtNum(safeNumber(asaanAvailableUnits, 0)));
+_setFac('factoryAsaanUsedUnits', fmtNum(safeNumber(asaanUsedUnits, 0)));
 _setFac('factoryAsaanUnitCost', await formatCurrency(asaanCostPerUnit));
 _setFac('factoryAsaanTotalVal', await formatCurrency(asaanTotalCostValue));
-_setFac('factoryAsaanOutput', safeNumber(asaanOutputQuantity, 0).toFixed(2) + ' kg');
-_setFac('factoryAsaanRawUsed', safeNumber(asaanRawMaterialsUsed, 0).toFixed(2) + ' kg');
+_setFac('factoryAsaanOutput', fmtNum(safeNumber(asaanOutputQuantity, 0)) + ' kg');
+_setFac('factoryAsaanRawUsed', fmtNum(safeNumber(asaanRawMaterialsUsed, 0)) + ' kg');
 _setFac('factoryAsaanMatVal', await formatCurrency(asaanMaterialsValue));
 _setFac('factoryAsaanProfit', await formatCurrency(asaanTotalProfit));
 _setFac('factoryAsaanProfitUnit', await formatCurrency(asaanProfitPerKg) + '/kg');
@@ -5401,13 +5401,13 @@ else {
 }
 const avgAdditionalCostPerDay = totalAdditionalCostProd > 0 ? totalAdditionalCostProd / periodDays : 0;
 const _setSum = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-_setSum('factorySumUnits', safeNumber(totalAvailable, 0).toFixed(2));
-_setSum('factorySumUsedUnits', safeNumber(totalConsumed, 0).toFixed(2));
+_setSum('factorySumUnits', fmtNum(safeNumber(totalAvailable, 0)));
+_setSum('factorySumUsedUnits', fmtNum(safeNumber(totalConsumed, 0)));
 _setSum('factorySumCostPerDay', await formatCurrency(avgAdditionalCostPerDay));
 _setSum('factorySumUnitCost', await formatCurrency(avgCostPerUnit));
 _setSum('factorySumTotalCost', await formatCurrency(totalCost));
-_setSum('factorySumOutput', safeNumber(totalOutput, 0).toFixed(2) + ' kg');
-_setSum('factorySumRawUsed', safeNumber(totalRawUsed, 0).toFixed(2) + ' kg');
+_setSum('factorySumOutput', fmtNum(safeNumber(totalOutput, 0)) + ' kg');
+_setSum('factorySumRawUsed', fmtNum(safeNumber(totalRawUsed, 0)) + ' kg');
 
 const _rawBreakdownEl = document.getElementById('factorySumRawBreakdown');
 if (_rawBreakdownEl) {
@@ -5418,7 +5418,7 @@ if (_rawBreakdownEl) {
 <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--glass-border);">
 <span style="font-size:0.72rem;color:var(--text-main);font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</span>
 <span style="display:flex;gap:10px;align-items:center;">
-<span style="font-size:0.7rem;color:var(--text-muted);">${safeNumber(data.qty,0).toFixed(2)} kg</span>
+<span style="font-size:0.7rem;color:var(--text-muted);">${fmtNum(safeNumber(data.qty,0))} kg</span>
 <span class="cost-val" style="font-size:0.72rem;min-width:60px;text-align:right;">${fmtAmt(data.cost)}</span>
 </span>
 </div>`).join('');
@@ -5766,7 +5766,7 @@ totalCombined.formulaUnits += storeData.formulaUnits;
 totalCombined.formulaCost += storeData.formulaCost;
 let returnsHtml = '';
 if (storeData.returns > 0) {
-returnsHtml = `<p><span>Returns Recvd:</span> <span style="color:#10b981; font-weight:800;">${safeValue(storeData.returns).toFixed(2)} kg</span></p>`;
+returnsHtml = `<p><span>Returns Recvd:</span> <span style="color:#10b981; font-weight:800;">${fmtNum(safeValue(storeData.returns))} kg</span></p>`;
 }
 
 let soldBreakdownHtml = '';
@@ -5776,7 +5776,7 @@ const soldBreakdownId = `sold-breakdown-${store}-${index}`;
 const soldRowsHtml = soldBreakdownEntries.map(([cust, qty]) => `
 <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--glass-border);">
 <span style="font-size:0.7rem;color:var(--text-main);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cust)}</span>
-<span style="font-size:0.7rem;font-weight:700;color:var(--cost-val, #f59e0b);white-space:nowrap;margin-left:8px;">${safeValue(qty).toFixed(2)} kg</span>
+<span style="font-size:0.7rem;font-weight:700;color:var(--cost-val, #f59e0b);white-space:nowrap;margin-left:8px;">${fmtNum(safeValue(qty))} kg</span>
 </div>`).join('');
 soldBreakdownHtml = `
 <div style="margin-top:4px;">
@@ -5799,15 +5799,15 @@ card.className = `overview-card liquid-card`;
 card.innerHTML = `
 <span class="store-badge ${storeColors[index]}">${esc(storeNames[index])}</span>
 <h4>${esc(storeNames[index])} (${mode === 'all' ? 'All Times' : _cap(mode)})</h4>
-<p><span>Produced:</span> <span class="qty-val" style="color:var(--text-main);">${safeValue(storeData.production).toFixed(2)} kg</span></p>
+<p><span>Produced:</span> <span class="qty-val" style="color:var(--text-main);">${fmtNum(safeValue(storeData.production))} kg</span></p>
 ${returnsHtml}
-<p><span>Sold (Sales Tab):</span> <span class="cost-val">${safeValue(soldQty).toFixed(2)} kg</span></p>
+<p><span>Sold (Sales Tab):</span> <span class="cost-val">${fmtNum(safeValue(soldQty))} kg</span></p>
 ${soldBreakdownHtml}
 <div style="border-top:1px dashed var(--glass-border); margin:4px 0; padding-top:4px;">
-<p><span>Remaining:</span> <span class="profit-val" style="font-size:1.1rem;">${safeValue(remainingQty).toFixed(2)} kg</span></p>
+<p><span>Remaining:</span> <span class="profit-val" style="font-size:1.1rem;">${fmtNum(safeValue(remainingQty))} kg</span></p>
 </div>
 <div style="background:rgba(37,99,235,0.03); padding:5px; border-radius:6px; margin:5px 0;">
-<p><span>Formula Units:</span> <span class="qty-val u-fw-700" >${safeValue(storeData.formulaUnits).toFixed(2)}</span></p>
+<p><span>Formula Units:</span> <span class="qty-val u-fw-700" >${fmtNum(safeValue(storeData.formulaUnits))}</span></p>
 <p><span>Formula Cost:</span> <span class="cost-val u-fw-700" >${fmtAmt(safeValue(storeData.formulaCost))}</span></p>
 </div>
 <hr>
@@ -5849,7 +5849,7 @@ const combinedSoldBreakdownId = `sold-breakdown-combined`;
 const combinedSoldRowsHtml = combinedSoldEntries.map(([cust, qty]) => `
 <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--glass-border);">
 <span style="font-size:0.7rem;color:var(--text-main);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cust)}</span>
-<span style="font-size:0.7rem;font-weight:700;color:var(--cost-val, #f59e0b);white-space:nowrap;margin-left:8px;">${safeValue(qty).toFixed(2)} kg</span>
+<span style="font-size:0.7rem;font-weight:700;color:var(--cost-val, #f59e0b);white-space:nowrap;margin-left:8px;">${fmtNum(safeValue(qty))} kg</span>
 </div>`).join('');
 combinedSoldBreakdownHtml = `
 <div style="margin-top:4px;">
@@ -5871,14 +5871,14 @@ const combinedCard = document.createElement('div');
 combinedCard.className = `overview-card liquid-card highlight-card`;
 combinedCard.innerHTML = `
 <h4 style="color: var(--accent);">Total Combined</h4>
-<p><span>Fresh Production:</span> <span class="qty-val">${safeValue(totalCombined.production).toFixed(2)} kg</span></p>
-${totalCombined.returns > 0 ? `<p><span>Total Returns:</span> <span style="color:#10b981; font-weight:800;">${safeValue(totalCombined.returns).toFixed(2)} kg</span></p>` : ''}
-<p><span>Total Sold:</span> <span class="cost-val">${safeValue(totalCombined.sold).toFixed(2)} kg</span></p>
+<p><span>Fresh Production:</span> <span class="qty-val">${fmtNum(safeValue(totalCombined.production))} kg</span></p>
+${totalCombined.returns > 0 ? `<p><span>Total Returns:</span> <span style="color:#10b981; font-weight:800;">${fmtNum(safeValue(totalCombined.returns))} kg</span></p>` : ''}
+<p><span>Total Sold:</span> <span class="cost-val">${fmtNum(safeValue(totalCombined.sold))} kg</span></p>
 ${combinedSoldBreakdownHtml}
 <div style="border-top:1px dashed var(--glass-border); margin:4px 0; padding-top:4px;">
-<p><span>Total Remaining:</span> <span class="profit-val" style="font-size:1.1rem;">${safeValue(combinedRemaining).toFixed(2)} kg</span></p>
+<p><span>Total Remaining:</span> <span class="profit-val" style="font-size:1.1rem;">${fmtNum(safeValue(combinedRemaining))} kg</span></p>
 </div>
-<p><span>Total Formula Units:</span> <span class="qty-val">${safeValue(totalCombined.formulaUnits).toFixed(2)}</span></p>
+<p><span>Total Formula Units:</span> <span class="qty-val">${fmtNum(safeValue(totalCombined.formulaUnits))}</span></p>
 <p><span>Total Formula Cost:</span> <span class="cost-val">${fmtAmt(safeValue(totalCombined.formulaCost))}</span></p>
 <hr style="margin:8px 0;">
 <p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(totalCombined.value))}</span></p>
@@ -6392,7 +6392,7 @@ ${(typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(item) : ''}
 ${supplyDateLine}
 <div class="supply-tag ${supplyTagClass}">Supply: ${supplyTagText}</div>
 <hr>
-<p><span>Quantity:</span> <span class="qty-val">${safeValue(item.quantity).toFixed(2)} kg</span></p>
+<p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(item.quantity))} kg</span></p>
 <p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(item.totalValue))}</span></p>
 <p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(item.profit))}</span></p>
 ${creditSection}
@@ -6474,7 +6474,7 @@ const el = document.getElementById('stockTransferAvailability');
 if (!el) return;
 if (!fromStore || !date) { el.textContent = ''; return; }
 const snap = await computeStoreStockSnapshot(fromStore, date);
-el.textContent = `${safeNumber(snap.available, 0).toFixed(2)} kg available at ${getStoreLabel(fromStore)} on ${date}`;
+el.textContent = `${fmtNum(safeNumber(snap.available, 0))} kg available at ${getStoreLabel(fromStore)} on ${date}`;
 el.style.color = snap.available > 0 ? 'var(--accent-emerald)' : 'var(--danger)';
 }
 window.updateStockTransferAvailability = updateStockTransferAvailability;
@@ -6495,7 +6495,7 @@ if (fromStore === toStore) { showToast('From and To stores must be different.', 
 if (quantity <= 0) { showToast('Please enter a valid quantity.', 'warning', 3000); return; }
 const snapshot = await computeStoreStockSnapshot(fromStore, date);
 if (quantity > snapshot.available) {
-showToast(` Insufficient stock at ${getStoreLabel(fromStore)}. Available: ${safeNumber(snapshot.available, 0).toFixed(2)} kg, Requested: ${safeNumber(quantity, 0).toFixed(2)} kg.`, 'error', 6000);
+showToast(` Insufficient stock at ${getStoreLabel(fromStore)}. Available: ${fmtNum(safeNumber(snapshot.available, 0))} kg, Requested: ${fmtNum(safeNumber(quantity, 0))} kg.`, 'error', 6000);
 return;
 }
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
@@ -6535,7 +6535,7 @@ db.push(outEntry, inEntry);
 await unifiedSave('mfg_pro_pkr', db, null, [outEntry.id, inEntry.id]);
 notifyDataChange('production');
 emitSyncUpdate({ mfg_pro_pkr: null });
-showToast(`Transferred ${safeNumber(quantity, 0).toFixed(2)} kg: ${getStoreLabel(fromStore)} → ${getStoreLabel(toStore)}`, 'success');
+showToast(`Transferred ${fmtNum(safeNumber(quantity, 0))} kg: ${getStoreLabel(fromStore)} → ${getStoreLabel(toStore)}`, 'success');
 const qtyInput = document.getElementById('stock-transfer-qty'); if (qtyInput) qtyInput.value = '';
 const noteInput = document.getElementById('stock-transfer-note'); if (noteInput) noteInput.value = '';
 await updateStockTransferAvailability();
@@ -6566,7 +6566,7 @@ div.innerHTML = `
 ${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(item) : ''}
 </div>
 <p><span style="color:var(--accent);">${escapeHtml(getStoreLabel(item.store))}</span> <span style="color:var(--text-muted);"> &rarr; </span> <span style="color:var(--accent-emerald);">${escapeHtml(getStoreLabel(item.transferPeerStore))}</span></p>
-<p><span>Quantity:</span> <span class="qty-val">${safeValue(Math.abs(item.net)).toFixed(2)} kg</span></p>
+<p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(Math.abs(item.net)))} kg</span></p>
 ${item.transferNote ? `<p><span>Note:</span> <span style="color:var(--text-muted);">${escapeHtml(item.transferNote)}</span></p>` : ''}
 <button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteStockTransfer('${escapeHtml(item.transferPairId)}') })()">Delete</button>
 `;
@@ -6585,7 +6585,7 @@ const inSide = entries.find(e => e.transferDirection === 'in');
 const qty = Math.abs((outSide && outSide.net) || (inSide && inSide.net) || 0);
 const fromLabel = outSide ? getStoreLabel(outSide.store) : (inSide ? getStoreLabel(inSide.transferPeerStore) : '?');
 const toLabel = inSide ? getStoreLabel(inSide.store) : (outSide ? getStoreLabel(outSide.transferPeerStore) : '?');
-const confirmMsg = `Remove this stock transfer?\n${fromLabel} → ${toLabel}\nQuantity: ${qty.toFixed(2)} kg\n\nThis cannot be undone.`;
+const confirmMsg = `Remove this stock transfer?\n${fromLabel} → ${toLabel}\nQuantity: ${fmtNum(qty)} kg\n\nThis cannot be undone.`;
 if (!(await showGlassConfirm(confirmMsg, { title: 'Remove Transfer', confirmText: 'Remove', danger: true }))) return;
 try {
 let working = db.slice();

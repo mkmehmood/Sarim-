@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, balanceAfterHtml, _mergedBadgeHtml, _safeErr, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, balanceAfterHtml, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { calculateCashTracker, calculateNetCash, custTransactionMode, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
@@ -59,7 +59,7 @@ totalCredit -= (s.totalValue || 0);
 totalCredit = Math.max(0, totalCredit);
 const _setCust = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setCust('customer-current-credit', await formatCurrency(totalCredit));
-_setCust('customer-total-quantity', safeNumber(totalQty, 0).toFixed(2) + ' kg');
+_setCust('customer-total-quantity', fmtNum(safeNumber(totalQty, 0)) + ' kg');
 document.getElementById('customer-info-display').classList.remove('hidden');
 if (typeof custTransactionMode !== 'undefined' && custTransactionMode === 'collection' && typeof updateCollectionPreview === 'function') {
 updateCollectionPreview();
@@ -206,7 +206,7 @@ tbody.appendChild(_fragC);
 const _setCustH = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setCustH('customer-count', `${totalItems || 0} active`);
 _setCustH('customers-total-credit', `${fmtAmt(totalOutstanding)}`);
-_setCustH('customers-total-quantity', safeNumber(totalGlobalQty, 0).toFixed(2) + ' kg');
+_setCustH('customers-total-quantity', fmtNum(safeNumber(totalGlobalQty, 0)) + ' kg');
 }
 
 export let currentManagingCustomer = null;
@@ -478,7 +478,7 @@ itemContent = `
 <div class="txn-card-row">
   <div class="cust-history-info">
     <div class="u-fs-sm2 u-text-muted">${formatDisplayDateTime(t.date, t.time || null)}${_mergedBadgeHtml(t, {inline:true})}${(typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(t) : ''}</div>
-    <div class="u-fs-sm2 u-text-muted">${safeToFixed(t.quantity, 2)} kg @ ${await formatCurrency(_displayUnitPrice)} = ${await formatCurrency(_txValue)}</div>
+    <div class="u-fs-sm2 u-text-muted">${fmtNum(t.quantity)} kg @ ${await formatCurrency(_displayUnitPrice)} = ${await formatCurrency(_txValue)}</div>
     ${hasPartialPayment ? `<div style="font-size:0.7rem;color:var(--accent-emerald);margin-top:2px;">Paid: ${await formatCurrency(partialPaid)} | Due: ${await formatCurrency(Math.max(0, _txValue - partialPaid))}</div>` : ''}
     <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">${getStoreLabel(t.supplyStore)}</div>
     ${(t.supplyDate && t.supplyDate !== t.date) ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;font-style:italic;">Supply Date: ${formatDisplayDate(t.supplyDate)}</div>` : ''}
@@ -609,7 +609,7 @@ _txMsg = `Delete this cash sale for ${_txCust || 'customer'}?`;
 if (_txDate) _txMsg += `\nDate: ${_txDate}`;
 if (_txQty) _txMsg += `\nQty: ${_txQty}${_txAmt}`;
 if (_txStore) _txMsg += `\nStore: ${_txStore}`;
-_txMsg += `\n\n\u21a9 ${(_txItem?.quantity||0).toFixed(2)} kg will be restored to inventory.`;
+_txMsg += `\n\n\u21a9 ${fmtNum(_txItem?.quantity||0)} kg will be restored to inventory.`;
 }
 _txMsg += `\n\nThis cannot be undone.`;
 if (!(await showGlassConfirm(_txMsg, { title: _txTitle || `Delete ${_txType}`, confirmText: 'Delete', danger: true }))) return;
@@ -694,7 +694,7 @@ _rTitle = 'Delete Rep Cash Sale';
 _rMsg = `Delete this cash sale for ${_rCust || 'customer'}${_rRep ? ` (Rep: ${_rRep})` : ''}?`;
 if (_rDate) _rMsg += `\nDate: ${_rDate}`;
 if (_rQty) _rMsg += `\nQty: ${_rQty}${_rAmt}`;
-_rMsg += `\n\n\u21a9 ${(_rItem?.quantity||0).toFixed(2)} kg will be restored to inventory.`;
+_rMsg += `\n\n\u21a9 ${fmtNum(_rItem?.quantity||0)} kg will be restored to inventory.`;
 }
 _rMsg += `\n\nThis cannot be undone.`;
 if (!(await showGlassConfirm(_rMsg, { title: _rTitle || `Delete ${_rType}`, confirmText: 'Delete', danger: true }))) return;
@@ -1077,7 +1077,7 @@ await unifiedSave('customer_sales', salesArray, null, renamedRecords.map(r => r.
 }
 }
 const message = nameChanged ? `Customer renamed to "${name}" and details updated`
-: oldDebit > 0 ? `Customer updated with old debt of ₨${oldDebit.toLocaleString()}`
+: oldDebit > 0 ? `Customer updated with old debt of ₨${fmtNum(oldDebit)}`
 : (oldDebit === 0 && previousOldDebit > 0) ? 'Customer updated and old debt cleared'
 : 'Customer details updated successfully';
 if (nameChanged) {

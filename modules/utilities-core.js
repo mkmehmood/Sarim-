@@ -1,5 +1,5 @@
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, generateUUID, getTimestamp, isSyncing, loadAllData, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getTimestamp, isSyncing, loadAllData, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
 import { DeltaSync, calculateCashTracker, calculateCustomerSale, calculateNetCash, currentActiveTab, currentCashTrackerMode, currentCustomerChartMode, currentFactoryDate, currentFactoryEntryStore, currentIndMetric, currentIndMode, currentMfgMode, currentOverviewMode, currentProductionView, currentStoreComparisonMetric, custTransactionMode, getStoreFormulaType, getStoreLabel, refreshCustomerSales, refreshFactoryTab, refreshUI, renderEntityTable, trackFirestoreWrite, updateFactorySummaryCard, updateFactoryUnitsAvailableStats, updateMfgCharts } from './utilities-sales.js';
 import { _applyPaymentTransferPendingPhoto, autoFillTotalSoldQuantity, calculateEntityBalances, currentCompMode, currentExpenseOverlayName, currentPerfOverviewMode, currentSalesSummaryMode, deletePaymentTransfer, editEntityBasicInfo, editingEntityId, entityViewMode, formatCurrency, formatDisplayDate, formatDisplayDateTime, loadSalesData, phoneActionHTML, refreshPaymentTab, renderUnifiedTable, selectedEntityId, toSafeDate } from './utilities-payments.js';
@@ -1261,11 +1261,11 @@ if (_clearGrossWt) _clearGrossWt.value = '';
 if (_clearContWt) _clearContWt.value = '';
 if (_clearNetWt) _clearNetWt.value = '';
 if (formulaUnitsEl) formulaUnitsEl.value = '1';
-if (displayCostValue) displayCostValue.innerText = '0.00';
-if (profitPerKg) profitPerKg.innerText = '0.00';
-if (formulaUnitCostDisplay) formulaUnitCostDisplay.innerText = '0.00/unit';
-if (totalFormulaCostDisplay) totalFormulaCostDisplay.innerText = '0.00';
-if (dynamicCostPerKg) dynamicCostPerKg.innerText = '0.00/kg';
+if (displayCostValue) displayCostValue.innerText = '0';
+if (profitPerKg) profitPerKg.innerText = '0';
+if (formulaUnitCostDisplay) formulaUnitCostDisplay.innerText = '0/unit';
+if (totalFormulaCostDisplay) totalFormulaCostDisplay.innerText = '0';
+if (dynamicCostPerKg) dynamicCostPerKg.innerText = '0/kg';
 await refreshUI();
 calculateNetCash();
 calculateCashTracker();
@@ -1310,28 +1310,28 @@ if (preDeletedRecord && typeof preDeletedRecord === 'object') {
     case 'sales':
       tempResult.displayName   = s.customerName || s.name || 'Unknown Customer';
       tempResult.displayDetail = [s.supplyStore || s.store || '', s.paymentType ? (s.paymentType === 'CASH' ? 'Cash' : s.paymentType === 'CREDIT' ? 'Credit' : s.paymentType) : '', s.date || ''].filter(Boolean).join(' · ');
-      tempResult.displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : (s.quantity ? `${s.quantity} kg` : null);
+      tempResult.displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : (s.quantity ? `${s.quantity} kg` : null);
       break;
     case 'transactions':
       if (s.isTransfer === true) {
         tempResult.displayName   = `Transfer – ${s.entityName || '?'} ${s.type === 'OUT' ? '→' : '←'} ${s.transferPeerEntityName || '?'}`;
         tempResult.displayDetail = [s.type === 'IN' ? '↓ IN' : s.type === 'OUT' ? '↑ OUT' : (s.type || ''), s.date || ''].filter(Boolean).join(' · ');
-        tempResult.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+        tempResult.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
       } else {
         tempResult.displayName   = s.entityName || s.name || s.description || 'Unknown Transaction';
         tempResult.displayDetail = [s.type === 'IN' ? '↓ IN' : s.type === 'OUT' ? '↑ OUT' : (s.type || ''), s.date || ''].filter(Boolean).join(' · ');
-        tempResult.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : (s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null);
+        tempResult.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : (s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null);
       }
       break;
     case 'rep_sales':
       tempResult.displayName   = s.customerName || s.name || 'Unknown Rep Customer';
       tempResult.displayDetail = [s.salesRep ? `Rep: ${s.salesRep}` : '', s.paymentType === 'COLLECTION' ? 'Collection' : s.paymentType === 'CREDIT' ? 'Credit' : s.paymentType === 'CASH' ? 'Cash' : (s.paymentType || ''), s.date || ''].filter(Boolean).join(' · ');
-      tempResult.displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : (s.quantity ? `${s.quantity} kg` : null);
+      tempResult.displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : (s.quantity ? `${s.quantity} kg` : null);
       break;
     case 'expenses':
       tempResult.displayName   = s.name || s.description || 'Unknown Expense';
       tempResult.displayDetail = [s.category || '', s.date || ''].filter(Boolean).join(' · ');
-      tempResult.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+      tempResult.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
       break;
     case 'sales_customers':
       tempResult.displayName   = s.name || null;
@@ -1373,7 +1373,7 @@ if (preDeletedRecord && typeof preDeletedRecord === 'object') {
     case 'calculator_history':
       tempResult.displayName   = s.customerName || s.customer || s.name || 'Calculator Entry';
       tempResult.displayDetail = s.supplyStore || s.store || '';
-      tempResult.displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null;
+      tempResult.displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null;
       break;
     case 'entities':
       tempResult.displayName   = s.name || 'Payment Entity';
@@ -1382,7 +1382,7 @@ if (preDeletedRecord && typeof preDeletedRecord === 'object') {
     default:
       tempResult.displayName   = s.name || s.customerName || s.entityName || s.description || null;
       tempResult.displayDetail = s.date || null;
-      tempResult.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+      tempResult.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
   }
   _snapshot = tempResult;
 } else {
@@ -1476,7 +1476,7 @@ const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_prod
           record.paymentType ? (record.paymentType === 'CASH' ? 'Cash' : record.paymentType === 'CREDIT' ? 'Credit' : record.paymentType) : '',
           record.date || ''
         ].filter(Boolean).join(' · ');
-        result.displayAmount = record.totalValue != null ? `₨${Number(record.totalValue).toLocaleString()}` : (record.quantity ? `${record.quantity} kg` : null);
+        result.displayAmount = record.totalValue != null ? `₨${fmtNum(record.totalValue)}` : (record.quantity ? `${record.quantity} kg` : null);
         break;
       case 'transactions':
         if (record.isTransfer === true) {
@@ -1485,14 +1485,14 @@ const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_prod
             record.type === 'IN' ? '↓ IN' : record.type === 'OUT' ? '↑ OUT' : (record.type || ''),
             record.date || ''
           ].filter(Boolean).join(' · ');
-          result.displayAmount = record.amount != null ? `₨${Number(record.amount).toLocaleString()}` : null;
+          result.displayAmount = record.amount != null ? `₨${fmtNum(record.amount)}` : null;
         } else {
           result.displayName   = record.entityName || record.description || record.name || 'Unknown Entity';
           result.displayDetail = [
             record.type === 'IN' ? '↓ IN' : record.type === 'OUT' ? '↑ OUT' : (record.type || ''),
             record.date || ''
           ].filter(Boolean).join(' · ');
-          result.displayAmount = record.amount != null ? `₨${Number(record.amount).toLocaleString()}` : (record.totalValue != null ? `₨${Number(record.totalValue).toLocaleString()}` : null);
+          result.displayAmount = record.amount != null ? `₨${fmtNum(record.amount)}` : (record.totalValue != null ? `₨${fmtNum(record.totalValue)}` : null);
         }
         break;
       case 'rep_sales':
@@ -1502,12 +1502,12 @@ const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_prod
           record.paymentType === 'COLLECTION' ? 'Collection' : record.paymentType === 'CREDIT' ? 'Credit' : record.paymentType === 'CASH' ? 'Cash' : (record.paymentType || ''),
           record.date || ''
         ].filter(Boolean).join(' · ');
-        result.displayAmount = record.totalValue != null ? `₨${Number(record.totalValue).toLocaleString()}` : (record.quantity ? `${record.quantity} kg` : null);
+        result.displayAmount = record.totalValue != null ? `₨${fmtNum(record.totalValue)}` : (record.quantity ? `${record.quantity} kg` : null);
         break;
       case 'expenses':
         result.displayName   = record.name || 'Unknown Expense';
         result.displayDetail = record.category || '';
-        result.displayAmount = record.amount != null ? `₨${Number(record.amount).toLocaleString()}` : null;
+        result.displayAmount = record.amount != null ? `₨${fmtNum(record.amount)}` : null;
         break;
       case 'production':
         if (record.isTransfer === true) {
@@ -1536,7 +1536,7 @@ const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_prod
       case 'calculator_history':
         result.displayName   = record.customerName || record.customer || 'Calculator Entry';
         result.displayDetail = record.store || record.supplyStore || '';
-        result.displayAmount = record.totalValue != null ? `₨${Number(record.totalValue).toLocaleString()}` : null;
+        result.displayAmount = record.totalValue != null ? `₨${fmtNum(record.totalValue)}` : null;
         break;
       case 'inventory':
         result.displayName   = record.name || 'Inventory Item';
@@ -1561,7 +1561,7 @@ const factoryProductionHistory = ensureArray(await sqliteStore.get('factory_prod
       default:
         result.displayName   = record.name || record.customerName || record.entityName || record.description || null;
         result.displayDetail = record.date || null;
-        result.displayAmount = record.amount != null ? `₨${Number(record.amount).toLocaleString()}` : null;
+        result.displayAmount = record.amount != null ? `₨${fmtNum(record.amount)}` : null;
     }
   } catch(e) {   }
   return result;
@@ -1575,12 +1575,12 @@ _captureRecordSnapshot._fromObj = function(snapshotObj, collectionName) {
       case 'sales':
         result.displayName   = s.customerName || s.name || null;
         result.displayDetail = [s.supplyStore || s.store || '', s.paymentType || '', s.date || ''].filter(Boolean).join(' · ');
-        result.displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null;
+        result.displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null;
         break;
       case 'rep_sales':
         result.displayName   = s.customerName || s.name || null;
         result.displayDetail = [s.salesRep ? `Rep: ${s.salesRep}` : '', s.paymentType || '', s.date || ''].filter(Boolean).join(' · ');
-        result.displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null;
+        result.displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null;
         break;
       case 'transactions':
         if (s.isTransfer === true) {
@@ -1589,12 +1589,12 @@ _captureRecordSnapshot._fromObj = function(snapshotObj, collectionName) {
           result.displayName = s.entityName || s.description || s.name || null;
         }
         result.displayDetail = [s.type === 'IN' ? '↓ IN' : s.type === 'OUT' ? '↑ OUT' : (s.type || ''), s.date || ''].filter(Boolean).join(' · ');
-        result.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+        result.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
         break;
       case 'expenses':
         result.displayName   = s.name || s.description || null;
         result.displayDetail = [s.category || '', s.date || ''].filter(Boolean).join(' · ');
-        result.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+        result.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
         break;
       case 'production':
         if (s.isTransfer === true) {
@@ -1622,7 +1622,7 @@ _captureRecordSnapshot._fromObj = function(snapshotObj, collectionName) {
       case 'calculator_history':
         result.displayName   = s.customerName || s.customer || s.name || 'Calculator Entry';
         result.displayDetail = s.supplyStore || s.store || '';
-        result.displayAmount = s.totalValue != null ? `₨${Number(s.totalValue).toLocaleString()}` : null;
+        result.displayAmount = s.totalValue != null ? `₨${fmtNum(s.totalValue)}` : null;
         break;
       case 'inventory':
         result.displayName   = s.name || 'Inventory Item';
@@ -1647,7 +1647,7 @@ _captureRecordSnapshot._fromObj = function(snapshotObj, collectionName) {
       default:
         result.displayName   = s.name || s.customerName || s.entityName || s.description || null;
         result.displayDetail = s.date || null;
-        result.displayAmount = s.amount != null ? `₨${Number(s.amount).toLocaleString()}` : null;
+        result.displayAmount = s.amount != null ? `₨${fmtNum(s.amount)}` : null;
     }
   } catch(e) {   }
   return result;
@@ -1771,7 +1771,7 @@ export async function _buildPreclosePanel(record, type, panelId) {
 
     if (record.quantity > 0 || record.totalValue > 0) {
       html += sec('Sales Volume');
-      if (record.quantity > 0)   html += row('Total Quantity',  `${safeToFixed(record.quantity, 2)} kg`);
+      if (record.quantity > 0)   html += row('Total Quantity',  `${fmtNum(record.quantity)} kg`);
       if (record.unitPrice > 0)  html += row('Unit Price',      `${await fmt(record.unitPrice)}/kg`);
       if (record.supplyStore)    html += row('Supply Store',    storeLabel, 'muted');
       html += row('Gross Sale Value', await fmt(record.totalValue));
@@ -2131,7 +2131,7 @@ return;
 const _dtEntity = paymentEntities.find(e => String(e.id) === String(_dt.entityId));
 const _dtEntityName = _dtEntity ? _dtEntity.name : 'Unknown';
 const _dtTypeLabel = _dt.type === 'IN' ? 'Payment Received (IN)' : 'Payment Made (OUT)';
-const _dtAmount = (parseFloat(_dt.amount) || 0).toFixed(2);
+const _dtAmount = fmtNum(parseFloat(_dt.amount) || 0);
 const _dtDate = _dt.date || 'Unknown date';
 const _dtDesc = _dt.description ? `\nNote: ${_dt.description}` : '';
 let _dtMsg = `Delete this ${_dtTypeLabel}?`;
