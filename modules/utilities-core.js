@@ -1102,6 +1102,7 @@ export async function loadUIState() {
     if (saved && typeof saved === 'object') {
       _uiState = { ..._UI_DEFAULTS, ...saved };
     }
+    (window.__uiSyncers || []).forEach(fn => { try { fn(); } catch (_) {} });
   } catch (_) {}
 }
 

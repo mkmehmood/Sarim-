@@ -8,18 +8,20 @@ import { calculatePaymentSummaries, closeFactoryInventoryModal, editingFactoryIn
 import { calculateCustomerStatsForDisplay, currentManagingRepCustomer, openCustomerEditModal, refreshAllCalculations, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
 import { calculateRepCustomerStatsForDisplay, checkBiometricLock, disableBiometricLock, openRepCustomerEditModal, refreshRepUI, renderRepCustomerTable, renderRepCustomerTransactions, renderRepHistory } from './rep-sales.js';
 
+const _cap = (s) => { s = String(s ?? ''); return s.charAt(0).toUpperCase() + s.slice(1); };
+
 // Implicit globals (previously assigned only via window.X / bare X = ...,
 // no formal var/let/const anywhere) -- now real module bindings.
-export let currentCompMode;
+export let currentCompMode = 'all';
 window.currentCompMode = currentCompMode;
 export function _set_currentCompMode(v) { currentCompMode = v; window.currentCompMode = v; }
-export let currentSalesSummaryMode;
+export let currentSalesSummaryMode = 'day';
 window.currentSalesSummaryMode = currentSalesSummaryMode;
 export function _set_currentSalesSummaryMode(v) { currentSalesSummaryMode = v; window.currentSalesSummaryMode = v; }
-export let currentPerfOverviewMode;
+export let currentPerfOverviewMode = 'day';
 window.currentPerfOverviewMode = currentPerfOverviewMode;
 export function _set_currentPerfOverviewMode(v) { currentPerfOverviewMode = v; window.currentPerfOverviewMode = v; }
-export let entityViewMode;
+export let entityViewMode = 'detailed';
 window.entityViewMode = entityViewMode;
 export function _set_entityViewMode(v) { entityViewMode = v; window.entityViewMode = v; }
 export let editingEntityId;
@@ -31,6 +33,15 @@ export function _set_selectedEntityId(v) { selectedEntityId = v; window.selected
 export let currentExpenseOverlayName;
 window.currentExpenseOverlayName = currentExpenseOverlayName;
 export function _set_currentExpenseOverlayName(v) { currentExpenseOverlayName = v; window.currentExpenseOverlayName = v; }
+
+// Re-sync module bindings from the persisted UI state once it has loaded.
+(window.__uiSyncers = window.__uiSyncers || []).push(() => {
+  try { const v = window.currentCompMode; if (v !== undefined) currentCompMode = v; } catch (_) {}
+  try { const v = window.currentSalesSummaryMode; if (v !== undefined) currentSalesSummaryMode = v; } catch (_) {}
+  try { const v = window.currentPerfOverviewMode; if (v !== undefined) currentPerfOverviewMode = v; } catch (_) {}
+  try { const v = window.entityViewMode; if (v !== undefined) entityViewMode = v; } catch (_) {}
+});
+
 
 export async function toggleCustomerCreditReceived(id, event) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -3542,7 +3553,7 @@ default: return true;
 }
 records.sort((a, b) => new Date(a.date) - new Date(b.date));
 const total = records.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-const rangeName = range === 'all' ? 'All Time' : range.charAt(0).toUpperCase() + range.slice(1);
+const rangeName = range === 'all' ? 'All Time' : _cap(range);
 const { jsPDF } = window.jspdf;
 const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
 const pageW = doc.internal.pageSize.getWidth();
@@ -6509,7 +6520,7 @@ const hint = document.getElementById('userrole-access-hint');
 if (hint) {
 hint.textContent = _newUserRoleSelectedTabs.size === 0
 ? 'Select one or more tabs to assign'
-: 'Access: ' + [..._newUserRoleSelectedTabs].map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ');
+: 'Access: ' + [..._newUserRoleSelectedTabs].map(t => _cap(t)).join(', ');
 }
 }
 

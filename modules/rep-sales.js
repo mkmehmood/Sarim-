@@ -9,12 +9,19 @@ import { _set_currentManagingRepCustomer, currentManagingRepCustomer, showGlassC
 
 // Implicit globals (previously assigned only via window.X / bare X = ...,
 // no formal var/let/const anywhere) -- now real module bindings.
-export let repTransactionMode;
+export let repTransactionMode = 'sale';
 window.repTransactionMode = repTransactionMode;
 export function _set_repTransactionMode(v) { repTransactionMode = v; window.repTransactionMode = v; }
-export let currentRepAnalyticsMode;
+export let currentRepAnalyticsMode = 'day';
 window.currentRepAnalyticsMode = currentRepAnalyticsMode;
 export function _set_currentRepAnalyticsMode(v) { currentRepAnalyticsMode = v; window.currentRepAnalyticsMode = v; }
+
+// Re-sync module bindings from the persisted UI state once it has loaded.
+(window.__uiSyncers = window.__uiSyncers || []).push(() => {
+  try { const v = window.currentRepAnalyticsMode; if (v !== undefined) currentRepAnalyticsMode = v; } catch (_) {}
+  try { const v = window.repTransactionMode; if (v !== undefined) repTransactionMode = v; } catch (_) {}
+});
+
 
 export async function enableBiometricLock() {
 try {

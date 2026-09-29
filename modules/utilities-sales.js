@@ -9,44 +9,63 @@ import { calculateFactoryProduction, currentFactorySummaryMode, currentStore, ge
 import { calculateCustomerStatsForDisplay, currentManagingCustomer, renderCustomerTransactions, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
 import { calculateRepAnalytics, calculateRepSalePreview, getPosition, refreshRepUI, renderRepCustomerTable, repMap, updateRepLiveMap } from './rep-sales.js';
 
+const _cap = (s) => { s = String(s ?? ''); return s.charAt(0).toUpperCase() + s.slice(1); };
+
 // Implicit globals (previously assigned only via window.X / bare X = ...,
 // no formal var/let/const anywhere) -- now real module bindings.
-export let currentCashTrackerMode;
+export let currentCashTrackerMode = 'day';
 window.currentCashTrackerMode = currentCashTrackerMode;
 export function _set_currentCashTrackerMode(v) { currentCashTrackerMode = v; window.currentCashTrackerMode = v; }
-export let custTransactionMode;
+export let custTransactionMode = 'sale';
 window.custTransactionMode = custTransactionMode;
 export function _set_custTransactionMode(v) { custTransactionMode = v; window.custTransactionMode = v; }
-export let currentIndMode;
+export let currentIndMode = 'week';
 window.currentIndMode = currentIndMode;
 export function _set_currentIndMode(v) { currentIndMode = v; window.currentIndMode = v; }
-export let currentIndMetric;
+export let currentIndMetric = 'weight';
 window.currentIndMetric = currentIndMetric;
 export function _set_currentIndMetric(v) { currentIndMetric = v; window.currentIndMetric = v; }
-export let currentStoreComparisonMetric;
+export let currentStoreComparisonMetric = 'weight';
 window.currentStoreComparisonMetric = currentStoreComparisonMetric;
 export function _set_currentStoreComparisonMetric(v) { currentStoreComparisonMetric = v; window.currentStoreComparisonMetric = v; }
-export let currentActiveTab;
+export let currentActiveTab = 'prod';
 window.currentActiveTab = currentActiveTab;
 export function _set_currentActiveTab(v) { currentActiveTab = v; window.currentActiveTab = v; }
-export let currentMfgMode;
+export let currentMfgMode = 'week';
 window.currentMfgMode = currentMfgMode;
 export function _set_currentMfgMode(v) { currentMfgMode = v; window.currentMfgMode = v; }
-export let currentFactoryDate;
+export let currentFactoryDate = new Date().toISOString().split('T')[0];
 window.currentFactoryDate = currentFactoryDate;
 export function _set_currentFactoryDate(v) { currentFactoryDate = v; window.currentFactoryDate = v; }
-export let currentFactoryEntryStore;
+export let currentFactoryEntryStore = 'STORE_A';
 window.currentFactoryEntryStore = currentFactoryEntryStore;
 export function _set_currentFactoryEntryStore(v) { currentFactoryEntryStore = v; window.currentFactoryEntryStore = v; }
-export let currentProductionView;
+export let currentProductionView = 'store';
 window.currentProductionView = currentProductionView;
 export function _set_currentProductionView(v) { currentProductionView = v; window.currentProductionView = v; }
-export let currentOverviewMode;
+export let currentOverviewMode = 'day';
 window.currentOverviewMode = currentOverviewMode;
 export function _set_currentOverviewMode(v) { currentOverviewMode = v; window.currentOverviewMode = v; }
-export let currentCustomerChartMode;
+export let currentCustomerChartMode = 'week';
 window.currentCustomerChartMode = currentCustomerChartMode;
 export function _set_currentCustomerChartMode(v) { currentCustomerChartMode = v; window.currentCustomerChartMode = v; }
+
+// Re-sync module bindings from the persisted UI state once it has loaded.
+(window.__uiSyncers = window.__uiSyncers || []).push(() => {
+  try { const v = window.currentMfgMode; if (v !== undefined) currentMfgMode = v; } catch (_) {}
+  try { const v = window.currentCustomerChartMode; if (v !== undefined) currentCustomerChartMode = v; } catch (_) {}
+  try { const v = window.currentStoreComparisonMetric; if (v !== undefined) currentStoreComparisonMetric = v; } catch (_) {}
+  try { const v = window.currentIndMode; if (v !== undefined) currentIndMode = v; } catch (_) {}
+  try { const v = window.currentIndMetric; if (v !== undefined) currentIndMetric = v; } catch (_) {}
+  try { const v = window.currentOverviewMode; if (v !== undefined) currentOverviewMode = v; } catch (_) {}
+  try { const v = window.currentProductionView; if (v !== undefined) currentProductionView = v; } catch (_) {}
+  try { const v = window.currentFactoryEntryStore; if (v !== undefined) currentFactoryEntryStore = v; } catch (_) {}
+  try { const v = window.currentCashTrackerMode; if (v !== undefined) currentCashTrackerMode = v; } catch (_) {}
+  try { const v = window.currentActiveTab; if (v !== undefined) currentActiveTab = v; } catch (_) {}
+  try { const v = window.custTransactionMode; if (v !== undefined) custTransactionMode = v; } catch (_) {}
+  try { const v = window.currentFactoryDate; if (v !== undefined) currentFactoryDate = v; } catch (_) {}
+});
+
 
 export function setCashTrackerMode(mode) {
 currentCashTrackerMode = mode; window.currentCashTrackerMode = currentCashTrackerMode;
@@ -3100,7 +3119,7 @@ plugins: {
 legend: { display: false },
 title: {
 display: true,
-text: `${getMetricLabel(currentIndMetric)} - ${currentIndMode === 'all' ? 'All Times' : currentIndMode.charAt(0).toUpperCase() + currentIndMode.slice(1) + 'ly'} View`,
+text: `${getMetricLabel(currentIndMetric)} - ${currentIndMode === 'all' ? 'All Times' : _cap(currentIndMode) + 'ly'} View`,
 color: colors.text,
 font: { size: 13, weight: 'bold' }
 }
@@ -3220,7 +3239,7 @@ plugins: {
 legend: { display: false },
 title: {
 display: true,
-text: `Store Comparison by ${metricLabel} (${mode === 'all' ? 'All Times' : mode.charAt(0).toUpperCase() + mode.slice(1)})`,
+text: `Store Comparison by ${metricLabel} (${mode === 'all' ? 'All Times' : _cap(mode)})`,
 color: colors.text,
 font: { size: 13, weight: 'bold' }
 }
@@ -5134,7 +5153,7 @@ plugins: {
 legend: { labels: { color: colors.text } },
 title: {
 display: true,
-text: `Production Quantity (${currentMfgMode === 'all' ? 'All Times' : currentMfgMode.charAt(0).toUpperCase() + currentMfgMode.slice(1)})`,
+text: `Production Quantity (${currentMfgMode === 'all' ? 'All Times' : _cap(currentMfgMode)})`,
 color: colors.text,
 font: { size: 13, weight: 'bold' }
 }
@@ -5166,7 +5185,7 @@ plugins: {
 legend: { position:'bottom', labels: { color: colors.text, font: { size: 10 } } },
 title: {
 display: true,
-text: `Financials: ${fmtAmt(safeValue(totalValue))} Total - ${currentMfgMode === 'all' ? 'All Times' : currentMfgMode.charAt(0).toUpperCase() + currentMfgMode.slice(1)}`,
+text: `Financials: ${fmtAmt(safeValue(totalValue))} Total - ${currentMfgMode === 'all' ? 'All Times' : _cap(currentMfgMode)}`,
 color: colors.text,
 font: { size: 13, weight: 'bold' }
 }
@@ -5775,7 +5794,7 @@ const card = document.createElement('div');
 card.className = `overview-card liquid-card`;
 card.innerHTML = `
 <span class="store-badge ${storeColors[index]}">${esc(storeNames[index])}</span>
-<h4>${esc(storeNames[index])} (${mode === 'all' ? 'All Times' : mode.charAt(0).toUpperCase() + mode.slice(1)})</h4>
+<h4>${esc(storeNames[index])} (${mode === 'all' ? 'All Times' : _cap(mode)})</h4>
 <p><span>Produced:</span> <span class="qty-val" style="color:var(--text-main);">${safeValue(storeData.production).toFixed(2)} kg</span></p>
 ${returnsHtml}
 <p><span>Sold (Sales Tab):</span> <span class="cost-val">${safeValue(soldQty).toFixed(2)} kg</span></p>
@@ -6071,7 +6090,7 @@ plugins: {
 legend: { labels: { color: colors.text, font: { size: 10 } } },
 title: {
 display: true,
-text: `Sales by Payment Type (${currentCustomerChartMode === 'all' ? 'All Times' : currentCustomerChartMode.charAt(0).toUpperCase() + currentCustomerChartMode.slice(1)})`,
+text: `Sales by Payment Type (${currentCustomerChartMode === 'all' ? 'All Times' : _cap(currentCustomerChartMode)})`,
 color: colors.text,
 font: { size: 13, weight: 'bold' }
 }
@@ -6111,7 +6130,7 @@ plugins: {
 legend: { position:'bottom', labels: { color: colors.text, font: { size: 10 } } },
 title: {
 display: true,
-text: `Total: ${fmtAmt(safeValue(totalCash + totalCredit))} - ${currentCustomerChartMode === 'all' ? 'All Times' : currentCustomerChartMode.charAt(0).toUpperCase() + currentCustomerChartMode.slice(1)}`,
+text: `Total: ${fmtAmt(safeValue(totalCash + totalCredit))} - ${currentCustomerChartMode === 'all' ? 'All Times' : _cap(currentCustomerChartMode)}`,
 color: colors.text,
 font: { size: 13, weight: 'bold' }
 }

@@ -8,18 +8,26 @@ import { showGlassConfirm, showToast } from './customers.js';
 
 // Implicit globals (previously assigned only via window.X / bare X = ...,
 // no formal var/let/const anywhere) -- now real module bindings.
-export let currentFactorySettingsStore;
+export let currentFactorySettingsStore = 'standard';
 window.currentFactorySettingsStore = currentFactorySettingsStore;
 export function _set_currentFactorySettingsStore(v) { currentFactorySettingsStore = v; window.currentFactorySettingsStore = v; }
 export let editingFactoryInventoryId;
 window.editingFactoryInventoryId = editingFactoryInventoryId;
 export function _set_editingFactoryInventoryId(v) { editingFactoryInventoryId = v; window.editingFactoryInventoryId = v; }
-export let currentFactorySummaryMode;
+export let currentFactorySummaryMode = 'daily';
 window.currentFactorySummaryMode = currentFactorySummaryMode;
 export function _set_currentFactorySummaryMode(v) { currentFactorySummaryMode = v; window.currentFactorySummaryMode = v; }
-export let currentStore;
+export let currentStore = 'STORE_A';
 window.currentStore = currentStore;
 export function _set_currentStore(v) { currentStore = v; window.currentStore = v; }
+
+// Re-sync module bindings from the persisted UI state once it has loaded.
+(window.__uiSyncers = window.__uiSyncers || []).push(() => {
+  try { const v = window.currentStore; if (v !== undefined) currentStore = v; } catch (_) {}
+  try { const v = window.currentFactorySettingsStore; if (v !== undefined) currentFactorySettingsStore = v; } catch (_) {}
+  try { const v = window.currentFactorySummaryMode; if (v !== undefined) currentFactorySummaryMode = v; } catch (_) {}
+});
+
 
 export async function getCostPerUnit(storeType) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
