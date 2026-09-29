@@ -1805,8 +1805,15 @@ await sqliteStore.set('payment_transactions', localTransactions);
 } catch (e) {
 }
 }
-initPaymentData();
-(async function initExpenseManager() {
+// business.js and utilities-payments.js import from each other (a circular
+// dependency), so when this module's top-level code first runs — as part of
+// business.js resolving ITS import of utilities-payments.js — business.js
+// itself hasn't yet reached the line that assigns `sqliteStore`. Calling
+// sqliteStore.get(...) here synchronously used to throw "Cannot read
+// properties of undefined (reading 'get')". Deferring both calls with
+// setTimeout(0) lets the whole module graph finish evaluating first.
+setTimeout(() => { initPaymentData(); }, 0);
+setTimeout(async function initExpenseManager() {
 const expenseRecords = await sqliteStore.get('expenses') || [];
 let savedCategories = await sqliteStore.get('expense_categories') || [];
 const categoriesFromRecords = [...new Set(
@@ -1821,7 +1828,7 @@ if (expenseDateInput) {
 expenseDateInput.value = new Date().toISOString().split('T')[0];
 }
 renderRecentExpenses();
-})();
+}, 0);
 export async function handleExpenseSearch() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
@@ -6116,7 +6123,12 @@ repProfile: {
 localKey: 'repProfile',
 localVariable: 'currentRepProfile',
 type: 'string',
-defaultValue: salesRepsList[0] || 'NORAN SHAH',
+// NOTE: this is a static reference/documentation object evaluated once at
+// module load time, before salesRepsList (imported from business.js) has
+// been populated — so salesRepsList[0] was always undefined here and threw
+// "Cannot read properties of undefined (reading '0')". The real runtime
+// default is computed lazily wherever repProfile is actually read/used.
+defaultValue: 'NORAN SHAH',
 description: 'Active sales-representative profile name'
 },
 deleted_records: {
