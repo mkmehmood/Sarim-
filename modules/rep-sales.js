@@ -1,3 +1,4 @@
+import { beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, localDateStr, lockedUnitPrice, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
@@ -223,6 +224,37 @@ _reEnable();
 }
 }
 
+function _resetRepForm() {
+['rep-cust-name', 'rep-quantity', 'rep-amount-collected', 'rep-new-cust-phone'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+const pc = document.getElementById('rep-new-customer-phone-container'); if (pc) pc.classList.add('hidden');
+setRepMode('sale');
+}
+
+export async function startEditRepSale(id) {
+const repSales = ensureArray(await sqliteStore.get('rep_sales'));
+const rec = repSales.find(s => s && String(s.id) === String(id));
+if (!rec || rec.isMerged) { showToast('This entry cannot be edited.', 'warning'); return; }
+if (rec.transactionType === 'OLD_DEBT') { showToast('Opening balances are edited from the customer details.', 'warning'); return; }
+if (typeof showTab === 'function') showTab('rep');
+const isColl = rec.paymentType === 'COLLECTION' || rec.paymentType === 'PARTIAL_PAYMENT';
+setRepMode(isColl ? 'collection' : 'sale');
+const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v; };
+set('rep-date', rec.date);
+set('rep-cust-name', rec.customerName || '');
+if (isColl) {
+set('rep-amount-collected', rec.totalValue);
+} else {
+set('rep-quantity', rec.quantity);
+window.selectRepPaymentType(document.getElementById(rec.paymentType === 'CASH' ? 'btn-rep-pay-cash' : 'btn-rep-pay-credit'), rec.paymentType === 'CASH' ? 'CASH' : 'CREDIT');
+}
+if (rec.customerPhone) {
+const pc = document.getElementById('rep-new-customer-phone-container'); if (pc) pc.classList.remove('hidden');
+set('rep-new-cust-phone', rec.customerPhone);
+}
+beginEditMode('repsale', rec, { buttonId: 'btn-save-rep-transaction', label: 'Update Transaction', anchorId: 'rep-cust-name', cancelFn: _resetRepForm });
+}
+registerEditHandler('repsale', startEditRepSale);
+
 export function setRepMode(mode) {
 repTransactionMode = mode; window.repTransactionMode = repTransactionMode;
 const _setRep = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
@@ -300,6 +332,7 @@ if (_repTVS) _repTVS.innerText = "" + fmtAmt(safeNumber(qty * salePrice, 0));
 }
 
 export async function saveRepTransaction() {
+const _ed = getEditCtx('repsale');
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 let repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
 const submitBtn = document.querySelector('#rep-new-transaction-card .btn-main');
@@ -354,14 +387,16 @@ showToast(" Invalid cost price detected. Please check Factory Formulas.", "warni
 restoreBtn();
 return;
 }
-const totalValue = qty * salePrice;
-const computedProfit = totalValue - (qty * costPerKg);
+const _lockedPrice = (_ed && _ed.original.unitPrice > 0) ? _ed.original.unitPrice : salePrice;
+const _lockedCost = (_ed && _ed.original.quantity > 0) ? (_ed.original.totalCost || 0) / _ed.original.quantity : costPerKg;
+const totalValue = qty * _lockedPrice;
+const computedProfit = totalValue - (qty * _lockedCost);
 if(computedProfit < 0) {
 showToast(` This sale would result in a loss of ${fmtAmt ? fmtAmt(Math.abs(computedProfit)) : fmtNum(Math.abs(computedProfit))}. Check sale price vs cost price in Factory Formulas.`, "warning", 6000);
 restoreBtn();
 return;
 }
-let saleId = generateUUID('sale');
+let saleId = _ed ? _ed.id : generateUUID('sale');
 if (!validateUUID(saleId)) {
 saleId = generateUUID('sale');
 }
@@ -376,10 +411,10 @@ supplyStore: 'STORE_A',
 paymentType: payType,
 salesRep: currentRepProfile,
 gps: gpsCoords,
-totalCost: qty * costPerKg,
+totalCost: qty * _lockedCost,
 totalValue: totalValue,
-profit: totalValue - (qty * costPerKg),
-unitPrice: salePrice,
+profit: totalValue - (qty * _lockedCost),
+unitPrice: _lockedPrice,
 creditReceived: (payType === 'CASH'),
 createdAt: getTimestamp(),
 updatedAt: getTimestamp(),
@@ -398,17 +433,17 @@ return;
 let _repOutstanding = 0;
 try {
 const _repHistory = repSales.filter(s =>
-s && s.customerName && s.customerName.toLowerCase() === name.toLowerCase() &&
+s && !(_ed && s.id === _ed.id) && s.customerName && s.customerName.toLowerCase() === name.toLowerCase() &&
 s.salesRep === currentRepProfile
 );
 for (const h of _repHistory) _repOutstanding = round2(_repOutstanding + debtDelta(h, parseFloat(h.totalValue) || 0));
 _repOutstanding = Math.max(0, _repOutstanding);
 } catch (_e) { _repOutstanding = -1; }
-if (_repOutstanding === 0) {
+if (_repOutstanding === 0 && !_ed) {
 showToast(`${name} has no outstanding credit balance. Collections can only be recorded against existing unpaid credit.`, 'error', 5000);
 restoreBtn();
 return;
-} else if (_repOutstanding > 0 && amount > _repOutstanding) {
+} else if (_repOutstanding >= 0 && amount > _repOutstanding) {
 const _overAmt = amount - _repOutstanding;
 const _proceedOver = await showGlassConfirm(
 ` Over-collection Warning!
@@ -421,7 +456,7 @@ This will exceed the outstanding balance. Proceed only if this is an advance pay
 );
 if (!_proceedOver) { restoreBtn(); return; }
 }
-let collId = generateUUID('sale');
+let collId = _ed ? _ed.id : generateUUID('sale');
 if (!validateUUID(collId)) {
 collId = generateUUID('sale');
 }
@@ -449,7 +484,18 @@ syncedAt: new Date().toISOString()
 };
 transactionRecord = ensureRecordIntegrity(transactionRecord, false);
 }
+if (_ed) {
+const o = _ed.original;
+stampEdit(transactionRecord, o);
+transactionRecord.time = o.time;
+transactionRecord.gps = o.gps || transactionRecord.gps;
+transactionRecord.salesRep = o.salesRep;
+if (o.partialPaymentReceived) transactionRecord.partialPaymentReceived = o.partialPaymentReceived;
+ensureRecordIntegrity(transactionRecord, true);
+replaceRecord(repSales, transactionRecord);
+} else {
 repSales.push(transactionRecord);
+}
 await unifiedSave('rep_sales', repSales, transactionRecord);
 
 void _gpsBgPromise.then(async coords => {
@@ -497,9 +543,10 @@ await setRepMode('sale');
 }
 if(phoneInput) phoneInput.value = '';
 document.getElementById('rep-new-customer-phone-container').classList.add('hidden');
+if (_ed) endEditMode();
 renderRepCustomerTable();
 renderRepHistory();
-showToast("Transaction Saved Successfully", "success");
+showToast(_ed ? "Transaction updated" : "Transaction Saved Successfully", "success");
 setTimeout(updateRepLiveMap, 300);
 } catch (error) {
 showToast('Failed to save transaction. Please try again.', 'error');
@@ -1083,7 +1130,8 @@ toggleBtnHtml = `<span class="status-toggle-btn txn-collect">COLLECTION</span>`;
 } else {
 toggleBtnHtml = `<span class="status-toggle-btn txn-cash">CASH SALE</span>`;
 }
-const deleteBtnHtml = t.isMerged ? '' : `<button class="btn btn-sm btn-danger u-p-4-8" onclick="deleteRepTransactionFromOverlay('${esc(t.id)}')">⌫</button>`;
+const editBtnHtml = (t.isMerged || t.transactionType === 'OLD_DEBT') ? '' : `<button class="btn btn-sm u-p-4-8" style="color:var(--accent);border:1px solid var(--accent);background:transparent;" onclick="startEdit('repsale','${esc(t.id)}')">✎</button>`;
+const deleteBtnHtml = t.isMerged ? '' : `${editBtnHtml}<button class="btn btn-sm btn-danger u-p-4-8" onclick="deleteRepTransactionFromOverlay('${esc(t.id)}')">⌫</button>`;
 const safeId = String(t.id).replace(/'/g, "\\'");
 const panelId = `rp-${t.id}`;
 const kebabBtn = t.isMerged
