@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, lockedUnitPrice, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, localDateStr, lockedUnitPrice, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
 import { _exportDocAsImageAndOpenWhatsApp, getPersonPhoto, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML } from './utilities-payments.js';
@@ -630,7 +630,7 @@ repMap.removeLayer(repPolyline);
 repPolyline = null;
 }
 const dateInput = document.getElementById('rep-date');
-const selectedDate = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+const selectedDate = dateInput ? dateInput.value : localDateStr();
 const dailyRoute = repSales
 .filter(s => s.salesRep === currentRepProfile && s.date === selectedDate && s.gps)
 .sort((a, b) => a.timestamp - b.timestamp);
@@ -716,7 +716,7 @@ const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
 if (appMode !== 'admin') return;
 const adminDateInput = document.getElementById('admin-rep-date');
-const selectedDate = (adminDateInput && adminDateInput.value) || new Date().toISOString().split('T')[0];
+const selectedDate = (adminDateInput && adminDateInput.value) || localDateStr();
 const selectedDateObj = new Date(selectedDate);
 const selectedYear = selectedDateObj.getFullYear();
 const selectedMonth = selectedDateObj.getMonth();
@@ -1272,7 +1272,7 @@ if (!tx.time) tx.time = new Date().toLocaleTimeString('en-US', {hour: '2-digit',
 ensureRecordIntegrity(tx, true);
 oldDebtModified = true; oldDebtRecord = tx;
 } else {
-const tx = { id: generateUUID('old_debt'), date: new Date().toISOString().split('T')[0],
+const tx = { id: generateUUID('old_debt'), date: localDateStr(),
 customerName: name, customerPhone: phone, salesRep: currentRepProfile, quantity: 0,
 supplyStore: 'N/A', paymentType: 'CREDIT', transactionType: 'OLD_DEBT',
 totalValue: oldDebit, creditReceived: false, partialPaymentReceived: 0,
@@ -1706,7 +1706,7 @@ pageW / 2, 291, { align: 'center' }
 doc.text(`Page ${i} of ${pageCount}`, pageW / 2, 287, { align: 'center' });
 }
 await new Promise(r => setTimeout(r, 100));
-const dateStamp  = new Date().toISOString().split('T')[0];
+const dateStamp  = localDateStr();
 const safeRepName = customerName.replace(/[^a-z0-9]/gi, '_');
 if (pageCount === 1) {
   showToast('Single-page statement — converting to image…', 'info');
@@ -1729,8 +1729,8 @@ const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const list = document.getElementById('repHistoryList');
 if (!list) return;
 const dateInput = document.getElementById('rep-date');
-const selectedDate = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
-const isToday = selectedDate === new Date().toISOString().split('T')[0];
+const selectedDate = dateInput && dateInput.value ? dateInput.value : localDateStr();
+const isToday = selectedDate === localDateStr();
 const headerText = isToday ? "Today's Activity" : `Activity for ${selectedDate}`;
 const activityData = repSales
 .filter(s =>

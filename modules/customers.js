@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, balanceAfterHtml, currentRepProfile, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, lockedUnitPrice, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, balanceAfterHtml, currentRepProfile, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, localDateStr, lockedUnitPrice, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { calculateCashTracker, calculateNetCash, custTransactionMode, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
@@ -997,7 +997,7 @@ if (!tx.time) tx.time = new Date().toLocaleTimeString('en-US', {hour: '2-digit',
 ensureRecordIntegrity(tx, true);
 oldDebtModified = true; oldDebtRecord = tx;
 } else {
-const tx = { id: generateUUID('old_debt'), date: new Date().toISOString().split('T')[0],
+const tx = { id: generateUUID('old_debt'), date: localDateStr(),
 customerName: name, customerPhone: phone, salesRep: 'ADMIN', quantity: 0,
 supplyStore: 'N/A', paymentType: 'CREDIT', transactionType: 'OLD_DEBT',
 currentRepProfile: 'admin',

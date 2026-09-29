@@ -76,3 +76,9 @@ test('records with no stored price defer to the live price lookup', () => {
 test('zero-quantity records use their stored value', () => {
   assert.equal(lockedSaleValue({ quantity: 0, totalValue: 500 }), 500);
 });
+
+test('localDateStr uses the local calendar day, not UTC', () => {
+  const { localDateStr } = mod;
+  assert.equal(localDateStr(new Date(2026, 8, 29, 0, 30)), '2026-09-29');
+  assert.equal(localDateStr(new Date(2026, 0, 5, 23, 59)), '2026-01-05');
+});

@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, lockedSaleValue, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, localDateStr, lockedSaleValue, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
 import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
 import { _set_currentFactoryEntryStore, calculateCashTracker, calculateNetCash, currentFactoryEntryStore, deleteStockTransfer, getAppStores, getStoreFormulaType, getStoreLabel, refreshFactoryTab, refreshUI, updateAllTabsWithFactoryCosts, updateFactorySummaryCard, updateFactoryUnitsAvailableStats } from './utilities-sales.js';
@@ -23,6 +23,14 @@ export function _set_currentStore(v) { currentStore = v; window.currentStore = v
   try { const v = window.currentFactorySettingsStore; if (v !== undefined) currentFactorySettingsStore = v; } catch (_) {}
   try { const v = window.currentFactorySummaryMode; if (v !== undefined) currentFactorySummaryMode = v; } catch (_) {}
 });
+
+export function resolveLiveCost(item, inventory) {
+const list = Array.isArray(inventory) ? inventory : [];
+let live = list.find(i => String(i.id) === String(item.id));
+if (!live && item.name) live = list.find(i => i.name && i.name.trim().toLowerCase() === item.name.trim().toLowerCase());
+const c = live ? Number(live.cost) : NaN;
+return Number.isFinite(c) && c > 0 ? c : (Number(item.cost) || 0);
+}
 
 export async function getCostPerUnit(storeType) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
@@ -63,8 +71,8 @@ factoryInventoryData.forEach(item => { totalValue += (item.quantity * item.cost)
 }
 const stdTracking = factoryUnitTracking?.standard || { available: 0 };
 const asaanTracking = factoryUnitTracking?.asaan || { available: 0 };
-const stdCostPerUnit = getCostPerUnit('standard');
-const asaanCostPerUnit = getCostPerUnit('asaan');
+const stdCostPerUnit = await getCostPerUnit('standard');
+const asaanCostPerUnit = await getCostPerUnit('asaan');
 totalValue += (stdTracking.available * stdCostPerUnit);
 totalValue += (asaanTracking.available * asaanCostPerUnit);
 return totalValue;
@@ -81,8 +89,8 @@ factoryInventoryData.forEach(item => { rawMaterialsValue += (item.quantity * ite
 }
 const stdTracking = factoryUnitTracking?.standard || { available: 0 };
 const asaanTracking = factoryUnitTracking?.asaan || { available: 0 };
-const stdCostPerUnit = getCostPerUnit('standard');
-const asaanCostPerUnit = getCostPerUnit('asaan');
+const stdCostPerUnit = await getCostPerUnit('standard');
+const asaanCostPerUnit = await getCostPerUnit('asaan');
 const formulaUnitsValue = (stdTracking.available * stdCostPerUnit) + (asaanTracking.available * asaanCostPerUnit);
 const rawMaterialsEl = document.getElementById('formulaRawMaterials');
 const unitsValueEl = document.getElementById('formulaUnitsValue');
@@ -92,7 +100,7 @@ if (unitsValueEl) unitsValueEl.textContent = `${fmtAmt(safeValue(formulaUnitsVal
 
 export async function calculatePaymentSummaries() {
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
-const today = new Date().toISOString().split('T')[0];
+const today = localDateStr();
 const todayObj = new Date();
 const year = todayObj.getFullYear();
 const month = todayObj.getMonth();
@@ -971,7 +979,7 @@ material.updatedAt = getTimestamp();
 ensureRecordIntegrity(material, true);
 const payableTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const now = new Date();
-const dateStr = now.toISOString().split('T')[0];
+const dateStr = localDateStr(now);
 const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 let payableTxId = generateUUID('pay');
 if (!validateUUID(payableTxId)) payableTxId = generateUUID('pay');
@@ -1073,6 +1081,7 @@ return { salePrice: await getSalePriceForStore(store), costPrice: await getCostP
 export async function calculateFactoryProduction() {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
+const _previewInv = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const units = parseInt(document.getElementById('factoryProductionUnits').value) || 1;
 const _cfesType = typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(currentFactoryEntryStore) : (currentFactoryEntryStore === 'STORE_C' ? 'asaan' : 'standard');
 const _cfesLabel = _cfesType === 'asaan' ? 'Asaan' : 'Standard';
@@ -1083,7 +1092,7 @@ let rawMaterialsUsed = 0;
 let html = `<h4 style="margin:0 0 5px 0;font-size:0.9rem;">${_cfesLabel} Formula (${units} Units)</h4>`;
 if (settings && settings.length > 0) {
 for (const i of settings) {
-const lineTotal = i.cost * i.quantity * units;
+const lineTotal = resolveLiveCost(i, _previewInv) * i.quantity * units;
 baseCost += lineTotal;
 rawMaterialsUsed += i.quantity * units;
 html += `<div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:2px;"><span>${i.name} (${fmtNum(i.quantity * units)} kg)</span><span>${await formatCurrency(lineTotal)}</span></div>`;
@@ -1144,6 +1153,7 @@ rawMat = settings.reduce((acc, cur) => acc + cur.quantity, 0) * units;
 }
 const totalCost = baseCost + (additionalCost * units);
 let inventoryUpdated = false;
+const materialsUsed = [];
 if (settings && settings.length > 0) {
 for (const item of settings) {
 const materialUsed = item.quantity * units;
@@ -1154,7 +1164,7 @@ inventoryItem = factoryInventoryData.find(i => i.name && i.name.trim().toLowerCa
 if (!inventoryItem) {
 throw new Error(`Material "${item.name}" not found in inventory. Please re-open Factory Settings and re-save the formula to relink all materials.`);
 }
-if (inventoryItem.quantity >= materialUsed) {
+if (inventoryItem.quantity + 1e-6 >= materialUsed) {
 inventoryItem.quantity -= materialUsed;
 inventoryItem.quantity = Math.max(0, parseFloat(inventoryItem.quantity.toFixed(6)));
 inventoryItem.totalValue = inventoryItem.quantity * inventoryItem.cost;
@@ -1163,6 +1173,7 @@ inventoryItem.purchaseQuantity = inventoryItem.quantity / inventoryItem.conversi
 }
 inventoryItem.updatedAt = getTimestamp();
 inventoryUpdated = true;
+materialsUsed.push({ id: inventoryItem.id, name: inventoryItem.name, quantity: materialUsed, cost: inventoryItem.cost });
 } else {
 throw new Error(`Insufficient "${inventoryItem.name}" in inventory! Available: ${fmtNum(inventoryItem.quantity)} kg, Required: ${fmtNum(materialUsed)} kg`);
 }
@@ -1174,7 +1185,7 @@ const factProdCreatedAt = getTimestamp();
 const _savedFormulaType = typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(currentFactoryEntryStore) : (currentFactoryEntryStore === 'STORE_C' ? 'asaan' : 'standard');
 const productionRecord = {
 id: factProdId,
-date: new Date().toISOString().split('T')[0],
+date: localDateStr(),
 time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
 store: currentFactoryEntryStore,
 formulaType: _savedFormulaType,
@@ -1183,6 +1194,7 @@ totalCost,
 materialsCost: baseCost,
 additionalCost: additionalCost * units,
 rawMaterialsUsed: rawMat,
+materialsUsed,
 createdAt: factProdCreatedAt,
 updatedAt: factProdCreatedAt,
 timestamp: factProdCreatedAt,
@@ -1356,14 +1368,25 @@ if (entryIndex === -1) { await refreshFactoryTab(); return; }
 const entry = factoryProductionHistory[entryIndex];
 if (entry.isMerged) { showToast('Merged opening balance records cannot be deleted', 'warning'); return; }
 const _feStoreLabel = getStoreLabel(entry.store) || entry.store;
-const _feFormula = factoryDefaultFormulas[entry.store] || [];
-const _feMatsDetail = _feFormula.length > 0
-? _feFormula.map(f => {
-let inv = factoryInventoryData.find(i => i.id === f.id);
+const _feFormulaKey = entry.formulaType || (typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(entry.store) : entry.store);
+const _feRestore = (Array.isArray(entry.materialsUsed) && entry.materialsUsed.length > 0)
+? entry.materialsUsed.map(m => ({ id: m.id, name: m.name, quantity: m.quantity }))
+: (factoryDefaultFormulas[_feFormulaKey] || factoryDefaultFormulas[entry.store] || []).map(f => ({ id: f.id, name: f.name, quantity: f.quantity * entry.units }));
+const _feMatsDetail = _feRestore.length > 0
+? _feRestore.map(f => {
+let inv = factoryInventoryData.find(i => String(i.id) === String(f.id));
 if (!inv && f.name) inv = factoryInventoryData.find(i => i.name && i.name.trim().toLowerCase() === f.name.trim().toLowerCase());
-return ` • ${inv?.name || f.name || 'Material'}: ${fmtNum(f.quantity * entry.units)} kg restored`;
+return ` • ${inv?.name || f.name || 'Material'}: ${fmtNum(f.quantity)} kg restored`;
 }).join('\n')
 : '';
+{
+const _feTracking = await updateFormulaInventory();
+const _feAvail = _feTracking?.[_feFormulaKey]?.available || 0;
+if (_feAvail + 1e-9 < (entry.units || 0)) {
+showToast(`Cannot delete: ${fmtNum((entry.units || 0) - _feAvail)} unit${((entry.units || 0) - _feAvail) === 1 ? '' : 's'} of this batch already used in manufacturing entries. Delete those first.`, 'warning', 5000);
+return;
+}
+}
 let _feMsg = `Delete this factory production batch permanently?`;
 _feMsg += `\nStore: ${_feStoreLabel}\nDate: ${entry.date}\nUnits Produced: ${entry.units}`;
 if (entry.totalCost) _feMsg += `\nTotal Cost: ${fmtAmt(entry.totalCost || 0)}`;
@@ -1375,16 +1398,14 @@ entry.deletedAt = getTimestamp();
 entry.updatedAt = getTimestamp();
 ensureRecordIntegrity(entry, true);
 let restoredMaterials = [];
-const formula = factoryDefaultFormulas[entry.store];
-if (formula && formula.length > 0) {
-for (const formulaItem of formula) {
-const materialToRestore = formulaItem.quantity * entry.units;
-let inventoryItem = factoryInventoryData.find(i => i.id === formulaItem.id);
+for (const formulaItem of _feRestore) {
+const materialToRestore = formulaItem.quantity;
+let inventoryItem = factoryInventoryData.find(i => String(i.id) === String(formulaItem.id));
 if (!inventoryItem && formulaItem.name) {
 inventoryItem = factoryInventoryData.find(i => i.name && i.name.trim().toLowerCase() === formulaItem.name.trim().toLowerCase());
 }
 if (inventoryItem) {
-inventoryItem.quantity += materialToRestore;
+inventoryItem.quantity = parseFloat(((inventoryItem.quantity || 0) + materialToRestore).toFixed(6));
 inventoryItem.totalValue = inventoryItem.quantity * inventoryItem.cost;
 if (inventoryItem.conversionFactor && inventoryItem.conversionFactor !== 1) {
 inventoryItem.purchaseQuantity = inventoryItem.quantity / inventoryItem.conversionFactor;
@@ -1392,7 +1413,6 @@ inventoryItem.purchaseQuantity = inventoryItem.quantity / inventoryItem.conversi
 inventoryItem.updatedAt = getTimestamp();
 ensureRecordIntegrity(inventoryItem, true);
 restoredMaterials.push({ name: inventoryItem.name || 'Unknown', quantity: materialToRestore });
-}
 }
 }
 factoryProductionHistory.splice(entryIndex, 1);
@@ -1419,6 +1439,7 @@ showToast(' Failed to delete entry. Please try again.', 'error');
 export async function calculateDynamicCost(storeType, formulaUnits, netWeight) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
+const _dcInv = ensureArray(await sqliteStore.get('factory_inventory_data'));
 let formulaStore = 'standard';
 if (storeType === 'standard' || storeType === 'asaan') {
   formulaStore = storeType;
@@ -1433,7 +1454,7 @@ return { costPerUnit: 0, totalFormulaCost: 0, dynamicCostPerKg: 0, formulaStore,
 }
 let totalMaterialCost = 0;
 let totalWeight = 0;
-formula.forEach(item => { totalMaterialCost += (item.cost * item.quantity); totalWeight += item.quantity; });
+formula.forEach(item => { totalMaterialCost += (resolveLiveCost(item, _dcInv) * item.quantity); totalWeight += item.quantity; });
 const additionalCost = factoryAdditionalCosts[formulaStore] || 0;
 const costPerUnit = totalMaterialCost + additionalCost;
 return {
@@ -1452,10 +1473,11 @@ export async function calculateSalesCostPerKg(formulaStore) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
+const _scInv = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const formula = factoryDefaultFormulas[formulaStore];
 if (!formula || formula.length === 0) return 0;
 let rawMaterialCost = 0;
-formula.forEach(item => { rawMaterialCost += (item.cost * item.quantity); });
+formula.forEach(item => { rawMaterialCost += (resolveLiveCost(item, _scInv) * item.quantity); });
 const additionalCost = factoryAdditionalCosts[formulaStore] || 0;
 const adjustmentFactor = factoryCostAdjustmentFactor[formulaStore] || 1;
 return adjustmentFactor > 0 ? (rawMaterialCost + additionalCost) / adjustmentFactor : rawMaterialCost + additionalCost;

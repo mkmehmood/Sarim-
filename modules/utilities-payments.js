@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
+import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, localDateStr, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, currentEntityId, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
 import { DeltaSync, _set_currentFactoryDate, _set_currentOverviewMode, calculateCashTracker, calculateNetCash, calculateSales, closeEntityTransactions, currentOverviewMode, getAvailableCashInHand, getStoreFormulaType, getStoreLabel, initFactoryTab, loadFirestoreStats, promptVerifiedBackupPassword, refreshCustomerSales, refreshUI, renderEntityTable, revertRepSalesEntries, setProductionView, showTab, syncSuppliersToEntities, trackFirestoreWrite, updateAllStoresOverview, updateAllTabsWithFactoryCosts, updateCustomerCharts, updateIndChart } from './utilities-sales.js';
@@ -71,7 +71,7 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const compMode = currentCompMode;
 const _sdEl = document.getElementById('sale-date');
-const selectedDate = _sdEl ? _sdEl.value : new Date().toISOString().split('T')[0];
+const selectedDate = _sdEl ? _sdEl.value : localDateStr();
 const selectedDateObj = new Date(selectedDate);
 const selectedYear = selectedDateObj.getFullYear();
 const selectedMonth = selectedDateObj.getMonth();
@@ -195,7 +195,7 @@ return customerSales.filter(sale =>
 export function getCalcDateRange(pending) {
 const toEl = document.getElementById('sale-date');
 const fromEl = document.getElementById('sale-date-from');
-const to = (toEl && toEl.value) || new Date().toISOString().split('T')[0];
+const to = (toEl && toEl.value) || localDateStr();
 let from = (fromEl && fromEl.value) || '';
 if (!window._calcFromManual || !from) {
   const days = (pending || []).map(_calcSaleDay).filter(d => d && d <= to).sort();
@@ -411,7 +411,7 @@ true, h.id, isCombined ? h.seller : null, isHighlight, h.isMerged
 ));
 });
 if (list) list.innerHTML = _hlParts.join('');
-const validSearchDate = searchDate || new Date().toISOString().split('T')[0];
+const validSearchDate = searchDate || localDateStr();
 const now = new Date(validSearchDate);
 if (isNaN(now.getTime())) {
 now.setTime(Date.now());
@@ -440,7 +440,7 @@ const _mr = document.getElementById('monthlyReport'); if (_mr) _mr.innerHTML = c
 const _yr = document.getElementById('yearlyReport'); if (_yr) _yr.innerHTML = createReportHTML("Yearly View", ranges.y);
 const _ar = document.getElementById('allTimeReport'); if (_ar) _ar.innerHTML = createReportHTML("All Time Summary", ranges.a);
 if (typeof setPerfOverviewMode === 'function') setPerfOverviewMode(currentPerfOverviewMode || 'day');
-const _saleDate = (document.getElementById('sale-date') || {}).value || new Date().toISOString().split('T')[0];
+const _saleDate = (document.getElementById('sale-date') || {}).value || localDateStr();
 _filterHistoryByPeriod('#historyList', _saleDate, currentPerfOverviewMode || 'day');
 const _setLt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setLt('ltCredit', "" + fmtNum(safeValue(ltCr)));
@@ -595,8 +595,8 @@ hours = hours % 12;
 hours = hours ? hours : 12;
 const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
 const formulaStore = typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(storeKey) : (storeKey === 'STORE_C' ? 'asaan' : 'standard');
-const salePrice = getSalePriceForStore(storeKey);
-const costPerKg = getCostPriceForStore(storeKey);
+const salePrice = await getSalePriceForStore(storeKey);
+const costPerKg = await getCostPriceForStore(storeKey);
 const totalCost = quantity * costPerKg;
 const totalSale = quantity * salePrice;
 const profit = totalSale - totalCost;
@@ -894,7 +894,7 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
     if (typeof initializeFirebaseSystem === 'function') initializeFirebaseSystem();
     else if (typeof initFirebase === 'function') initFirebase();
   }, 100);
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   ['sys-date','sale-date','sale-date-from','cust-date','factory-date','expenseDate','rep-date'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = today;
@@ -959,7 +959,7 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
   }, 800);
 });
 export function _filterFactoryHistoryByMode(mode) {
-const selectedDateVal = (document.getElementById('factory-date') || {}).value || new Date().toISOString().split('T')[0];
+const selectedDateVal = (document.getElementById('factory-date') || {}).value || localDateStr();
 const selectedDate = new Date(selectedDateVal);
 if (isNaN(selectedDate.getTime())) return;
 const weekStart = new Date(selectedDate);
@@ -1043,7 +1043,7 @@ if (card) {
 if (mode === 'all') card.classList.add('all-times-summary');
 else card.classList.remove('all-times-summary');
 }
-const refDate = (document.getElementById('cust-date') || {}).value || new Date().toISOString().split('T')[0];
+const refDate = (document.getElementById('cust-date') || {}).value || localDateStr();
 _filterHistoryByPeriod('#custHistoryList', refDate, mode);
 }
 
@@ -1058,7 +1058,7 @@ const ghostMap = { day:'dailyReport', week:'weeklyReport', month:'monthlyReport'
 const ghostEl = document.getElementById(ghostMap[mode]);
 const activeEl = document.getElementById('activeReport');
 if (activeEl && ghostEl) activeEl.innerHTML = ghostEl.innerHTML;
-const refDate = (document.getElementById('sale-date') || {}).value || new Date().toISOString().split('T')[0];
+const refDate = (document.getElementById('sale-date') || {}).value || localDateStr();
 _filterHistoryByPeriod('#historyList', refDate, mode);
 }
 
@@ -1812,7 +1812,7 @@ const expCatMerged = [...new Set([...savedCategories, ...categoriesFromRecords])
 await sqliteStore.set('expense_categories', expCatMerged);
 const expenseDateInput = document.getElementById('expenseDate');
 if (expenseDateInput) {
-expenseDateInput.value = new Date().toISOString().split('T')[0];
+expenseDateInput.value = localDateStr();
 }
 renderRecentExpenses();
 }, 0);
@@ -2381,7 +2381,7 @@ const periodFilter = document.getElementById('expensePeriodFilter')?.value || 'm
 const categoryFilter = document.getElementById('expenseCategoryFilter')?.value || 'all';
 let filteredExpenses = [...expenseRecords];
 const now2 = new Date();
-const today = now2.toISOString().split('T')[0];
+const today = localDateStr(now2);
 if (periodFilter === 'today') {
 filteredExpenses = filteredExpenses.filter(e => e.date === today);
 } else if (periodFilter === 'week') {
@@ -3172,7 +3172,7 @@ pageW/2, 291, { align:'center' }
 );
 doc.text(`Page ${i} of ${pageCount}`, pageW/2, 287, { align:'center' });
 }
-const filename = `Unified_Statement_${viewMode}_${periodFilter}_${now.toISOString().split('T')[0]}.pdf`;
+const filename = `Unified_Statement_${viewMode}_${periodFilter}_${localDateStr(now)}.pdf`;
 doc.save(filename);
 showToast('PDF exported successfully!', 'success');
 } catch (error) {
@@ -3391,7 +3391,7 @@ return;
 }
 try {
 const now = new Date();
-const dateStr = now.toISOString().split('T')[0];
+const dateStr = localDateStr(now);
 let expenseId = generateUUID('exp');
 if (!validateUUID(expenseId)) expenseId = generateUUID('exp');
 let newExpense = {
@@ -3653,7 +3653,7 @@ pageW/2, 291, { align:'center' }
 );
 doc.text(`Page ${i} of ${pageCount}`, pageW/2, 287, { align:'center' });
 }
-doc.save(`Expense_${expenseName.replace(/\s+/g,'_')}_${range}_${new Date().toISOString().split('T')[0]}.pdf`);
+doc.save(`Expense_${expenseName.replace(/\s+/g,'_')}_${range}_${localDateStr()}.pdf`);
 showToast('PDF exported successfully', 'success');
 } catch (error) {
 showToast('Failed to export PDF: ' + error.message, 'error');
@@ -3804,7 +3804,7 @@ export function clearExpenseForm() {
 document.getElementById('expenseName').value = '';
 document.getElementById('expenseAmount').value = '';
 document.getElementById('expenseDescription').value = '';
-document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+document.getElementById('expenseDate').value = localDateStr();
 document.getElementById('expense-search-results').classList.add('hidden');
 selectExpenseCategory('OUT', document.getElementById('btn-category-out'));
 ['btn-category-operating','btn-category-in','btn-category-out'].forEach(id => {
@@ -4739,7 +4739,7 @@ return;
 try {
 showToast('Encrypting backup with AES-256-GCM...', 'info', 3000);
 const encryptedBlob = await CryptoEngine.encrypt(data, currentUser.email, encPassword, currentUser.uid);
-const timestamp = new Date().toISOString().split('T')[0];
+const timestamp = localDateStr();
 _triggerFileDownload(encryptedBlob, `NaswarDealers_SecureBackup_${timestamp}.gznd`);
 showToast('Encrypted backup saved! Only your account and credentials can restore this file.', 'success', 5000);
 } catch(encErr) {

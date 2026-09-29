@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, OfflineAuth, round2, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, localDateStr, OfflineAuth, round2, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { SarimChart, _restorePayableFromDeletedTransaction, _set_custPaymentChart, _set_custSalesChart, _set_defaultSettings, _set_indPerformanceChart, _set_mfgBarChart, _set_mfgPieChart, _set_storeComparisonChart, custPaymentChart, custSalesChart, defaultSettings, indPerformanceChart, invalidateAllCaches, loadScript, mfgBarChart, mfgPieChart, notifyDataChange, storeComparisonChart, syncCalculatorTab, syncFactoryTab, syncPaymentsTab, syncProductionTab, syncRepTab, syncSalesTab, triggerAutoSync } from './utilities-core.js';
@@ -31,7 +31,7 @@ export function _set_currentActiveTab(v) { currentActiveTab = v; window.currentA
 export let currentMfgMode = 'week';
 window.currentMfgMode = currentMfgMode;
 export function _set_currentMfgMode(v) { currentMfgMode = v; window.currentMfgMode = v; }
-export let currentFactoryDate = new Date().toISOString().split('T')[0];
+export let currentFactoryDate = localDateStr();
 window.currentFactoryDate = currentFactoryDate;
 export function _set_currentFactoryDate(v) { currentFactoryDate = v; window.currentFactoryDate = v; }
 export let currentFactoryEntryStore = 'STORE_A';
@@ -87,7 +87,7 @@ const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventor
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
 const paymentDateEl = document.getElementById('expenseDate');
-const selectedDate = (paymentDateEl && paymentDateEl.value) || new Date().toISOString().split('T')[0];
+const selectedDate = (paymentDateEl && paymentDateEl.value) || localDateStr();
 const selectedDateObj = new Date(selectedDate);
 const selectedYear = selectedDateObj.getFullYear();
 const selectedMonth = selectedDateObj.getMonth();
@@ -689,7 +689,7 @@ const factoryProductionHistory = ensureArray(_cncBatch.get('factory_production_h
 const factoryDefaultFormulas = _cncBatch.get('factory_default_formulas') || {};
 const factoryAdditionalCosts = _cncBatch.get('factory_additional_costs') || {};
 const paymentDateEl = document.getElementById('expenseDate');
-const selectedDate = (paymentDateEl && paymentDateEl.value) || new Date().toISOString().split('T')[0];
+const selectedDate = (paymentDateEl && paymentDateEl.value) || localDateStr();
 const selectedDateObj = new Date(selectedDate);
 const selectedYear = selectedDateObj.getFullYear();
 const selectedMonth = selectedDateObj.getMonth();
@@ -1080,14 +1080,9 @@ return;
 }
 let storeSpecificProduction = 0;
 db.forEach(production => {
-if (production.date === date) {
-if (store === 'STORE_A' && production.store === 'STORE_A') {
+if (production.isReturn) return;
+if (production.date === date && production.store === store) {
 storeSpecificProduction += production.net || 0;
-} else if (store === 'STORE_B' && production.store === 'STORE_B') {
-storeSpecificProduction += production.net || 0;
-} else if (store === 'STORE_C' && production.store === 'STORE_C') {
-storeSpecificProduction += production.net || 0;
-}
 }
 });
 let storeSpecificSales = 0;
@@ -1570,16 +1565,12 @@ const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs'
 const factoryCostAdjustmentFactor = (await sqliteStore.get('factory_cost_adjustment_factor')) || {};
 let costPerKg = 0;
 let salePricePerKg = 0;
-if (store === 'STORE_C') {
-const formulaCost = await getCostPerUnit('asaan');
-const adjustmentFactor = factoryCostAdjustmentFactor.asaan || 1;
+{
+const _scType = await getStoreFormulaType(store);
+const formulaCost = await getCostPerUnit(_scType);
+const adjustmentFactor = factoryCostAdjustmentFactor[_scType] || 1;
 costPerKg = adjustmentFactor > 0 ? formulaCost / adjustmentFactor : formulaCost;
-			salePricePerKg = await getSalePriceForStore('STORE_C');
-} else {
-const formulaCost = await getCostPerUnit('standard');
-const adjustmentFactor = factoryCostAdjustmentFactor.standard || 1;
-costPerKg = adjustmentFactor > 0 ? formulaCost / adjustmentFactor : formulaCost;
-salePricePerKg = await getSalePriceForStore('STORE_A');
+salePricePerKg = await getSalePriceForStore(store);
 }
 const totalCost = quantity * costPerKg;
 const totalValue = quantity * salePricePerKg;
@@ -1612,6 +1603,7 @@ document.getElementById('cust-profit').textContent = fmtAmt(safeNumber(totalValu
 if (date) {
 let storeProduction = 0;
 db.forEach(production => {
+if (production.isReturn) return;
 if (production.date === date && production.store === store) {
 storeProduction += production.net || 0;
 }
@@ -2850,7 +2842,7 @@ const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 if (!seller || seller === 'COMBINED') return [];
 const linkedIds = [];
 const now = new Date();
-const receivedDate = now.toISOString().split('T')[0];
+const receivedDate = localDateStr(now);
 const receivedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 customerSales.forEach(sale => {
 if (
@@ -2899,7 +2891,7 @@ if (remainingQty <= 0) break;
 if (sale.quantity <= remainingQty) {
 sale.creditReceivedManually = true;
 sale.creditReceived = true;
-sale.creditReceivedDate = new Date().toISOString().split('T')[0];
+sale.creditReceivedDate = localDateStr();
 sale.creditReceivedTime = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true});
 if (!sale.currentRepProfile) sale.currentRepProfile = 'admin';
 sale.updatedAt = getTimestamp();
@@ -3798,7 +3790,7 @@ return;
 try {
 showToast(' Encrypting backup with AES-256-GCM + account binding...', 'info', 3000);
 const encryptedBlob = await CryptoEngine.encrypt(data, encEmail, encPassword, currentUser.uid);
-const timestamp = new Date().toISOString().split('T')[0];
+const timestamp = localDateStr();
 _triggerFileDownload(encryptedBlob, `NaswarDealers_SecureBackup_${timestamp}.gznd`);
 showToast(' Encrypted backup created! File requires your credentials to restore.', 'success', 5000);
 } catch(encErr) {
@@ -5283,7 +5275,7 @@ const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventor
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const mode = currentFactorySummaryMode || 'all';
-const selectedDateVal = document.getElementById('factory-date').value || new Date().toISOString().split('T')[0];
+const selectedDateVal = document.getElementById('factory-date').value || localDateStr();
 const selectedDate = new Date(selectedDateVal);
 const selectedYear = selectedDate.getFullYear();
 const selectedMonth = selectedDate.getMonth();
@@ -5301,10 +5293,10 @@ if (mode === 'yearly') return entryDate.getFullYear() === selectedYear;
 return true;
 }
 const allTimeRecomp = { standard: { produced: 0, consumed: 0 }, asaan: { produced: 0, consumed: 0 } };
-factoryProductionHistory.forEach(entry => {
-const store = entry.store === 'asaan' ? 'asaan' : 'standard';
+for (const entry of factoryProductionHistory) {
+const store = (entry.formulaType || await getStoreFormulaType(entry.store)) === 'asaan' ? 'asaan' : 'standard';
 allTimeRecomp[store].produced += entry.units || 0;
-});
+}
 db.forEach(entry => {
 if (entry.isReturn === true) return;
 const store = (entry.formulaStore === 'asaan' || entry.store === 'STORE_C') ? 'asaan' : 'standard';
@@ -5318,9 +5310,9 @@ let totalCost = 0, totalOutput = 0, totalProfit = 0;
 let totalSaleValue = 0, totalRawMatCost = 0;
 let totalRawUsed = 0;
 const rawByMaterial = {};
-db.forEach(async entry => {
-if (entry.isReturn === true) return;
-if (!isInRange(entry.date)) return;
+for (const entry of db) {
+if (entry.isReturn === true) continue;
+if (!isInRange(entry.date)) continue;
 const formulaStore = (entry.formulaStore === 'asaan' || entry.store === 'STORE_C') ? 'asaan' : 'standard';
 const units = entry.formulaUnits || 0;
 if (formulaStore === 'asaan') asaanConsumed += units;
@@ -5346,7 +5338,7 @@ formula.forEach(f => {
   rawByMaterial[matName].qty += qtyUsed;
   rawByMaterial[matName].cost += matCost;
 });
-});
+}
 const totalConsumed = stdConsumed + asaanConsumed;
 const stdCostPerUnit = await getCostPerUnit('standard');
 const asaanCostPerUnit = await getCostPerUnit('asaan');
@@ -5356,12 +5348,12 @@ const avgCostPerUnit = totalConsumed > 0
 const totalMatValue = totalRawMatCost;
 const avgProfitPerKg = totalOutput > 0 ? totalProfit / totalOutput : 0;
 let totalAdditionalCostProd = 0;
-factoryProductionHistory.forEach(entry => {
-  if (!isInRange(entry.date)) return;
+for (const entry of factoryProductionHistory) {
+  if (entry.isMerged || !isInRange(entry.date)) continue;
   const units = entry.units || 0;
-  const addCostPerUnit = factoryAdditionalCosts[entry.store] || 0;
-  totalAdditionalCostProd += addCostPerUnit * units;
-});
+  const ft = entry.formulaType || await getStoreFormulaType(entry.store);
+  totalAdditionalCostProd += (entry.additionalCost != null ? (parseFloat(entry.additionalCost) || 0) : (factoryAdditionalCosts[ft] || 0) * units);
+}
 let periodDays = 1;
 if (mode === 'daily') { periodDays = 1; }
 else if (mode === 'weekly') { periodDays = 7; }
@@ -5515,7 +5507,7 @@ console.warn('[initFactoryTab] data load failed:', _safeErr(error));
 }
 const factoryDateInput = document.getElementById('factory-date');
 if (!factoryDateInput.value) {
-const today = new Date().toISOString().split('T')[0];
+const today = localDateStr();
 factoryDateInput.value = today;
 currentFactoryDate = today; window.currentFactoryDate = currentFactoryDate;
 } else {
@@ -5550,7 +5542,7 @@ refreshUI();
 export function initFactoryTab() {
 const factoryDateInput = document.getElementById('factory-date');
 if (!factoryDateInput.value) {
-const today = new Date().toISOString().split('T')[0];
+const today = localDateStr();
 factoryDateInput.value = today;
 currentFactoryDate = today; window.currentFactoryDate = currentFactoryDate;
 }
@@ -6379,7 +6371,7 @@ fragment.appendChild(card);
 });
 histContainer.replaceChildren(fragment);
 }
-const _custDate = (document.getElementById('cust-date') || {}).value || new Date().toISOString().split('T')[0];
+const _custDate = (document.getElementById('cust-date') || {}).value || localDateStr();
 _filterHistoryByPeriod('#custHistoryList', _custDate, currentSalesSummaryMode || 'day');
 renderCustomersTable();
 updateCustomerCharts();
@@ -6391,7 +6383,7 @@ const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 let production = 0;
 db.forEach(item => {
-if (item.date === date && item.store === store) production += item.net || 0;
+if (!item.isReturn && item.date === date && item.store === store) production += item.net || 0;
 });
 let returns = 0;
 stockReturns.forEach(r => {
