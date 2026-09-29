@@ -1,4 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
+import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler } from './edit-mode.js';
 import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, localDateStr, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, currentEntityId, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
@@ -1561,7 +1562,7 @@ const isSettled = transaction.isSettled === true;
 const mergedBadge = isMerged ? _mergedBadgeHtml(transaction, {inline:true}) : '';
 const settledBadge = isSettled ? `<span class="settled-badge"> Settled</span>` : '';
 const creatorBadge = (typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(transaction) : '';
-const deleteButton = isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deletePaymentTransaction('${esc(transaction.id)}') })()">Delete</button>`;
+const deleteButton = isMerged ? '' : actionRowHtml('payment', transaction.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deletePaymentTransaction('${esc(transaction.id)}') })()">Delete</button>`);
 const card = document.createElement('div');
 card.className = `card liquid-card${isSettled ? ' is-settled-record' : ''}`;
 if (transaction.date) card.setAttribute('data-date', transaction.date);
@@ -1963,6 +1964,117 @@ if (btn) btn.classList.remove('active');
 if (clickedBtn) clickedBtn.classList.add('active');
 }
 
+function _resetExpenseForm() {
+['expenseName', 'expenseAmount', 'expenseDescription'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+async function applyPaymentEdit(ed, v) {
+const o = ed.original;
+const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
+const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
+const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
+const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
+const origCategory = o.isExpense ? 'operating' : o.type;
+if (v.category !== origCategory) {
+showToast('The type cannot be changed while editing. Delete and re-enter it instead.', 'warning', 4000);
+return;
+}
+const oldSigned = o.type === 'IN' ? (o.amount || 0) : -(o.amount || 0);
+const newSigned = o.type === 'IN' ? v.amount : -v.amount;
+const delta = newSigned - oldSigned;
+if (delta < 0) {
+const avail = await getAvailableCashInHand();
+if (avail + delta < 0) {
+showToast(`Insufficient cash in hand. Available: ${fmtAmt(Math.max(0, avail))} — Extra required: ${fmtAmt(-delta)}`, 'error', 5000);
+return;
+}
+}
+const t = paymentTransactions.find(x => x && x.id === o.id);
+if (!t) { showToast('Original transaction not found.', 'error'); return; }
+const tBefore = { ...t };
+const e = o.expenseId ? expenseRecords.find(x => x && x.id === o.expenseId) : null;
+const eBefore = e ? { ...e } : null;
+try {
+let entity = paymentEntities.find(x => String(x.id) === String(o.entityId));
+let createdEntity = null;
+if (!entity || String(entity.name || '').toLowerCase() !== v.name.toLowerCase()) {
+entity = paymentEntities.find(x => x.name && x.name.toLowerCase() === v.name.toLowerCase() && !!x.isExpenseEntity === !!o.isExpense);
+if (!entity) {
+let entId = generateUUID('ent');
+if (!validateUUID(entId)) entId = generateUUID('ent');
+createdEntity = ensureRecordIntegrity(o.isExpense
+? { id: entId, name: v.name, type: 'payee', isSupplier: false, isExpenseEntity: true, category: 'operating', phone: '', address: '', notes: 'Auto-created by Expense Manager' }
+: { id: entId, name: v.name, type: o.type === 'OUT' ? 'payee' : 'payor', isSupplier: false, isExpenseEntity: false, phone: '', address: '', notes: 'Auto-created from Transaction Manager' }, false);
+paymentEntities.push(createdEntity);
+entity = createdEntity;
+}
+}
+const ts = getTimestamp();
+const editedAt = new Date().toISOString();
+const desc = v.description || (o.isExpense ? `Expense: ${v.name}` : `Payment ${o.type}: ${v.name}`);
+Object.assign(t, { entityId: entity.id, entityName: entity.name, amount: v.amount, date: v.date, description: desc, updatedAt: ts, isEdited: true, editedAt });
+ensureRecordIntegrity(t, true);
+if (e) {
+Object.assign(e, { name: v.name, amount: v.amount, date: v.date, description: v.description || (o.isExpense ? '' : desc), updatedAt: ts, isEdited: true, editedAt });
+ensureRecordIntegrity(e, true);
+}
+if (createdEntity) await unifiedSave('payment_entities', paymentEntities, createdEntity);
+if (e) await unifiedSave('expenses', expenseRecords, e);
+await unifiedSave('payment_transactions', paymentTransactions, t);
+if (o.isExpense && !expenseCategories.includes(v.name)) {
+expenseCategories.push(v.name);
+await sqliteStore.set('expense_categories', expenseCategories);
+}
+notifyDataChange('payments');
+notifyDataChange('expenses');
+emitSyncUpdate({ payment_transactions: null, expenses: null, payment_entities: createdEntity ? null : undefined });
+endEditMode();
+_resetExpenseForm();
+if (typeof refreshPaymentTab === 'function') await refreshPaymentTab();
+if (typeof calculateNetCash === 'function') calculateNetCash();
+if (typeof calculateCashTracker === 'function') calculateCashTracker();
+if (typeof renderUnifiedTable === 'function') await renderUnifiedTable(1);
+if (typeof refreshEntityBalances === 'function') refreshEntityBalances();
+if (typeof renderExpenseTable === 'function') renderExpenseTable();
+showToast('Transaction updated', 'success');
+} catch (err) {
+Object.assign(t, tBefore);
+if (e && eBefore) Object.assign(e, eBefore);
+console.warn('[edit payment] failed', err);
+showToast('Failed to update transaction. Please try again.', 'error');
+}
+}
+
+export async function startEditPayment(id) {
+const txs = ensureArray(await sqliteStore.get('payment_transactions'));
+const t = txs.find(x => x && String(x.id) === String(id));
+if (!t || t.isMerged) { showToast('This transaction cannot be edited.', 'warning'); return; }
+if (t.isTransfer) { showToast('Transfers are edited from the Transfer card.', 'warning'); return; }
+if (t.isSettled) { showToast('Settled records cannot be edited.', 'warning'); return; }
+if (t.isPayable || t.materialId || parseFloat(t.supplierCreditAmount || 0) > 0) {
+showToast('This payment settled a supplier payable or credit. Delete and re-enter it to change it.', 'warning', 5000);
+return;
+}
+if (typeof showTab === 'function') showTab('payments');
+const cat = t.isExpense ? 'operating' : t.type;
+selectExpenseCategory(cat, document.getElementById('btn-category-' + (cat === 'operating' ? 'operating' : cat.toLowerCase())));
+const set = (eid, val) => { const el = document.getElementById(eid); if (el) el.value = val; };
+set('expenseName', t.entityName || '');
+set('expenseAmount', t.amount);
+set('expenseDate', t.date);
+set('expenseDescription', t.description || '');
+beginEditMode('payment', t, { buttonId: 'btn-save-expense', label: 'Update Transaction', anchorId: 'expenseName', cancelFn: _resetExpenseForm });
+}
+
+export async function startEditExpenseRecord(expenseId) {
+const txs = ensureArray(await sqliteStore.get('payment_transactions'));
+const t = txs.find(x => x && String(x.expenseId) === String(expenseId));
+if (!t) { showToast('No linked transaction found for this expense.', 'warning'); return; }
+await startEditPayment(t.id);
+}
+registerEditHandler('payment', startEditPayment);
+registerEditHandler('expense', startEditExpenseRecord);
+
 export async function saveExpense() {
 const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventory_data'));
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
@@ -1987,6 +2099,11 @@ return;
 }
 if (!date) {
 showToast("Please select date", "warning");
+return;
+}
+const _edPay = getEditCtx('payment');
+if (_edPay) {
+await applyPaymentEdit(_edPay, { name, amount, date, description, category });
 return;
 }
 if (category === 'OUT' || category === 'operating') {
@@ -3334,7 +3451,7 @@ item.innerHTML = `
   </svg>
   Photo
 </button>
-${exp.isMerged ? '' : `<button class="btn btn-sm btn-danger u-p-4-8" onclick="deleteExpenseFromOverlay('${esc(exp.id)}')">⌫</button>`}
+${exp.isMerged ? '' : `<button class="btn btn-sm u-p-4-8" style="color:var(--accent);border:1px solid var(--accent);background:transparent;" onclick="startEdit('expense','${esc(exp.id)}')">✎</button><button class="btn btn-sm btn-danger u-p-4-8" onclick="deleteExpenseFromOverlay('${esc(exp.id)}')">⌫</button>`}
 </div>
 `;
 _expFrag.appendChild(item);

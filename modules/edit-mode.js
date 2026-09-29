@@ -13,6 +13,9 @@ export async function startEdit(kind, id) {
     return;
   }
   try {
+    document.querySelectorAll('.standalone-screen').forEach(s => {
+      if (s.id && getComputedStyle(s).display !== 'none' && typeof window.closeStandaloneScreen === 'function') window.closeStandaloneScreen(s.id);
+    });
     await h(id);
   } catch (e) {
     console.warn('[edit] failed to start', kind, e);
