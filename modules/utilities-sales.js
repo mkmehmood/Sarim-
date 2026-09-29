@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, OfflineAuth, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, OfflineAuth, round2, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { SarimChart, _restorePayableFromDeletedTransaction, _set_custPaymentChart, _set_custSalesChart, _set_defaultSettings, _set_indPerformanceChart, _set_mfgBarChart, _set_mfgPieChart, _set_storeComparisonChart, custPaymentChart, custSalesChart, defaultSettings, indPerformanceChart, invalidateAllCaches, loadScript, mfgBarChart, mfgPieChart, notifyDataChange, storeComparisonChart, syncCalculatorTab, syncFactoryTab, syncPaymentsTab, syncProductionTab, syncRepTab, syncSalesTab, triggerAutoSync } from './utilities-core.js';
@@ -1132,19 +1132,7 @@ let existingCredit = 0;
 if (existingCustomer) {
 for (const sale of customerSales) {
 if (!(sale && sale.customerName && name && sale.customerName.toLowerCase() === name.toLowerCase())) continue;
-if (sale.transactionType === 'OLD_DEBT' && !sale.creditReceived) {
-existingCredit += (await getSaleTransactionValue(sale)) - (sale.partialPaymentReceived || 0);
-} else if (sale.paymentType === 'CREDIT' && !sale.creditReceived) {
-if (sale.isMerged && typeof sale.creditValue === 'number') {
-existingCredit += sale.creditValue;
-} else {
-existingCredit += (await getSaleTransactionValue(sale)) - (sale.partialPaymentReceived || 0);
-}
-} else if (sale.paymentType === 'COLLECTION') {
-existingCredit -= (sale.totalValue || 0);
-} else if (sale.paymentType === 'PARTIAL_PAYMENT') {
-existingCredit -= (sale.totalValue || 0);
-}
+existingCredit = round2(existingCredit + debtDelta(sale, debtNeedsGross(sale) ? await getSaleTransactionValue(sale) : 0));
 }
 existingCredit = Math.max(0, existingCredit);
 }
@@ -1335,19 +1323,7 @@ const _custHistory = customerSales.filter(s =>
 s && s.currentRepProfile === 'admin' &&
 s.customerName && s.customerName.toLowerCase() === name.toLowerCase()
 );
-for (const s of _custHistory) {
-if (s.transactionType === 'OLD_DEBT') {
-if (!s.creditReceived) _custOutstanding += (parseFloat(s.totalValue) || 0) - (s.partialPaymentReceived || 0);
-} else if (s.paymentType === 'CREDIT' && !s.creditReceived) {
-if (s.isMerged && typeof s.creditValue === 'number') {
-_custOutstanding += s.creditValue;
-} else {
-_custOutstanding += (typeof getSaleTransactionValue === 'function' ? (await getSaleTransactionValue(s)) : (parseFloat(s.totalValue) || 0)) - (s.partialPaymentReceived || 0);
-}
-} else if (s.paymentType === 'COLLECTION' || s.paymentType === 'PARTIAL_PAYMENT') {
-_custOutstanding -= (s.totalValue || 0);
-}
-}
+for (const s of _custHistory) _custOutstanding = round2(_custOutstanding + debtDelta(s, debtNeedsGross(s) ? await getSaleTransactionValue(s) : 0));
 _custOutstanding = Math.max(0, _custOutstanding);
 } catch (_e) { _custOutstanding = -1; }
 if (_custOutstanding === 0) {
@@ -3711,7 +3687,7 @@ export async function promptVerifiedBackupPassword({ title = 'Confirm Password',
     modal.innerHTML = `
     <div class="liquid-card" style="max-width:370px;width:92%;padding:28px 24px;text-align:center;">
       <div style="font-size:1.6rem;margin-bottom:8px;"></div>
-      <h3 style="margin:0 0 6px;color:var(--text-main);font-size:1rem;font-weight:800;font-family:'Bricolage Grotesque',system-ui,sans-serif;">${esc(title)}</h3>
+      <h3 style="margin:0 0 6px;color:var(--text-main);font-size:1rem;font-weight:800;font-family:var(--font-display);">${esc(title)}</h3>
       <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">${esc(subtitle)}</p>
       <p style="font-size:0.72rem;color:var(--accent);margin-bottom:14px;">Account: <strong>${esc(currentUser.email)}</strong></p>
       <div style="position:relative;margin-bottom:8px;">

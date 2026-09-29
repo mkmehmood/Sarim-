@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, balanceAfterHtml, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, balanceAfterHtml, currentRepProfile, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { calculateCashTracker, calculateNetCash, custTransactionMode, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
@@ -37,24 +37,7 @@ let totalCredit = 0;
 let totalQty = 0;
 for (const s of sales) {
 totalQty += (s.quantity || 0);
-const isRepLinked = s.salesRep !== 'NONE';
-if (s.transactionType === 'OLD_DEBT') {
-if (!s.creditReceived) {
-const partialPaid = s.partialPaymentReceived || 0;
-totalCredit += (await getSaleTransactionValue(s) - partialPaid);
-}
-} else if (s.paymentType === 'CREDIT' && !s.creditReceived) {
-if (s.isMerged && typeof s.creditValue === 'number') {
-totalCredit += s.creditValue;
-} else {
-const partialPaid = s.partialPaymentReceived || 0;
-totalCredit += (await getSaleTransactionValue(s) - partialPaid);
-}
-} else if (s.paymentType === 'COLLECTION') {
-totalCredit -= (s.totalValue || 0);
-} else if (s.paymentType === 'PARTIAL_PAYMENT') {
-totalCredit -= (s.totalValue || 0);
-}
+totalCredit = round2(totalCredit + debtDelta(s, debtNeedsGross(s) ? await getSaleTransactionValue(s) : 0));
 }
 totalCredit = Math.max(0, totalCredit);
 const _setCust = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
@@ -110,22 +93,7 @@ if (!customerStats[name]) {
 customerStats[name] = { name: name, credit: 0, quantity: 0, lastSaleDate: 0 };
 }
 customerStats[name].quantity += (sale.quantity || 0);
-if (sale.transactionType === 'OLD_DEBT' && !sale.creditReceived) {
-const partialPaid = sale.partialPaymentReceived || 0;
-customerStats[name].credit += (await getSaleTransactionValue(sale) - partialPaid);
-} else if (sale.paymentType === 'CREDIT' && !sale.creditReceived) {
-if (sale.isMerged && typeof sale.creditValue === 'number') {
-customerStats[name].credit += sale.creditValue;
-} else {
-const partialPaid = sale.partialPaymentReceived || 0;
-customerStats[name].credit += (await getSaleTransactionValue(sale) - partialPaid);
-}
-} else if (sale.paymentType === 'COLLECTION') {
-customerStats[name].credit -= (sale.totalValue || 0);
-} else if (sale.paymentType === 'PARTIAL_PAYMENT') {
-customerStats[name].credit -= (sale.totalValue || 0);
-}
-if (customerStats[name].credit < 0) customerStats[name].credit = 0;
+customerStats[name].credit = round2(customerStats[name].credit + debtDelta(sale, debtNeedsGross(sale) ? await getSaleTransactionValue(sale) : 0));
 const saleDate = sale.date;
 if (saleDate) {
 const timestamp = new Date(saleDate).getTime();
@@ -242,9 +210,9 @@ const name = currentManagingCustomer;
 const txs = customerSales.filter(s =>
 s && s.customerName === name
 );
-const totalDebt = txs
-.filter(s => s.paymentType === 'CREDIT' && !s.creditReceived)
-.reduce((sum, s) => sum + (s.totalValue || 0) - (s.partialPaymentReceived || 0), 0);
+let totalDebt = 0;
+for (const s of txs.filter(x => x.currentRepProfile === 'admin')) totalDebt = round2(totalDebt + debtDelta(s, debtNeedsGross(s) ? await getSaleTransactionValue(s) : 0));
+totalDebt = Math.max(0, totalDebt);
 let msg = `Permanently delete customer "${name}"?`;
 if (txs.length > 0) {
 msg += `\n\n This customer has ${txs.length} transaction record${txs.length !== 1 ? 's' : ''} on file.`;
@@ -318,28 +286,12 @@ transactions = customerSales.filter(s =>
 s && s.currentRepProfile === 'admin' && s.customerName === name
 );
 }
-const _custDelta = async (t) => {
-const _tRepLinked = t.salesRep && t.salesRep !== 'NONE';
-if (t.transactionType === 'OLD_DEBT' && !t.creditReceived) {
-return await getSaleTransactionValue(t) - (t.partialPaymentReceived || 0);
-}
-if (_tRepLinked) {
-if (t.paymentType === 'CREDIT' && !t.creditReceived) return await getSaleTransactionValue(t) - (t.partialPaymentReceived || 0);
-if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') return -(t.totalValue || 0);
-return 0;
-}
-if (t.paymentType === 'CREDIT' && !t.creditReceived) {
-if (t.isMerged && typeof t.creditValue === 'number') return t.creditValue;
-return await getSaleTransactionValue(t) - (t.partialPaymentReceived || 0);
-}
-if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') return -(t.totalValue || 0);
-return 0;
-};
+const _custDelta = async (t) => debtDelta(t, debtNeedsGross(t) ? await getSaleTransactionValue(t) : 0);
 const _runBal = new Map();
 let _runTotal = 0;
 const _ascTx = transactions.map((t, i) => ({ t, i })).sort((a, b) => ((a.t.timestamp || 0) - (b.t.timestamp || 0)) || (a.i - b.i));
 for (const { t } of _ascTx) {
-_runTotal += await _custDelta(t);
+_runTotal = round2(_runTotal + await _custDelta(t));
 _runBal.set(t, _runTotal);
 }
 const rangeSelect = document.getElementById('customerPdfRange');

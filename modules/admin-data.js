@@ -188,7 +188,7 @@ try {
   const badge = (txt, color) =>
     `<span style="font-size:0.6rem;font-weight:700;padding:2px 7px;color:${color};letter-spacing:0.03em">${txt}</span>`;
   const pill = (txt, color) =>
-    `<span style="font-size:0.62rem;padding:2px 6px;color:${color};font-family:'Geist Mono','Courier New',monospace">${txt}</span>`;
+    `<span style="font-size:0.62rem;padding:2px 6px;color:${color};font-family:var(--font-mono)">${txt}</span>`;
 
   let totalFsDocs = 0;
   COLLECTIONS.forEach(c => { totalFsDocs += c.snap.size || 0; });
@@ -202,7 +202,7 @@ try {
       <span style="display:flex;align-items:center;"><svg width="20" height="20" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="26" height="7" rx="2.5" fill="var(--accent)" fill-opacity="0.20" stroke="var(--accent)" stroke-width="1.4"/><rect x="5" y="15" width="26" height="7" rx="2.5" fill="var(--accent)" fill-opacity="0.13" stroke="var(--accent)" stroke-width="1.4"/><rect x="5" y="25" width="26" height="7" rx="2.5" fill="var(--accent)" fill-opacity="0.08" stroke="var(--accent)" stroke-width="1.4"/><circle cx="27" cy="8.5" r="1.5" fill="var(--accent)"/><circle cx="27" cy="18.5" r="1.5" fill="var(--accent)" opacity="0.7"/><circle cx="27" cy="28.5" r="1.5" fill="var(--accent)" opacity="0.5"/></svg></span>
       <div>
         <div style="font-weight:700;font-size:1rem;color:var(--text)">Database Structure</div>
-        <div style="font-size:0.67rem;color:var(--text-muted);font-family:'Geist Mono','Courier New',monospace;margin-top:1px">
+        <div style="font-size:0.67rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:1px">
           users/${currentUser.uid.slice(0,14)}…/  &nbsp;·&nbsp; shard&nbsp;<span style="color:var(--accent);font-weight:700">${myDeviceShard}</span>
         </div>
       </div>
@@ -272,13 +272,13 @@ try {
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-        <span style="font-weight:700;font-size:0.82rem;color:var(--text);font-family:'Geist Mono','Courier New',monospace">${col.fsName}</span>
+        <span style="font-weight:700;font-size:0.82rem;color:var(--text);font-family:var(--font-mono)">${col.fsName}</span>
         ${hasLiveListener ? badge('LIVE','#30d158','rgba(48,209,88,0.12)') : badge('SNAPSHOT','#f59e0b','rgba(245,158,11,0.12)')}
         ${col.lock ? badge('LOCKED ON CLOSE','#888','rgba(128,128,128,0.1)') : ''}
         ${isDirty ? badge('PENDING','#f59e0b','rgba(245,158,11,0.15)') : ''}
       </div>
       <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">${col.desc}</div>
-      <div style="font-size:0.63rem;font-family:'Geist Mono','Courier New',monospace;display:flex;flex-wrap:wrap;gap:6px">
+      <div style="font-size:0.63rem;font-family:var(--font-mono);display:flex;flex-wrap:wrap;gap:6px">
         <span>SQLite: ${pill(col.sqliteKey,'var(--accent)')}</span>
         <span>JS: ${pill(col.jsVar,'var(--accent-cyan)')}</span>
         <span>Tab: ${pill(col.tabFn||'—','var(--text-muted)')}</span>
@@ -310,7 +310,7 @@ try {
 <div style="margin-bottom:10px;padding:12px;background:var(--input-bg);border-radius:14px;border:1px solid var(--glass-border)">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
     <div style="flex:1;min-width:0">
-      <div style="font-weight:700;font-size:0.82rem;color:var(--text);font-family:'Geist Mono','Courier New',monospace;margin-bottom:2px">${doc.path}</div>
+      <div style="font-weight:700;font-size:0.82rem;color:var(--text);font-family:var(--font-mono);margin-bottom:2px">${doc.path}</div>
       <div style="font-size:0.67rem;color:var(--text-muted);margin-bottom:4px">${doc.desc}</div>
       <div style="font-size:0.62rem;color:var(--text-muted)">Listener: ${pill(doc.listener, '#30d158')}</div>
     </div>
@@ -324,7 +324,7 @@ try {
         <div style="font-size:0.63rem;color:var(--text-muted);margin-bottom:3px;font-weight:600">SQLite ↔ Firestore field mapping:</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px">
           ${doc.sqlite.map(([sk, fk]) =>
-            `<div style="font-size:0.61rem;font-family:'Geist Mono','Courier New',monospace;background:rgba(0,122,255,0.08);padding:2px 7px;border-radius:8px">
+            `<div style="font-size:0.61rem;font-family:var(--font-mono);background:rgba(0,122,255,0.08);padding:2px 7px;border-radius:8px">
               <span style="color:var(--accent)">${sk}</span><span style="color:var(--text-muted)"> → </span><span style="color:var(--accent-cyan)">${fk}</span>
             </div>`
           ).join('')}
@@ -339,7 +339,7 @@ try {
           ${doc.fsFields.map(k => {
             const present = k in data;
             return `<div style="font-size:0.62rem;display:flex;justify-content:space-between;gap:6px;padding:1px 0">
-              <span style="color:${present?'var(--text)':'#ff453a'};font-family:'Geist Mono','Courier New',monospace;flex-shrink:0">${present?'':'<svg width="11" height="11" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M27 10 H33 L29 17 H31 L27 24 H33 L29 17 H31 Z" fill="currentColor" opacity="0.6" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><circle cx="18" cy="18" r="2" fill="currentColor" opacity="0.8"/></svg>'}${k}</span>
+              <span style="color:${present?'var(--text)':'#ff453a'};font-family:var(--font-mono);flex-shrink:0">${present?'':'<svg width="11" height="11" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M27 10 H33 L29 17 H31 L27 24 H33 L29 17 H31 Z" fill="currentColor" opacity="0.6" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><circle cx="18" cy="18" r="2" fill="currentColor" opacity="0.8"/></svg>'}${k}</span>
               <span>${present ? fmtVal(data[k]) : ''}</span>
             </div>`;
           }).join('')}
@@ -381,7 +381,7 @@ try {
 <div style="margin-bottom:8px;padding:10px 12px;background:var(--input-bg);border-radius:13px;border:1px solid var(--glass-border)">
   <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap">
     ${badge(l.type==='col'?'COLLECTION':'DOC', l.type==='col'?'#007aff':'#bf5af2', l.type==='col'?'rgba(0,122,255,0.1)':'rgba(191,90,242,0.1)')}
-    <span style="font-weight:700;font-size:0.78rem;color:var(--text);font-family:'Geist Mono','Courier New',monospace">${l.name}</span>
+    <span style="font-weight:700;font-size:0.78rem;color:var(--text);font-family:var(--font-mono)">${l.name}</span>
   </div>
   <div style="font-size:0.67rem;color:var(--text-muted);margin-bottom:3px">${l.purpose}</div>
   <div style="font-size:0.62rem;display:flex;flex-wrap:wrap;gap:6px">
@@ -397,7 +397,7 @@ try {
   html += `<div style="margin-bottom:12px">
     <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:8px">Firestore → SQLite → JS Variable Map</div>
     <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:0.63rem;font-family:'Geist Mono','Courier New',monospace">
+    <table style="width:100%;border-collapse:collapse;font-size:0.63rem;font-family:var(--font-mono)">
       <thead><tr style="border-bottom:1px solid var(--glass-border)">
         <th style="text-align:left;padding:4px 6px;color:var(--text-muted);font-weight:600">Firestore</th>
         <th style="text-align:left;padding:4px 6px;color:var(--text-muted);font-weight:600">SQLite Key</th>
@@ -423,7 +423,7 @@ try {
 
   html += `<div style="margin-bottom:12px;padding:12px;background:var(--input-bg);border-radius:14px">
     <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:8px">Firestore Schema (users/{uid}/…)</div>
-    <div style="font-size:0.63rem;font-family:'Geist Mono','Courier New',monospace;line-height:1.9;color:var(--text-muted)">
+    <div style="font-size:0.63rem;font-family:var(--font-mono);line-height:1.9;color:var(--text-muted)">
       <div><span style="color:var(--accent-gold)">users/</span><span style="color:var(--accent)">{uid}</span></div>
       <div style="padding-left:14px"><span style="color:#30d158">├─</span> <span style="color:var(--accent-cyan)">production/</span> <span style="color:var(--text-muted)">{docId}</span> — factory batches</div>
       <div style="padding-left:14px"><span style="color:#30d158">├─</span> <span style="color:var(--accent-cyan)">sales/</span> <span style="color:var(--text-muted)">{docId}</span> — customer sales</div>
@@ -618,7 +618,7 @@ _cyBody.innerHTML = `
 .cy-row-label {
   flex: 1; min-width: 0;
   font-size: 0.81rem; font-weight: 700;
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -627,7 +627,7 @@ _cyBody.innerHTML = `
   padding: 2px 8px; border-radius: 999px;
   background: rgba(255,179,0,0.12); color: var(--warning);
   border: 1px solid rgba(255,179,0,0.22);
-  flex-shrink: 0; font-family: 'Geist Mono', monospace;
+  flex-shrink: 0; font-family: var(--font-mono);
   letter-spacing: 0.02em;
 }
 .cy-arrow { font-size: 0.62rem; color: rgba(255,255,255,0.22); flex-shrink: 0; }
@@ -635,7 +635,7 @@ _cyBody.innerHTML = `
 .cy-after-badge {
   font-size: 0.66rem; font-weight: 700;
   padding: 2px 9px; border-radius: 999px;
-  flex-shrink: 0; font-family: 'Geist', sans-serif;
+  flex-shrink: 0; font-family: var(--font-ui);
   max-width: 168px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   transition: color 0.4s ease;
   border-width: 1px; border-style: solid;
@@ -670,7 +670,7 @@ _cyBody.innerHTML = `
 }
 .cy-result-inner  { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .cy-result-lbl    { font-size: 0.73rem; font-weight: 700; }
-.cy-result-tag    { font-size: 0.62rem; color: var(--text-muted); font-family: 'Geist Mono', monospace; }
+.cy-result-tag    { font-size: 0.62rem; color: var(--text-muted); font-family: var(--font-mono); }
 .cy-result-note   { font-size: 0.67rem; color: var(--text-muted); margin-top: 3px; line-height: 1.45; }
 
 #cy-progress-inner {
@@ -685,9 +685,9 @@ _cyBody.innerHTML = `
   border-color: var(--glass-border);
 }
 #cy-progress-meta { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-#cy-progress-meta-stage { font-size:0.75rem; color:var(--text-muted); font-family:'Geist',sans-serif; }
+#cy-progress-meta-stage { font-size:0.75rem; color:var(--text-muted); font-family:var(--font-ui); }
 #cy-progress-meta-stage b { font-weight:700; color:var(--accent); }
-#cy-progress-pct { font-size:0.73rem; font-weight:800; color:var(--accent); font-family:'Geist Mono',monospace; }
+#cy-progress-pct { font-size:0.73rem; font-weight:800; color:var(--accent); font-family:var(--font-mono); }
 #cy-progress-track {
   width:100%; height:4px;
   background:rgba(255,255,255,0.06);
@@ -732,7 +732,7 @@ _cyBody.innerHTML = `
   box-sizing: border-box;
   transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
-  font-family: 'Geist', sans-serif;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
 [data-theme="light"] #close-year-confirm-input {
@@ -752,7 +752,7 @@ _cyBody.innerHTML = `
 #close-year-pwd-error {
   min-height: 18px; padding: 0 2px;
   font-size: 0.71rem; color: var(--danger);
-  display: none; font-family: 'Geist', sans-serif;
+  display: none; font-family: var(--font-ui);
   animation: cy-fade-in 0.2s ease;
 }
 #cy-btn-row {
@@ -769,7 +769,7 @@ _cyBody.innerHTML = `
   font-size: 0.86rem; opacity: 0.38;
   transition: all 0.2s cubic-bezier(0.25,1,0.5,1);
   letter-spacing: 0.01em;
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: var(--font-display);
   box-shadow: 0 1px 0 rgba(255,255,255,0.14) inset;
 }
 #close-year-confirm-btn:not([disabled]):hover {
@@ -786,7 +786,7 @@ _cyBody.innerHTML = `
   color: var(--text-muted); cursor: pointer;
   font-size: 0.84rem; font-weight: 600;
   transition: all 0.18s ease;
-  font-family: 'Geist', sans-serif; white-space: nowrap;
+  font-family: var(--font-ui); white-space: nowrap;
 }
 [data-theme="light"] #cy-cancel-btn {
   background: var(--glass-raised); border-color: var(--glass-border);
@@ -826,13 +826,13 @@ _cyBody.innerHTML = `
   margin: 0 0 7px;
   color: var(--accent-emerald);
   font-size: 1.10rem; font-weight: 800;
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: var(--font-display);
   letter-spacing: -0.025em;
 }
 #cy-done-subtitle {
   color: var(--text-muted); font-size: 0.75rem;
   margin: 0 0 18px; line-height: 1.55;
-  font-family: 'Geist', sans-serif;
+  font-family: var(--font-ui);
 }
 #cy-sync-advisory {
   display: flex; align-items: flex-start; gap: 11px;
@@ -849,7 +849,7 @@ _cyBody.innerHTML = `
   border: none; border-radius: var(--radius-lg, 12px);
   color: #fff; font-weight: 800; cursor: pointer;
   font-size: 0.90rem; letter-spacing: 0.01em;
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: var(--font-display);
   box-shadow: 0 1px 0 rgba(255,255,255,0.20) inset, 0 4px 16px rgba(105,240,174,0.22);
   transition: all 0.2s ease;
 }

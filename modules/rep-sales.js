@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
 import { _exportDocAsImageAndOpenWhatsApp, getPersonPhoto, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML } from './utilities-payments.js';
@@ -266,25 +266,7 @@ s && s.customerName && s.customerName.toLowerCase() === name.toLowerCase() &&
 s.salesRep === currentRepProfile
 );
 let debt = 0;
-history.forEach(h => {
-if (h.transactionType === 'OLD_DEBT') {
-if (!h.creditReceived) {
-const partialPaid = h.partialPaymentReceived || 0;
-debt += ((h.totalValue || 0) - partialPaid);
-}
-} else if (h.paymentType === 'CREDIT' && !h.creditReceived) {
-if (h.isMerged && typeof h.creditValue === 'number') {
-debt += h.creditValue;
-} else {
-const partialPaid = h.partialPaymentReceived || 0;
-debt += ((h.totalValue || 0) - partialPaid);
-}
-} else if (h.paymentType === 'COLLECTION') {
-debt -= (h.totalValue || 0);
-} else if (h.paymentType === 'PARTIAL_PAYMENT') {
-debt -= (h.totalValue || 0);
-}
-});
+history.forEach(h => { debt = round2(debt + debtDelta(h, h.totalValue)); });
 debt = Math.max(0, debt);
 const _repCred = document.getElementById('rep-customer-current-credit');
 if (_repCred) _repCred.innerText = "" + fmtAmt(safeNumber(debt, 0));
@@ -419,19 +401,7 @@ const _repHistory = repSales.filter(s =>
 s && s.customerName && s.customerName.toLowerCase() === name.toLowerCase() &&
 s.salesRep === currentRepProfile
 );
-for (const h of _repHistory) {
-if (h.transactionType === 'OLD_DEBT') {
-if (!h.creditReceived) _repOutstanding += (parseFloat(h.totalValue) || 0) - (h.partialPaymentReceived || 0);
-} else if (h.paymentType === 'CREDIT' && !h.creditReceived) {
-if (h.isMerged && typeof h.creditValue === 'number') {
-_repOutstanding += h.creditValue;
-} else {
-_repOutstanding += (parseFloat(h.totalValue) || 0) - (h.partialPaymentReceived || 0);
-}
-} else if (h.paymentType === 'COLLECTION' || h.paymentType === 'PARTIAL_PAYMENT') {
-_repOutstanding -= (h.totalValue || 0);
-}
-}
+for (const h of _repHistory) _repOutstanding = round2(_repOutstanding + debtDelta(h, parseFloat(h.totalValue) || 0));
 _repOutstanding = Math.max(0, _repOutstanding);
 } catch (_e) { _repOutstanding = -1; }
 if (_repOutstanding === 0) {
@@ -838,20 +808,7 @@ const custMap = {};
 myData.forEach(s => {
 if(!custMap[s.customerName]) custMap[s.customerName] = { debt: 0, count: 0 };
 custMap[s.customerName].count++;
-if (s.transactionType === 'OLD_DEBT' && !s.creditReceived) {
-const partialPaid = s.partialPaymentReceived || 0;
-custMap[s.customerName].debt += ((s.totalValue || 0) - partialPaid);
-} else if(s.paymentType === 'CREDIT' && !s.creditReceived) {
-if (s.isMerged && typeof s.creditValue === 'number') {
-custMap[s.customerName].debt += s.creditValue;
-} else {
-const partialPaid = s.partialPaymentReceived || 0;
-custMap[s.customerName].debt += ((s.totalValue || 0) - partialPaid);
-}
-}
-if(s.paymentType === 'COLLECTION' || s.paymentType === 'PARTIAL_PAYMENT') {
-custMap[s.customerName].debt -= (s.totalValue || 0);
-}
+custMap[s.customerName].debt = round2(custMap[s.customerName].debt + debtDelta(s, s.totalValue));
 });
 const sortedCustomers = Object.keys(custMap).sort();
 if (Array.isArray(repCustomers)) {
@@ -966,9 +923,9 @@ const repCustomers = ensureArray(await sqliteStore.get('rep_customers'));
 if (!currentManagingRepCustomer) return;
 const name = currentManagingRepCustomer;
 const txs = repSales.filter(s => s.customerName === name && s.salesRep === currentRepProfile);
-const totalDebt = txs
-.filter(s => s.paymentType === 'CREDIT' && !s.creditReceived)
-.reduce((sum, s) => sum + (s.totalValue || 0) - (s.partialPaymentReceived || 0), 0);
+let totalDebt = 0;
+for (const s of txs) totalDebt = round2(totalDebt + debtDelta(s, s.totalValue));
+totalDebt = Math.max(0, totalDebt);
 let msg = `Permanently delete rep customer "${name}"?`;
 if (txs.length > 0) {
 msg += `\n\n This customer has ${txs.length} transaction record${txs.length !== 1 ? 's' : ''} on file.`;
@@ -1042,22 +999,12 @@ console.error('Rep sales operation failed.', _safeErr(e));
 showToast('Rep sales operation failed.', 'error');
 transactions = repSales.filter(s => s.customerName === name && s.salesRep === currentRepProfile);
 }
-const _repDelta = (t) => {
-let d = 0;
-if (t.transactionType === 'OLD_DEBT' && !t.creditReceived) {
-d += ((t.totalValue || 0) - (t.partialPaymentReceived || 0));
-} else if (t.paymentType === 'CREDIT' && !t.creditReceived) {
-if (t.isMerged && typeof t.creditValue === 'number') d += t.creditValue;
-else d += ((t.totalValue || 0) - (t.partialPaymentReceived || 0));
-}
-if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') d -= (t.totalValue || 0);
-return d;
-};
+const _repDelta = (t) => debtDelta(t, t.totalValue);
 const _runBal = new Map();
 let _runTotal = 0;
 const _ascTx = transactions.map((t, i) => ({ t, i })).sort((a, b) => ((a.t.timestamp || 0) - (b.t.timestamp || 0)) || (a.i - b.i));
 for (const { t } of _ascTx) {
-_runTotal += _repDelta(t);
+_runTotal = round2(_runTotal + _repDelta(t));
 _runBal.set(t, _runTotal);
 }
 const rangeSelect = document.getElementById('repCustomerPdfRange');
