@@ -8,7 +8,7 @@ export const BRAND_LOGO_JPEG_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ
 export var entityListViewType;
 
 export const APP_CONFIG = Object.freeze({
-  CACHE_VERSION: 'V.03.09.2026',
+  CACHE_VERSION: 'V.29.09.2026',
 
   PBKDF2_ITERATIONS: 210000,
   PBKDF2_ITERATIONS_SHA256: 310000,
