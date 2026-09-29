@@ -8,6 +8,24 @@ import { calculateDynamicCost, currentFactorySettingsStore, currentFactorySummar
 import { showGlassConfirm, showToast } from './customers.js';
 import { calculateRepAnalytics, currentRepAnalyticsMode, refreshRepUI, renderRepCustomerTable, repTransactionMode } from './rep-sales.js';
 
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentEntityId;
+window.currentEntityId = currentEntityId;
+export function _set_currentEntityId(v) { currentEntityId = v; window.currentEntityId = v; }
+export let _lbZoom;
+window._lbZoom = _lbZoom;
+export function _set__lbZoom(v) { _lbZoom = v; window._lbZoom = v; }
+export let _lbResetZoom;
+window._lbResetZoom = _lbResetZoom;
+export function _set__lbResetZoom(v) { _lbResetZoom = v; window._lbResetZoom = v; }
+export let openPhotoLightbox;
+window.openPhotoLightbox = openPhotoLightbox;
+export function _set_openPhotoLightbox(v) { openPhotoLightbox = v; window.openPhotoLightbox = v; }
+export let closePhotoLightbox;
+window.closePhotoLightbox = closePhotoLightbox;
+export function _set_closePhotoLightbox(v) { closePhotoLightbox = v; window.closePhotoLightbox = v; }
+
 export async function toggleDarkMode() {
 const html = document.documentElement;
 const themeToggle = document.getElementById('themeToggle');
@@ -3958,21 +3976,3 @@ export function _set_mfgPieChart(v) { mfgPieChart = v; }
 export function _set_salesCompChart(v) { salesCompChart = v; }
 export function _set_salesPerfChart(v) { salesPerfChart = v; }
 export function _set_storeComparisonChart(v) { storeComparisonChart = v; }
-
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
-export let currentEntityId;
-window.currentEntityId = currentEntityId;
-export function _set_currentEntityId(v) { currentEntityId = v; window.currentEntityId = v; }
-export let _lbZoom;
-window._lbZoom = _lbZoom;
-export function _set__lbZoom(v) { _lbZoom = v; window._lbZoom = v; }
-export let _lbResetZoom;
-window._lbResetZoom = _lbResetZoom;
-export function _set__lbResetZoom(v) { _lbResetZoom = v; window._lbResetZoom = v; }
-export let openPhotoLightbox;
-window.openPhotoLightbox = openPhotoLightbox;
-export function _set_openPhotoLightbox(v) { openPhotoLightbox = v; window.openPhotoLightbox = v; }
-export let closePhotoLightbox;
-window.closePhotoLightbox = closePhotoLightbox;
-export function _set_closePhotoLightbox(v) { closePhotoLightbox = v; window.closePhotoLightbox = v; }

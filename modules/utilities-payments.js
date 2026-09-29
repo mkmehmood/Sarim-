@@ -8,6 +8,30 @@ import { calculatePaymentSummaries, closeFactoryInventoryModal, editingFactoryIn
 import { calculateCustomerStatsForDisplay, currentManagingRepCustomer, openCustomerEditModal, refreshAllCalculations, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
 import { calculateRepCustomerStatsForDisplay, checkBiometricLock, disableBiometricLock, openRepCustomerEditModal, refreshRepUI, renderRepCustomerTable, renderRepCustomerTransactions, renderRepHistory } from './rep-sales.js';
 
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentCompMode;
+window.currentCompMode = currentCompMode;
+export function _set_currentCompMode(v) { currentCompMode = v; window.currentCompMode = v; }
+export let currentSalesSummaryMode;
+window.currentSalesSummaryMode = currentSalesSummaryMode;
+export function _set_currentSalesSummaryMode(v) { currentSalesSummaryMode = v; window.currentSalesSummaryMode = v; }
+export let currentPerfOverviewMode;
+window.currentPerfOverviewMode = currentPerfOverviewMode;
+export function _set_currentPerfOverviewMode(v) { currentPerfOverviewMode = v; window.currentPerfOverviewMode = v; }
+export let entityViewMode;
+window.entityViewMode = entityViewMode;
+export function _set_entityViewMode(v) { entityViewMode = v; window.entityViewMode = v; }
+export let editingEntityId;
+window.editingEntityId = editingEntityId;
+export function _set_editingEntityId(v) { editingEntityId = v; window.editingEntityId = v; }
+export let selectedEntityId;
+window.selectedEntityId = selectedEntityId;
+export function _set_selectedEntityId(v) { selectedEntityId = v; window.selectedEntityId = v; }
+export let currentExpenseOverlayName;
+window.currentExpenseOverlayName = currentExpenseOverlayName;
+export function _set_currentExpenseOverlayName(v) { currentExpenseOverlayName = v; window.currentExpenseOverlayName = v; }
+
 export async function toggleCustomerCreditReceived(id, event) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 if (event) {
@@ -7868,27 +7892,3 @@ window.handlePaymentTransferPhotoFile = handlePaymentTransferPhotoFile;
 window._applyPaymentTransferPendingPhoto = _applyPaymentTransferPendingPhoto;
 window.renderPaymentTransferHistory = renderPaymentTransferHistory;
 window.deletePaymentTransfer = deletePaymentTransfer;
-
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
-export let currentCompMode;
-window.currentCompMode = currentCompMode;
-export function _set_currentCompMode(v) { currentCompMode = v; window.currentCompMode = v; }
-export let currentSalesSummaryMode;
-window.currentSalesSummaryMode = currentSalesSummaryMode;
-export function _set_currentSalesSummaryMode(v) { currentSalesSummaryMode = v; window.currentSalesSummaryMode = v; }
-export let currentPerfOverviewMode;
-window.currentPerfOverviewMode = currentPerfOverviewMode;
-export function _set_currentPerfOverviewMode(v) { currentPerfOverviewMode = v; window.currentPerfOverviewMode = v; }
-export let entityViewMode;
-window.entityViewMode = entityViewMode;
-export function _set_entityViewMode(v) { entityViewMode = v; window.entityViewMode = v; }
-export let editingEntityId;
-window.editingEntityId = editingEntityId;
-export function _set_editingEntityId(v) { editingEntityId = v; window.editingEntityId = v; }
-export let selectedEntityId;
-window.selectedEntityId = selectedEntityId;
-export function _set_selectedEntityId(v) { selectedEntityId = v; window.selectedEntityId = v; }
-export let currentExpenseOverlayName;
-window.currentExpenseOverlayName = currentExpenseOverlayName;
-export function _set_currentExpenseOverlayName(v) { currentExpenseOverlayName = v; window.currentExpenseOverlayName = v; }

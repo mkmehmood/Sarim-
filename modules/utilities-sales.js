@@ -9,6 +9,45 @@ import { calculateFactoryProduction, currentFactorySummaryMode, currentStore, ge
 import { calculateCustomerStatsForDisplay, currentManagingCustomer, renderCustomerTransactions, renderCustomersTable, showGlassConfirm, showToast } from './customers.js';
 import { calculateRepAnalytics, calculateRepSalePreview, getPosition, refreshRepUI, renderRepCustomerTable, repMap, updateRepLiveMap } from './rep-sales.js';
 
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentCashTrackerMode;
+window.currentCashTrackerMode = currentCashTrackerMode;
+export function _set_currentCashTrackerMode(v) { currentCashTrackerMode = v; window.currentCashTrackerMode = v; }
+export let custTransactionMode;
+window.custTransactionMode = custTransactionMode;
+export function _set_custTransactionMode(v) { custTransactionMode = v; window.custTransactionMode = v; }
+export let currentIndMode;
+window.currentIndMode = currentIndMode;
+export function _set_currentIndMode(v) { currentIndMode = v; window.currentIndMode = v; }
+export let currentIndMetric;
+window.currentIndMetric = currentIndMetric;
+export function _set_currentIndMetric(v) { currentIndMetric = v; window.currentIndMetric = v; }
+export let currentStoreComparisonMetric;
+window.currentStoreComparisonMetric = currentStoreComparisonMetric;
+export function _set_currentStoreComparisonMetric(v) { currentStoreComparisonMetric = v; window.currentStoreComparisonMetric = v; }
+export let currentActiveTab;
+window.currentActiveTab = currentActiveTab;
+export function _set_currentActiveTab(v) { currentActiveTab = v; window.currentActiveTab = v; }
+export let currentMfgMode;
+window.currentMfgMode = currentMfgMode;
+export function _set_currentMfgMode(v) { currentMfgMode = v; window.currentMfgMode = v; }
+export let currentFactoryDate;
+window.currentFactoryDate = currentFactoryDate;
+export function _set_currentFactoryDate(v) { currentFactoryDate = v; window.currentFactoryDate = v; }
+export let currentFactoryEntryStore;
+window.currentFactoryEntryStore = currentFactoryEntryStore;
+export function _set_currentFactoryEntryStore(v) { currentFactoryEntryStore = v; window.currentFactoryEntryStore = v; }
+export let currentProductionView;
+window.currentProductionView = currentProductionView;
+export function _set_currentProductionView(v) { currentProductionView = v; window.currentProductionView = v; }
+export let currentOverviewMode;
+window.currentOverviewMode = currentOverviewMode;
+export function _set_currentOverviewMode(v) { currentOverviewMode = v; window.currentOverviewMode = v; }
+export let currentCustomerChartMode;
+window.currentCustomerChartMode = currentCustomerChartMode;
+export function _set_currentCustomerChartMode(v) { currentCustomerChartMode = v; window.currentCustomerChartMode = v; }
+
 export function setCashTrackerMode(mode) {
 currentCashTrackerMode = mode; window.currentCashTrackerMode = currentCashTrackerMode;
 document.querySelectorAll('#tab-payments .toggle-group .toggle-opt').forEach(opt => {
@@ -6666,42 +6705,3 @@ window.updateStockTransferAvailability = updateStockTransferAvailability;
 window.saveStockTransfer = saveStockTransfer;
 window.renderStockTransferHistory = renderStockTransferHistory;
 window.deleteStockTransfer = deleteStockTransfer;
-
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
-export let currentCashTrackerMode;
-window.currentCashTrackerMode = currentCashTrackerMode;
-export function _set_currentCashTrackerMode(v) { currentCashTrackerMode = v; window.currentCashTrackerMode = v; }
-export let custTransactionMode;
-window.custTransactionMode = custTransactionMode;
-export function _set_custTransactionMode(v) { custTransactionMode = v; window.custTransactionMode = v; }
-export let currentIndMode;
-window.currentIndMode = currentIndMode;
-export function _set_currentIndMode(v) { currentIndMode = v; window.currentIndMode = v; }
-export let currentIndMetric;
-window.currentIndMetric = currentIndMetric;
-export function _set_currentIndMetric(v) { currentIndMetric = v; window.currentIndMetric = v; }
-export let currentStoreComparisonMetric;
-window.currentStoreComparisonMetric = currentStoreComparisonMetric;
-export function _set_currentStoreComparisonMetric(v) { currentStoreComparisonMetric = v; window.currentStoreComparisonMetric = v; }
-export let currentActiveTab;
-window.currentActiveTab = currentActiveTab;
-export function _set_currentActiveTab(v) { currentActiveTab = v; window.currentActiveTab = v; }
-export let currentMfgMode;
-window.currentMfgMode = currentMfgMode;
-export function _set_currentMfgMode(v) { currentMfgMode = v; window.currentMfgMode = v; }
-export let currentFactoryDate;
-window.currentFactoryDate = currentFactoryDate;
-export function _set_currentFactoryDate(v) { currentFactoryDate = v; window.currentFactoryDate = v; }
-export let currentFactoryEntryStore;
-window.currentFactoryEntryStore = currentFactoryEntryStore;
-export function _set_currentFactoryEntryStore(v) { currentFactoryEntryStore = v; window.currentFactoryEntryStore = v; }
-export let currentProductionView;
-window.currentProductionView = currentProductionView;
-export function _set_currentProductionView(v) { currentProductionView = v; window.currentProductionView = v; }
-export let currentOverviewMode;
-window.currentOverviewMode = currentOverviewMode;
-export function _set_currentOverviewMode(v) { currentOverviewMode = v; window.currentOverviewMode = v; }
-export let currentCustomerChartMode;
-window.currentCustomerChartMode = currentCustomerChartMode;
-export function _set_currentCustomerChartMode(v) { currentCustomerChartMode = v; window.currentCustomerChartMode = v; }

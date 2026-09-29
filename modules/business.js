@@ -5,6 +5,39 @@ import { DeltaSync, UUIDSyncRegistry } from './utilities-sales.js';
 import { listenForDeviceCommands, listenForTeamChanges } from './utilities-payments.js';
 import { showToast } from './customers.js';
 
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let appMode;
+window.appMode = appMode;
+export function _set_appMode(v) { appMode = v; window.appMode = v; }
+export let currentRepProfile;
+window.currentRepProfile = currentRepProfile;
+export function _set_currentRepProfile(v) { currentRepProfile = v; window.currentRepProfile = v; }
+export let salesRepsList;
+window.salesRepsList = salesRepsList;
+export function _set_salesRepsList(v) { salesRepsList = v; window.salesRepsList = v; }
+export let currentUser;
+window.currentUser = currentUser;
+export function _set_currentUser(v) { currentUser = v; window.currentUser = v; }
+export let firebaseDB;
+window.firebaseDB = firebaseDB;
+export function _set_firebaseDB(v) { firebaseDB = v; window.firebaseDB = v; }
+export let database;
+window.database = database;
+export function _set_database(v) { database = v; window.database = v; }
+export let auth;
+window.auth = auth;
+export function _set_auth(v) { auth = v; window.auth = v; }
+export let isSyncing;
+window.isSyncing = isSyncing;
+export function _set_isSyncing(v) { isSyncing = v; window.isSyncing = v; }
+export let userRolesList;
+window.userRolesList = userRolesList;
+export function _set_userRolesList(v) { userRolesList = v; window.userRolesList = v; }
+export let deriveDeviceShard;
+window.deriveDeviceShard = deriveDeviceShard;
+export function _set_deriveDeviceShard(v) { deriveDeviceShard = v; window.deriveDeviceShard = v; }
+
 export function _safeErr(err) {
   if (err === null || err === undefined) return new Error('Unknown error (null)');
   if (err instanceof Error) return err;
@@ -2972,36 +3005,3 @@ window.cleanupOldTombstones = cleanupOldTombstones;
 window.scheduleAutomaticCleanup = scheduleAutomaticCleanup;
 window.validateAndFixRecords = validateAndFixRecords;
 window.validateAllDataOnStartup = validateAllDataOnStartup;
-
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
-export let appMode;
-window.appMode = appMode;
-export function _set_appMode(v) { appMode = v; window.appMode = v; }
-export let currentRepProfile;
-window.currentRepProfile = currentRepProfile;
-export function _set_currentRepProfile(v) { currentRepProfile = v; window.currentRepProfile = v; }
-export let salesRepsList;
-window.salesRepsList = salesRepsList;
-export function _set_salesRepsList(v) { salesRepsList = v; window.salesRepsList = v; }
-export let currentUser;
-window.currentUser = currentUser;
-export function _set_currentUser(v) { currentUser = v; window.currentUser = v; }
-export let firebaseDB;
-window.firebaseDB = firebaseDB;
-export function _set_firebaseDB(v) { firebaseDB = v; window.firebaseDB = v; }
-export let database;
-window.database = database;
-export function _set_database(v) { database = v; window.database = v; }
-export let auth;
-window.auth = auth;
-export function _set_auth(v) { auth = v; window.auth = v; }
-export let isSyncing;
-window.isSyncing = isSyncing;
-export function _set_isSyncing(v) { isSyncing = v; window.isSyncing = v; }
-export let userRolesList;
-window.userRolesList = userRolesList;
-export function _set_userRolesList(v) { userRolesList = v; window.userRolesList = v; }
-export let deriveDeviceShard;
-window.deriveDeviceShard = deriveDeviceShard;
-export function _set_deriveDeviceShard(v) { deriveDeviceShard = v; window.deriveDeviceShard = v; }

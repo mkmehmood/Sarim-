@@ -7,6 +7,15 @@ import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime
 import { getCostPriceForStore, getSalePriceForStore } from './factory.js';
 import { _set_currentManagingRepCustomer, currentManagingRepCustomer, showGlassConfirm, showToast } from './customers.js';
 
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let repTransactionMode;
+window.repTransactionMode = repTransactionMode;
+export function _set_repTransactionMode(v) { repTransactionMode = v; window.repTransactionMode = v; }
+export let currentRepAnalyticsMode;
+window.currentRepAnalyticsMode = currentRepAnalyticsMode;
+export function _set_currentRepAnalyticsMode(v) { currentRepAnalyticsMode = v; window.currentRepAnalyticsMode = v; }
+
 export async function enableBiometricLock() {
 try {
 const success = await BiometricAuth.register("Manager");
@@ -1944,12 +1953,3 @@ window.fetchRepDeviceLocation = fetchRepDeviceLocation;
 window.exportRepCustomerToPDF = exportRepCustomerToPDF;
 window.renderRepHistory = renderRepHistory;
 window.refreshRepUI = refreshRepUI;
-
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
-export let repTransactionMode;
-window.repTransactionMode = repTransactionMode;
-export function _set_repTransactionMode(v) { repTransactionMode = v; window.repTransactionMode = v; }
-export let currentRepAnalyticsMode;
-window.currentRepAnalyticsMode = currentRepAnalyticsMode;
-export function _set_currentRepAnalyticsMode(v) { currentRepAnalyticsMode = v; window.currentRepAnalyticsMode = v; }

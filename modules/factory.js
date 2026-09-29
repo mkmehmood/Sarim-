@@ -6,6 +6,21 @@ import { _set_currentFactoryEntryStore, calculateCashTracker, calculateNetCash, 
 import { _filterFactoryHistoryByMode, formatCurrency, refreshPaymentTab, renderUnifiedTable, safeValue } from './utilities-payments.js';
 import { showGlassConfirm, showToast } from './customers.js';
 
+// Implicit globals (previously assigned only via window.X / bare X = ...,
+// no formal var/let/const anywhere) -- now real module bindings.
+export let currentFactorySettingsStore;
+window.currentFactorySettingsStore = currentFactorySettingsStore;
+export function _set_currentFactorySettingsStore(v) { currentFactorySettingsStore = v; window.currentFactorySettingsStore = v; }
+export let editingFactoryInventoryId;
+window.editingFactoryInventoryId = editingFactoryInventoryId;
+export function _set_editingFactoryInventoryId(v) { editingFactoryInventoryId = v; window.editingFactoryInventoryId = v; }
+export let currentFactorySummaryMode;
+window.currentFactorySummaryMode = currentFactorySummaryMode;
+export function _set_currentFactorySummaryMode(v) { currentFactorySummaryMode = v; window.currentFactorySummaryMode = v; }
+export let currentStore;
+window.currentStore = currentStore;
+export function _set_currentStore(v) { currentStore = v; window.currentStore = v; }
+
 export async function getCostPerUnit(storeType) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
 const factoryAdditionalCosts = (await sqliteStore.get('factory_additional_costs')) || {};
@@ -1669,18 +1684,3 @@ window.calculateDynamicProductionCost = calculateDynamicProductionCost;
 window.updateProductionCostOnStoreChange = updateProductionCostOnStoreChange;
 window.calcNet = calcNet;
 window.deleteProdEntry = deleteProdEntry;
-
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
-export let currentFactorySettingsStore;
-window.currentFactorySettingsStore = currentFactorySettingsStore;
-export function _set_currentFactorySettingsStore(v) { currentFactorySettingsStore = v; window.currentFactorySettingsStore = v; }
-export let editingFactoryInventoryId;
-window.editingFactoryInventoryId = editingFactoryInventoryId;
-export function _set_editingFactoryInventoryId(v) { editingFactoryInventoryId = v; window.editingFactoryInventoryId = v; }
-export let currentFactorySummaryMode;
-window.currentFactorySummaryMode = currentFactorySummaryMode;
-export function _set_currentFactorySummaryMode(v) { currentFactorySummaryMode = v; window.currentFactorySummaryMode = v; }
-export let currentStore;
-window.currentStore = currentStore;
-export function _set_currentStore(v) { currentStore = v; window.currentStore = v; }
