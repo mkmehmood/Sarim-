@@ -641,8 +641,8 @@ export function safeToFixed(value, decimals = 2) {
 return safeNumber(value, 0).toFixed(decimals);
 }
 
-import { fmtNum, round2, debtNeedsGross, debtDelta } from './finance.js';
-export { fmtNum, round2, debtNeedsGross, debtDelta };
+import { fmtNum, round2, debtNeedsGross, debtDelta, lockedUnitPrice, lockedSaleValue } from './finance.js';
+export { fmtNum, round2, debtNeedsGross, debtDelta, lockedUnitPrice, lockedSaleValue };
 window.fmtNum = fmtNum;
 window.debtDelta = debtDelta;
 

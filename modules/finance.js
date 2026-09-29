@@ -23,6 +23,25 @@ export function round2(v) {
   return isFinite(n) ? Math.round((n + Math.sign(n) * Number.EPSILON) * 100) / 100 : 0;
 }
 
+export function lockedUnitPrice(t) {
+  if (!t) return 0;
+  const up = num(t.unitPrice, 0);
+  if (up > 0) return up;
+  const qty = num(t.quantity, 0);
+  const tv = num(t.totalValue, 0);
+  return qty > 0 && tv > 0 ? tv / qty : 0;
+}
+
+export function lockedSaleValue(t) {
+  if (!t) return null;
+  const qty = num(t.quantity, 0);
+  if (qty <= 0) return num(t.totalValue, 0);
+  const up = num(t.unitPrice, 0);
+  if (up > 0) return round2(qty * up);
+  const tv = num(t.totalValue, 0);
+  return tv > 0 ? round2(tv) : null;
+}
+
 export function debtNeedsGross(t) {
   if (!t || t.creditReceived) return false;
   if (t.transactionType === 'OLD_DEBT') return true;

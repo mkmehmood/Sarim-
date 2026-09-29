@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, lockedSaleValue, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
 import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
 import { _set_currentFactoryEntryStore, calculateCashTracker, calculateNetCash, currentFactoryEntryStore, deleteStockTransfer, getAppStores, getStoreFormulaType, getStoreLabel, refreshFactoryTab, refreshUI, updateAllTabsWithFactoryCosts, updateFactorySummaryCard, updateFactoryUnitsAvailableStats } from './utilities-sales.js';
@@ -1049,8 +1049,9 @@ const pt = t.paymentType || 'CASH';
 if (pt === 'COLLECTION' || pt === 'PARTIAL_PAYMENT') return parseFloat(t.totalValue) || 0;
 if (t.transactionType === 'OLD_DEBT') return parseFloat(t.totalValue) || 0;
 const qty = parseFloat(t.quantity) || 0;
-if (qty <= 0) return parseFloat(t.totalValue) || 0;
-return qty * (await getEffectiveSalePriceForCustomer(t.customerName, t.supplyStore || 'STORE_A'));
+const locked = lockedSaleValue(t);
+if (locked !== null) return locked;
+return round2(qty * (await getEffectiveSalePriceForCustomer(t.customerName, t.supplyStore || 'STORE_A')));
 }
 
 export async function getCostPriceForStore(store) {

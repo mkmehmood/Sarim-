@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, lockedUnitPrice, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
 import { _exportDocAsImageAndOpenWhatsApp, getPersonPhoto, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML } from './utilities-payments.js';
@@ -1123,8 +1123,8 @@ itemContent = `
   </div>
 </div>${panelPlaceholder}`;
 } else {
-const _repDisplayUnitPrice = (t.unitPrice && t.unitPrice > 0)
-  ? t.unitPrice
+const _repDisplayUnitPrice = lockedUnitPrice(t) > 0
+  ? lockedUnitPrice(t)
   : await getSalePriceForStore(t.supplyStore || 'STORE_A');
 itemContent = `
 <div class="txn-card-row">
@@ -1554,7 +1554,7 @@ const buildRow = async (t, runBal) => {
 const pt = t.paymentType || 'CASH';
 const isOldDebt = t.transactionType === 'OLD_DEBT';
 let debit = 0, credit = 0, typeLabel = '', detailLabel = '', displayDate = formatDisplayDate(t.supplyDate || t.date);
-const unitPrice = (t.unitPrice && t.unitPrice > 0) ? t.unitPrice : await getSalePriceForStore(t.supplyStore || 'STORE_A');
+const unitPrice = lockedUnitPrice(t) > 0 ? lockedUnitPrice(t) : await getSalePriceForStore(t.supplyStore || 'STORE_A');
 if (isOldDebt) {
 debit = parseFloat(t.totalValue) || 0;
 credit = parseFloat(t.partialPaymentReceived) || 0;

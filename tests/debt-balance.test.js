@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import * as mod from '../modules/finance.js';
-const { debtDelta, debtNeedsGross, round2, fmtNum } = mod;
+const { debtDelta, debtNeedsGross, round2, fmtNum, lockedSaleValue, lockedUnitPrice } = mod;
 
 test('helpers load', () => {
   assert.equal(typeof debtDelta, 'function');
@@ -56,4 +56,23 @@ test('fmtNum uses Indian grouping and hides .00', () => {
   assert.equal(fmtNum(22050790), '2,20,50,790');
   assert.equal(fmtNum(1234.5), '1,234.5');
   assert.equal(fmtNum(1000.00), '1,000');
+});
+
+test('sale value is locked to the price recorded at sale time', () => {
+  assert.equal(lockedSaleValue({ quantity: 10, unitPrice: 250, totalValue: 2500 }), 2500);
+  assert.equal(lockedSaleValue({ quantity: 10, unitPrice: 300, totalValue: 2500 }), 3000);
+});
+
+test('legacy records without unitPrice fall back to stored totalValue', () => {
+  assert.equal(lockedSaleValue({ quantity: 4, totalValue: 1000 }), 1000);
+  assert.equal(lockedUnitPrice({ quantity: 4, totalValue: 1000 }), 250);
+});
+
+test('records with no stored price defer to the live price lookup', () => {
+  assert.equal(lockedSaleValue({ quantity: 4 }), null);
+  assert.equal(lockedUnitPrice({ quantity: 4 }), 0);
+});
+
+test('zero-quantity records use their stored value', () => {
+  assert.equal(lockedSaleValue({ quantity: 0, totalValue: 500 }), 500);
 });
