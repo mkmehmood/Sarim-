@@ -1,4 +1,5 @@
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
+import { endEditMode, getEditCtx, replaceRecord, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getTimestamp, isSyncing, loadAllData, localDateStr, lockedUnitPrice, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
 import { DeltaSync, calculateCashTracker, calculateCustomerSale, calculateNetCash, currentActiveTab, currentCashTrackerMode, currentCustomerChartMode, currentFactoryDate, currentFactoryEntryStore, currentIndMetric, currentIndMode, currentMfgMode, currentOverviewMode, currentProductionView, currentStoreComparisonMetric, custTransactionMode, getStoreFormulaType, getStoreLabel, refreshCustomerSales, refreshFactoryTab, refreshUI, renderEntityTable, trackFirestoreWrite, updateFactorySummaryCard, updateFactoryUnitsAvailableStats, updateMfgCharts } from './utilities-sales.js';
@@ -1144,6 +1145,7 @@ export function updatePaymentStatusVisibility() {
 }
 
 export async function recordEntry() {
+const _ed = getEditCtx('prod');
 const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -1173,9 +1175,21 @@ const formulaUnits = parseFloat(formulaUnitsElement.value) || 0;
 const formulaStore = typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(store) : (store === 'STORE_C' ? 'asaan' : 'standard');
 const salePrice = await getSalePriceForStore(store);
 const validation = await validateFormulaAvailability(store, formulaUnits);
-if (!validation.sufficient) {
+const _unitCredit = (_ed && _ed.original.formulaStore === formulaStore) ? (_ed.original.formulaUnits || 0) : 0;
+if (!validation.sufficient && !(_ed && validation.available + _unitCredit + 1e-9 >= formulaUnits)) {
 showToast(` Insufficient formula units! Available: ${validation.available}, Requested: ${formulaUnits}`, 'warning', 4000);
 return;
+}
+if (_ed) {
+const o = _ed.original;
+const sameBucket = o.store === store && o.date === inputDate;
+const prodOld = db.filter(p => p && !p.isReturn && p.id !== o.id && p.date === o.date && p.store === o.store).reduce((a, p) => a + (p.net || 0), 0) + (sameBucket ? net : 0);
+const retOld = stockReturns.filter(r => r && r.date === o.date && r.store === o.store).reduce((a, r) => a + (r.quantity || 0), 0);
+const soldOld = customerSales.filter(s => s && (s.supplyDate || s.date) === o.date && s.supplyStore === o.store).reduce((a, s) => a + (s.quantity || 0), 0);
+if (prodOld + retOld - soldOld < -1e-6) {
+showToast(` Cannot reduce this entry: ${fmtNum(soldOld - prodOld - retOld)} kg already sold from ${o.date}. Reduce or delete those sales first.`, 'warning', 5000);
+return;
+}
 }
 const costData = await calculateDynamicCost(store, formulaUnits, net);
 if (net <= 0) {
@@ -1206,7 +1220,7 @@ const ampm = hours >= 12 ? 'PM' : 'AM';
 hours = hours % 12;
 hours = hours ? hours : 12;
 const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
-let prodId = generateUUID('prod');
+let prodId = _ed ? _ed.id : generateUUID('prod');
 if (!validateUUID(prodId)) {
 prodId = generateUUID('prod');
 }
@@ -1236,14 +1250,22 @@ syncedAt: new Date().toISOString(),
 managedBy: (appMode === 'production' && window._assignedManagerName) ? window._assignedManagerName : null,
 createdBy: (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null
 };
-newEntry = ensureRecordIntegrity(newEntry, false);
+if (_ed) {
+const o = _ed.original;
+stampEdit(newEntry, o);
+newEntry.time = o.time;
+newEntry.paymentStatus = o.paymentStatus || newEntry.paymentStatus;
+if (o.managedBy) newEntry.managedBy = o.managedBy;
+}
+newEntry = ensureRecordIntegrity(newEntry, !!_ed);
+const _edIdx = _ed ? db.findIndex(r => r && r.id === _ed.id) : -1;
 try {
-db.push(newEntry);
+if (_ed) replaceRecord(db, newEntry); else db.push(newEntry);
 await unifiedSave('mfg_pro_pkr', db, newEntry);
 notifyDataChange('production');
 emitSyncUpdate({ mfg_pro_pkr: null});
 } catch (error) {
-db.pop();
+if (_ed && _edIdx >= 0) db[_edIdx] = _ed.original; else db.pop();
 showToast(" Failed to save production entry. Please try again.", "error");
 return;
 }
@@ -1266,11 +1288,13 @@ if (profitPerKg) profitPerKg.innerText = '0';
 if (formulaUnitCostDisplay) formulaUnitCostDisplay.innerText = '0/unit';
 if (totalFormulaCostDisplay) totalFormulaCostDisplay.innerText = '0';
 if (dynamicCostPerKg) dynamicCostPerKg.innerText = '0/kg';
+if (_ed) endEditMode();
 await refreshUI();
 calculateNetCash();
 calculateCashTracker();
-showToast("Production record saved successfully!", "success");
+showToast(_ed ? "Production record updated!" : "Production record saved successfully!", "success");
 }
+
 
 export function _dedupDeletionRecordsLocal(arr) {
   if (!Array.isArray(arr)) return [];

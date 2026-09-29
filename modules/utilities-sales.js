@@ -1,4 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
+import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, localDateStr, OfflineAuth, round2, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
@@ -1047,6 +1048,7 @@ cashRatioElement.textContent = (cashRatio === null || cashRatio === undefined) ?
 }
 
 export async function saveCustomerSale() {
+const _ed = getEditCtx('sale');
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 let salesCustomers = ensureArray(await sqliteStore.get('sales_customers'));
@@ -1087,6 +1089,7 @@ storeSpecificProduction += production.net || 0;
 });
 let storeSpecificSales = 0;
 customerSales.forEach(sale => {
+if (_ed && sale.id === _ed.id) return;
 const _saleEffectiveDate = sale.supplyDate || sale.date;
 if (_saleEffectiveDate === date && sale.supplyStore === store) {
 storeSpecificSales += sale.quantity || 0;
@@ -1113,9 +1116,10 @@ if (remainingAfterSale < 0) {
 showToast(` Insufficient stock! Available: ${fmtNum(safeNumber(storeAvailableInventory, 0))} kg, Requested: ${fmtNum(safeNumber(quantity, 0))} kg. Shortage: ${fmtNum(safeNumber(Math.abs(remainingAfterSale), 0))} kg`, 'error', 6000);
 return;
 }
+const _sameBasis = !!(_ed && _ed.original.supplyStore === store && String(_ed.original.customerName || '').toLowerCase() === name.toLowerCase());
 const costData = await calculateSalesCost(store, quantity);
-const totalCost = costData.totalCost;
-const _effectiveSalePrice = await getEffectiveSalePriceForCustomer(name, store);
+const totalCost = (_sameBasis && _ed.original.quantity > 0) ? round2((_ed.original.totalCost || 0) / _ed.original.quantity * quantity) : costData.totalCost;
+const _effectiveSalePrice = (_sameBasis && _ed.original.unitPrice > 0) ? _ed.original.unitPrice : await getEffectiveSalePriceForCustomer(name, store);
 if (!_effectiveSalePrice || _effectiveSalePrice <= 0) {
 showToast(' Sale price not configured for this store. Set prices in Factory Formulas before recording sales.', 'warning', 5000);
 return;
@@ -1127,6 +1131,7 @@ let existingCredit = 0;
 if (existingCustomer) {
 for (const sale of customerSales) {
 if (!(sale && sale.customerName && name && sale.customerName.toLowerCase() === name.toLowerCase())) continue;
+if (_ed && sale.id === _ed.id) continue;
 existingCredit = round2(existingCredit + debtDelta(sale, debtNeedsGross(sale) ? await getSaleTransactionValue(sale) : 0));
 }
 existingCredit = Math.max(0, existingCredit);
@@ -1153,7 +1158,7 @@ hours = hours % 12;
 hours = hours ? hours : 12;
 const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
 const deviceDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-const recordId = generateUUID('sale');
+const recordId = _ed ? _ed.id : generateUUID('sale');
 const recordTimestamp = getTimestamp();
 if (!validateUUID(recordId)) {
 showToast(' Error generating transaction ID. Please try again.', 'error');
@@ -1182,10 +1187,18 @@ creditReceived: paymentType === 'CASH' ? true : false,
 syncedAt: new Date().toISOString(),
 createdBy: (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null,
 };
-const validatedRecord = ensureRecordIntegrity(saleRecord);
+if (_ed) {
+const o = _ed.original;
+stampEdit(saleRecord, o);
+saleRecord.date = o.date;
+saleRecord.time = o.time;
+saleRecord.currentRepProfile = o.currentRepProfile || 'admin';
+if (o.partialPaymentReceived) saleRecord.partialPaymentReceived = o.partialPaymentReceived;
+}
+const validatedRecord = ensureRecordIntegrity(saleRecord, !!_ed);
 const salesSnapshot = [...customerSales];
 try {
-customerSales.push(validatedRecord);
+if (_ed) replaceRecord(customerSales, validatedRecord); else customerSales.push(validatedRecord);
 await unifiedSave('customer_sales', customerSales, validatedRecord);
 try {
 const _scName = validatedRecord.customerName;
@@ -1224,7 +1237,8 @@ renderCustomersTable();
 if (typeof refreshCustomerSales === 'function') {
 refreshCustomerSales();
 }
-showToast(` Sale recorded successfully! ${name} - ${fmtNum(safeNumber(quantity, 0))} kg`, "success");
+if (_ed) endEditMode();
+showToast(_ed ? ` Sale updated! ${name} - ${fmtNum(safeNumber(quantity, 0))} kg` : ` Sale recorded successfully! ${name} - ${fmtNum(safeNumber(quantity, 0))} kg`, "success");
 } catch (error) {
 customerSales.length = 0;
 customerSales.push(...salesSnapshot);
@@ -1237,6 +1251,89 @@ showToast('Sale rollback failed: ' + (_safeErr(rollbackError).message || 'data m
 showToast(' Failed to save sale. Please try again.', 'error');
 }
 }
+
+function _resetSaleForm() {
+const n = document.getElementById('cust-name'); if (n) n.value = '';
+const q = document.getElementById('cust-quantity'); if (q) q.value = '';
+const a = document.getElementById('cust-amount-collected'); if (a) a.value = '';
+const ph = document.getElementById('new-cust-phone'); if (ph) ph.value = '';
+const pc = document.getElementById('new-customer-phone-container'); if (pc) pc.classList.add('hidden');
+setSaleMode('sale');
+}
+
+export async function startEditSale(id) {
+const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
+const rec = customerSales.find(s => s && String(s.id) === String(id));
+if (!rec || rec.isMerged) { showToast('This entry cannot be edited.', 'warning'); return; }
+if (rec.paymentType === 'COLLECTION' || rec.paymentType === 'PARTIAL_PAYMENT') { await startEditCollection(id); return; }
+if (typeof showTab === 'function') showTab('sales');
+setSaleMode('sale');
+const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v; };
+set('cust-date', rec.supplyDate || rec.date);
+selectSupplyStore(document.getElementById('btn-supply-store-' + String(rec.supplyStore || '').toLowerCase()), rec.supplyStore);
+set('supply-store-value', rec.supplyStore);
+selectPaymentType(document.getElementById(rec.paymentType === 'CASH' ? 'btn-payment-cash' : 'btn-payment-credit'), rec.paymentType === 'CASH' ? 'CASH' : 'CREDIT');
+const repBtns = Array.from(document.querySelectorAll('#sales-rep-toggle-group .toggle-opt'));
+const repBtn = repBtns.find(b => (b.getAttribute('onclick') || '').includes(`'${rec.salesRep}'`)) || repBtns[0];
+if (repBtn) { repBtns.forEach(b => b.classList.remove('active')); repBtn.classList.add('active'); }
+set('sales-rep-value', rec.salesRep || 'NONE');
+set('cust-name', rec.customerName || '');
+set('cust-quantity', rec.quantity);
+if (rec.customerPhone) {
+const pc = document.getElementById('new-customer-phone-container'); if (pc) pc.classList.remove('hidden');
+set('new-cust-phone', rec.customerPhone);
+}
+calculateCustomerSale();
+beginEditMode('sale', rec, { buttonId: 'btn-save-cust-transaction', label: 'Update Sale', anchorId: 'cust-name', cancelFn: _resetSaleForm });
+}
+
+export async function startEditCollection(id) {
+const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
+const rec = customerSales.find(s => s && String(s.id) === String(id));
+if (!rec || rec.isMerged) { showToast('This entry cannot be edited.', 'warning'); return; }
+if (typeof showTab === 'function') showTab('sales');
+setSaleMode('collection');
+const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v; };
+set('cust-date', rec.supplyDate || rec.date);
+set('cust-name', rec.customerName || '');
+set('cust-amount-collected', rec.totalValue);
+if (rec.customerPhone) {
+const pc = document.getElementById('new-customer-phone-container'); if (pc) pc.classList.remove('hidden');
+set('new-cust-phone', rec.customerPhone);
+}
+updateCollectionPreview();
+beginEditMode('collection', rec, { buttonId: 'btn-save-cust-transaction', label: 'Update Collection', anchorId: 'cust-amount-collected', cancelFn: _resetSaleForm });
+}
+registerEditHandler('sale', startEditSale);
+registerEditHandler('collection', startEditCollection);
+
+function _resetProdForm() {
+['gross-wt', 'cont-wt', 'net-wt'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+const fu = document.getElementById('formula-units'); if (fu) fu.value = '1';
+if (typeof window.calculateDynamicProductionCost === 'function') window.calculateDynamicProductionCost();
+}
+
+export async function startEditProd(id) {
+const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
+const rec = db.find(r => r && String(r.id) === String(id));
+if (!rec || rec.isMerged || rec.isReturn || rec.isTransfer) { showToast('This entry cannot be edited.', 'warning'); return; }
+if (typeof showTab === 'function') showTab('prod');
+const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v; };
+set('sys-date', rec.date);
+const stores = await getAppStores();
+const idx = stores.findIndex(s => s.key === rec.store);
+const grp = document.getElementById('storeSelectorToggleGroup');
+if (grp && idx >= 0 && grp.children[idx]) grp.children[idx].click();
+set('storeSelector', rec.store);
+set('formula-units', rec.formulaUnits || 1);
+set('gross-wt', rec.grossWt || '');
+set('cont-wt', rec.contWt || '');
+set('net-wt', rec.net);
+if (rec.grossWt && typeof window.calcNet === 'function') window.calcNet();
+if (typeof window.calculateDynamicProductionCost === 'function') await window.calculateDynamicProductionCost();
+beginEditMode('prod', rec, { buttonId: 'btn-save-production', label: 'Update Production', anchorId: 'sys-date', cancelFn: _resetProdForm });
+}
+registerEditHandler('prod', startEditProd);
 
 export function setSaleMode(mode) {
 custTransactionMode = mode; window.custTransactionMode = custTransactionMode;
@@ -1291,6 +1388,7 @@ balEl.style.color = remaining === 0 ? 'var(--accent-emerald)' : 'var(--warning)'
 }
 
 export async function saveCustomerCollection() {
+const _ed = getEditCtx('collection');
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
 const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
@@ -1316,16 +1414,17 @@ let _custOutstanding = 0;
 try {
 const _custHistory = customerSales.filter(s =>
 s && s.currentRepProfile === 'admin' &&
+!(_ed && s.id === _ed.id) &&
 s.customerName && s.customerName.toLowerCase() === name.toLowerCase()
 );
 for (const s of _custHistory) _custOutstanding = round2(_custOutstanding + debtDelta(s, debtNeedsGross(s) ? await getSaleTransactionValue(s) : 0));
 _custOutstanding = Math.max(0, _custOutstanding);
 } catch (_e) { _custOutstanding = -1; }
-if (_custOutstanding === 0) {
+if (_custOutstanding === 0 && !_ed) {
 showToast(`${name} has no outstanding credit balance. Collections can only be recorded against existing unpaid credit.`, 'error', 5000);
 restoreBtn();
 return;
-} else if (_custOutstanding > 0 && amount > _custOutstanding) {
+} else if (_custOutstanding >= 0 && amount > _custOutstanding) {
 const _overAmt = amount - _custOutstanding;
 const _proceed = await showGlassConfirm(
 ` Over-collection Warning!
@@ -1350,7 +1449,7 @@ const hours = now.getHours(), mins = now.getMinutes(), secs = now.getSeconds();
 const ampm = hours >= 12 ? 'PM' : 'AM';
 const h12 = hours % 12 || 12;
 const timeString = `${String(h12).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')} ${ampm}`;
-const recordId = generateUUID('sale');
+const recordId = _ed ? _ed.id : generateUUID('sale');
 if (!validateUUID(recordId)) {
 showToast('Error generating transaction ID. Please try again.', 'error');
 restoreBtn(); return;
@@ -1379,10 +1478,16 @@ gps: gpsCoords,
 syncedAt: new Date().toISOString(),
 createdBy: (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null,
 };
-const validated = ensureRecordIntegrity(collRecord);
+if (_ed) {
+const o = _ed.original;
+stampEdit(collRecord, o);
+collRecord.date = o.date;
+collRecord.time = o.time;
+}
+const validated = ensureRecordIntegrity(collRecord, !!_ed);
 const snapshot = [...customerSales];
 try {
-customerSales.push(validated);
+if (_ed) replaceRecord(customerSales, validated); else customerSales.push(validated);
 await unifiedSave('customer_sales', customerSales, validated);
 notifyDataChange('sales');
 triggerAutoSync();
@@ -1397,11 +1502,12 @@ const _custNameEl = document.getElementById('cust-name');
 if (_custNameEl) _custNameEl.value = '';
 document.getElementById('new-customer-phone-container').classList.add('hidden');
 if (phoneInput) phoneInput.value = '';
+if (_ed) endEditMode();
 if (typeof setSaleMode === 'function') setSaleMode('sale');
 if (typeof renderCustomersTable === 'function') renderCustomersTable();
 if (typeof refreshCustomerSales === 'function') refreshCustomerSales();
 if (typeof calculateCustomerStatsForDisplay === 'function') await calculateCustomerStatsForDisplay(savedName);
-showToast(` Collection of ${fmtAmt(amount)} recorded for ${name}`, 'success');
+showToast(_ed ? ` Collection updated: ${fmtAmt(amount)} for ${name}` : ` Collection of ${fmtAmt(amount)} recorded for ${name}`, 'success');
 } catch (error) {
 customerSales.length = 0;
 customerSales.push(...snapshot);
@@ -3396,7 +3502,7 @@ ${item.contWt ? `<p><span>Container:</span> <span style="color:var(--text-muted)
 <p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(item.profit))}</span></p>
 ${item.formulaUnits ? `<p><span>Formula Units:</span> <span class="qty-val">${fmtNum(safeValue(item.formulaUnits))}</span></p>` : ''}
 ${item.formulaCost ? `<p><span>Formula Cost:</span> <span class="cost-val">${fmtAmt(safeValue(item.formulaCost))}</span></p>` : ''}
-${item.isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`}
+${item.isMerged ? '' : actionRowHtml('prod', item.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`)}
 `}
 `;
 }
@@ -6319,7 +6425,7 @@ creditSection = `
 creditSection = `<div class="received-indicator">Credit Received </div>`;
 }
 }
-const deleteBtnHtml = item.isMerged ? '' : item.isSettled ? `<div class="settled-badge"> Settled</div>` : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteCustomerSale('${esc(item.id)}') })()">Delete</button>`;
+const deleteBtnHtml = item.isMerged ? '' : item.isSettled ? `<div class="settled-badge"> Settled</div>` : actionRowHtml('sale', item.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteCustomerSale('${esc(item.id)}') })()">Delete</button>`);
 const supplyDateLine = (item.supplyDate && item.supplyDate !== item.date)
 ? `<p style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;font-style:italic;">Supply Date: ${esc(formatDisplayDate(item.supplyDate))}</p>`
 : '';

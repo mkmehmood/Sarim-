@@ -5941,3 +5941,51 @@ font-family: var(--font-num);
 font-variant-numeric: tabular-nums lining-nums;
 font-feature-settings: "tnum" 1;
 }
+
+.tbl-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.tbl-action-row .tbl-action-btn {
+  flex: 1;
+  margin: 0;
+  width: auto;
+}
+.tbl-action-btn.edit {
+  background: rgba(29, 233, 182, 0.10);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.edit-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(29, 233, 182, 0.10);
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.edit-mode-banner button {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.edited-badge {
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
