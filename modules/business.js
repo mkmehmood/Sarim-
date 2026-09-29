@@ -2908,6 +2908,11 @@ return { totalFixed, totalValid, totalRecords };
 window._safeErr = _safeErr;
 window.escapeHtml = escapeHtml;
 window.esc = esc;
+
+export function balanceAfterHtml(text, tone = 'neutral', label = 'Balance after') {
+  return `<div class="txn-balance-after txn-balance-${tone}"><span>${esc(label)}</span><b>${esc(text)}</b></div>`;
+}
+window.balanceAfterHtml = balanceAfterHtml;
 window._triggerFileDownload = _triggerFileDownload;
 window._readFileAsArrayBuffer = _readFileAsArrayBuffer;
 window._readFileAsText = _readFileAsText;

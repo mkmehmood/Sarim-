@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { _creatorBadgeHtml, balanceAfterHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
 import { _exportDocAsImageAndOpenWhatsApp, getPersonPhoto, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime, handleUniversalSearch, phoneActionHTML } from './utilities-payments.js';
@@ -1042,6 +1042,24 @@ console.error('Rep sales operation failed.', _safeErr(e));
 showToast('Rep sales operation failed.', 'error');
 transactions = repSales.filter(s => s.customerName === name && s.salesRep === currentRepProfile);
 }
+const _repDelta = (t) => {
+let d = 0;
+if (t.transactionType === 'OLD_DEBT' && !t.creditReceived) {
+d += ((t.totalValue || 0) - (t.partialPaymentReceived || 0));
+} else if (t.paymentType === 'CREDIT' && !t.creditReceived) {
+if (t.isMerged && typeof t.creditValue === 'number') d += t.creditValue;
+else d += ((t.totalValue || 0) - (t.partialPaymentReceived || 0));
+}
+if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') d -= (t.totalValue || 0);
+return d;
+};
+const _runBal = new Map();
+let _runTotal = 0;
+const _ascTx = transactions.map((t, i) => ({ t, i })).sort((a, b) => ((a.t.timestamp || 0) - (b.t.timestamp || 0)) || (a.i - b.i));
+for (const { t } of _ascTx) {
+_runTotal += _repDelta(t);
+_runBal.set(t, _runTotal);
+}
 const rangeSelect = document.getElementById('repCustomerPdfRange');
 const range = rangeSelect ? rangeSelect.value : 'all';
 if (range !== 'all') {
@@ -1079,21 +1097,7 @@ ${phone ? phoneActionHTML(phone) : 'No Phone'} ${address ? `|  ${esc(address)}` 
 </div>
 </div>
 `;
-let currentDebt = 0;
-transactions.forEach(t => {
-if (t.transactionType === 'OLD_DEBT' && !t.creditReceived) {
-currentDebt += ((t.totalValue || 0) - (t.partialPaymentReceived || 0));
-} else if (t.paymentType === 'CREDIT' && !t.creditReceived) {
-if (t.isMerged && typeof t.creditValue === 'number') {
-currentDebt += t.creditValue;
-} else {
-currentDebt += ((t.totalValue || 0) - (t.partialPaymentReceived || 0));
-}
-}
-if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') {
-currentDebt -= (t.totalValue || 0);
-}
-});
+let currentDebt = _runTotal;
 currentDebt = Math.max(0, currentDebt);
 const _repMCS = document.getElementById('repManageCustomerStats'); if (_repMCS) _repMCS.innerText = `Current Debt: ${await formatCurrency(currentDebt)}`;
 transactions.sort((a, b) => b.timestamp - a.timestamp);
@@ -1187,7 +1191,9 @@ itemContent = `
   </div>
 </div>${panelPlaceholder}`;
 }
-item.innerHTML = itemContent;
+const _bal = _runBal.get(t) || 0;
+const _balText = _bal < -0.005 ? `${await formatCurrency(-_bal)} CR` : await formatCurrency(Math.max(0, _bal));
+item.innerHTML = itemContent + balanceAfterHtml(_balText, _bal > 0.005 ? 'debt' : 'clear');
 _repFrag.appendChild(item);
 }
 list.replaceChildren(_repFrag);

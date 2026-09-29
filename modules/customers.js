@@ -1,4 +1,4 @@
-import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { _creatorBadgeHtml, balanceAfterHtml, _mergedBadgeHtml, _safeErr, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { calculateCashTracker, calculateNetCash, custTransactionMode, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
@@ -318,6 +318,30 @@ transactions = customerSales.filter(s =>
 s && s.currentRepProfile === 'admin' && s.customerName === name
 );
 }
+const _custDelta = async (t) => {
+const _tRepLinked = t.salesRep && t.salesRep !== 'NONE';
+if (t.transactionType === 'OLD_DEBT' && !t.creditReceived) {
+return await getSaleTransactionValue(t) - (t.partialPaymentReceived || 0);
+}
+if (_tRepLinked) {
+if (t.paymentType === 'CREDIT' && !t.creditReceived) return await getSaleTransactionValue(t) - (t.partialPaymentReceived || 0);
+if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') return -(t.totalValue || 0);
+return 0;
+}
+if (t.paymentType === 'CREDIT' && !t.creditReceived) {
+if (t.isMerged && typeof t.creditValue === 'number') return t.creditValue;
+return await getSaleTransactionValue(t) - (t.partialPaymentReceived || 0);
+}
+if (t.paymentType === 'COLLECTION' || t.paymentType === 'PARTIAL_PAYMENT') return -(t.totalValue || 0);
+return 0;
+};
+const _runBal = new Map();
+let _runTotal = 0;
+const _ascTx = transactions.map((t, i) => ({ t, i })).sort((a, b) => ((a.t.timestamp || 0) - (b.t.timestamp || 0)) || (a.i - b.i));
+for (const { t } of _ascTx) {
+_runTotal += await _custDelta(t);
+_runBal.set(t, _runTotal);
+}
 const rangeSelect = document.getElementById('customerPdfRange');
 const range = rangeSelect ? rangeSelect.value : 'all';
 if (range !== 'all') {
@@ -367,34 +391,7 @@ ${phone ? phoneActionHTML(phone) : 'No Phone'} ${address ? `|  ${esc(address)}` 
 </div>
 </div>
 `;
-let currentDebt = 0;
-for (const t of transactions) {
-const _tRepLinked = t.salesRep && t.salesRep !== 'NONE';
-if (t.transactionType === 'OLD_DEBT' && !t.creditReceived) {
-const partialPaid = t.partialPaymentReceived || 0;
-currentDebt += await getSaleTransactionValue(t) - partialPaid;
-} else if (_tRepLinked) {
-if (t.paymentType === 'CREDIT' && !t.creditReceived) {
-const partialPaid = t.partialPaymentReceived || 0;
-currentDebt += (await getSaleTransactionValue(t) - partialPaid);
-} else if (t.paymentType === 'COLLECTION') {
-currentDebt -= (t.totalValue || 0);
-} else if (t.paymentType === 'PARTIAL_PAYMENT') {
-currentDebt -= (t.totalValue || 0);
-}
-} else if (t.paymentType === 'CREDIT' && !t.creditReceived) {
-if (t.isMerged && typeof t.creditValue === 'number') {
-currentDebt += t.creditValue;
-} else {
-const partialPaid = t.partialPaymentReceived || 0;
-currentDebt += (await getSaleTransactionValue(t) - partialPaid);
-}
-} else if (t.paymentType === 'COLLECTION') {
-currentDebt -= (t.totalValue || 0);
-} else if (t.paymentType === 'PARTIAL_PAYMENT') {
-currentDebt -= (t.totalValue || 0);
-}
-}
+let currentDebt = _runTotal;
 currentDebt = Math.max(0, currentDebt);
 const _mcStats = document.getElementById('manageCustomerStats'); if (_mcStats) _mcStats.innerText = `Current Debt: ${await formatCurrency(currentDebt)}`;
 transactions.sort((a, b) => b.timestamp - a.timestamp);
@@ -491,7 +488,9 @@ itemContent = `
   </div>
 </div>${panelPlaceholder}`;
 }
-item.innerHTML = itemContent;
+const _bal = _runBal.get(t) || 0;
+const _balText = _bal < -0.005 ? `${await formatCurrency(-_bal)} CR` : await formatCurrency(Math.max(0, _bal));
+item.innerHTML = itemContent + balanceAfterHtml(_balText, _bal > 0.005 ? 'debt' : 'clear');
 item.style.flexDirection = 'column';
 item.style.alignItems = 'stretch';
 _custFrag.appendChild(item);

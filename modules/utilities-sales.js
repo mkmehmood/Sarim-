@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
-import { CryptoEngine, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, compareRecordVersions, compareTimestamps, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
+import { CryptoEngine, balanceAfterHtml, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, compareRecordVersions, compareTimestamps, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
 import { emitSyncUpdate, mergeArrays, mergeDatasets, performOneClickSync, pushDataToCloud, sanitizeForFirestore, showAuthOverlay, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { SarimChart, _restorePayableFromDeletedTransaction, _set_custPaymentChart, _set_custSalesChart, _set_defaultSettings, _set_indPerformanceChart, _set_mfgBarChart, _set_mfgPieChart, _set_storeComparisonChart, custPaymentChart, custSalesChart, defaultSettings, indPerformanceChart, invalidateAllCaches, loadScript, mfgBarChart, mfgPieChart, notifyDataChange, storeComparisonChart, syncCalculatorTab, syncFactoryTab, syncPaymentsTab, syncProductionTab, syncRepTab, syncSalesTab, triggerAutoSync } from './utilities-core.js';
@@ -300,6 +300,14 @@ if (entityTransactions.length === 0) {
 transactionsList.replaceChildren(Object.assign(document.createElement('div'), {textContent:'No transactions found for this entity.',style:'text-align:center;padding:40px;color:var(--text-muted)'}));
 } else {
 const _etFrag = document.createDocumentFragment();
+const _entRun = new Map();
+let _entTotal = 0;
+entityTransactions.map((t, i) => ({ t, i })).sort((a, b) => ((a.t.timestamp || 0) - (b.t.timestamp || 0)) || (a.i - b.i)).forEach(({ t }) => {
+const amt = parseFloat(t.amount) || 0;
+if (t.type === 'IN') _entTotal += amt;
+else if (t.type === 'OUT') _entTotal -= amt;
+_entRun.set(t, _entTotal);
+});
 const sortedTransactions = [...entityTransactions].sort((a, b) => b.timestamp - a.timestamp);
 sortedTransactions.forEach(transaction => {
 const transactionCard = document.createElement('div');
@@ -323,6 +331,7 @@ ${esc(transaction.description || 'No description')}${etCreatorBadge}
 <span class="u-fs-sm2 u-text-muted" >Amount:</span>
 <span class="${amountClass}" style="font-size: 1.1rem; font-weight: 800;">${fmtAmt(safeAmount)}</span>
 </div>
+${balanceAfterHtml(fmtAmt(_entRun.get(transaction) || 0), (_entRun.get(transaction) || 0) < 0 ? 'out' : 'in')}
 `;
 _etFrag.appendChild(transactionCard);
 });

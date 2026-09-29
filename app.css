@@ -5466,6 +5466,23 @@ to   { transform: translateY(100%); opacity: 0;   }
   flex-direction: column;
   width: 100%;
 }
+.txn-balance-after {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--glass-border);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.txn-balance-after b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.txn-balance-debt b { color: var(--warning); }
+.txn-balance-clear b, .txn-balance-in b { color: var(--accent-emerald); }
+.txn-balance-out b { color: var(--danger, #ef4444); }
 .txn-card-row {
   display: flex;
   justify-content: space-between;
