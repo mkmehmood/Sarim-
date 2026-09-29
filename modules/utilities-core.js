@@ -3508,7 +3508,7 @@ export function renderPersonAvatarHTML(photoDataUrl, size) {
 
   function _onTouchStart(e) {
     if (e.touches.length === 2) {
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       _lbPinchDist = _pinchDist(e.touches);
       const m = _pinchMid(e.touches);
       _lbPinchMidX = m.x; _lbPinchMidY = m.y;
@@ -3532,7 +3532,7 @@ export function renderPersonAvatarHTML(photoDataUrl, size) {
 
   function _onTouchMove(e) {
     if (e.touches.length === 2) {
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       const newDist = _pinchDist(e.touches);
       const delta = newDist / _lbPinchDist;
       _lbPinchDist = newDist;
@@ -3541,7 +3541,7 @@ export function renderPersonAvatarHTML(photoDataUrl, size) {
       _lbClamp();
       _lbApply(false);
     } else if (e.touches.length === 1 && _lbDragging) {
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       _lbTransX += e.touches[0].clientX - _lbLastX;
       _lbTransY += e.touches[0].clientY - _lbLastY;
       _lbLastX = e.touches[0].clientX;
@@ -3681,7 +3681,7 @@ export const SarimChart = (() => {
         tip.style.top = top + 'px';
       };
       el.addEventListener('mouseenter', show);
-      el.addEventListener('touchstart', e => { e.preventDefault(); show(); }, {passive:false});
+      el.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); show(); }, {passive:false});
       el.addEventListener('mouseleave', () => { const tip = _getBodyTip(); tip.style.display = 'none'; });
       el.addEventListener('touchend', () => setTimeout(() => { const tip = _getBodyTip(); tip.style.display = 'none'; }, 1800));
     });
