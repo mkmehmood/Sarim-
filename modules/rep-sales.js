@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: rep-sales.js
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, compareTimestamps, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getRecordTimestamp, getTimestamp, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
@@ -7,8 +6,6 @@ import { BiometricAuth, formatCurrency, formatDisplayDate, formatDisplayDateTime
 import { getCostPriceForStore, getSalePriceForStore } from './factory.js';
 import { _set_currentManagingRepCustomer, currentManagingRepCustomer, showGlassConfirm, showToast } from './customers.js';
 
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
 export let repTransactionMode = 'sale';
 window.repTransactionMode = repTransactionMode;
 export function _set_repTransactionMode(v) { repTransactionMode = v; window.repTransactionMode = v; }
@@ -16,12 +13,10 @@ export let currentRepAnalyticsMode = 'day';
 window.currentRepAnalyticsMode = currentRepAnalyticsMode;
 export function _set_currentRepAnalyticsMode(v) { currentRepAnalyticsMode = v; window.currentRepAnalyticsMode = v; }
 
-// Re-sync module bindings from the persisted UI state once it has loaded.
 (window.__uiSyncers = window.__uiSyncers || []).push(() => {
   try { const v = window.currentRepAnalyticsMode; if (v !== undefined) currentRepAnalyticsMode = v; } catch (_) {}
   try { const v = window.repTransactionMode; if (v !== undefined) repTransactionMode = v; } catch (_) {}
 });
-
 
 export async function enableBiometricLock() {
 try {
@@ -918,7 +913,7 @@ return tr;
 }
 tbody.innerHTML = '';
 const _fragR = document.createDocumentFragment();
-filteredCustomers.forEach((name, i) => { const el = buildRepCustomerRow(name, i); if (el) _fragR.appendChild(el); });
+filteredCustomers.forEach((name, i) => { const el = buildRepCustomerRow(name); if (el) _fragR.appendChild(el); });
 tbody.appendChild(_fragR);
 }
 let repTotalCreditSales = 0;
@@ -1924,8 +1919,6 @@ setTimeout(updateRepLiveMap, 200);
 }
 }
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.enableBiometricLock = enableBiometricLock;
 window.disableBiometricLock = disableBiometricLock;
 window.checkBiometricLock = checkBiometricLock;

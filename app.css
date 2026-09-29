@@ -2406,9 +2406,7 @@ top: 0; left: 0; right: 0;
 z-index: var(--z-system, 99999);
 height: 34px;
 box-sizing: border-box;
-/* Matches .system-controls exactly (same var, no blur in dark mode) so
-   the two read as one continuous surface once the banner stacks above
-   it, rather than a differently-styled strip glued on top. */
+
 background: var(--glass);
 border-bottom: 1px solid var(--glass-border);
 color: var(--text-main, #f8fafc);
@@ -2463,9 +2461,7 @@ transition: color 0.15s;
 margin-left: 6px;
 flex-shrink: 0;
 }
-/* Shift the fixed hamburger/system-controls bar down by exactly the
-   banner's height when it's visible, so the two stack cleanly instead of
-   the banner (higher z-index) covering the top of system-controls. */
+
 body.offline-active .system-controls {
 top: 34px;
 }
@@ -2600,12 +2596,7 @@ padding-top: 10px;
 from { transform: translateY(-100%); opacity: 0; }
 to { transform: translateY(0); opacity: 1; }
 }
-/* Adds the banner's height on top of the 52px already reserved for the
-   fixed .system-controls bar (see the base `body { padding-top: 52px }`
-   rule) rather than replacing it - previously this used a lower value
-   than the base rule it was meant to extend, so page content actually
-   got LESS top clearance while the banner was visible, letting the
-   banner+system-controls stack cover it. */
+
 body.offline-active { padding-top: 86px; }
 @media (max-width: 768px) {
 .report-grid[style*="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))"] {
@@ -5859,7 +5850,7 @@ white-space: nowrap;
 .cdp-day-empty { visibility: hidden; cursor: default; }
 .cdp-day-disabled { opacity: 0.28; cursor: default; }
 .cdp-day { position: relative; }
-/* Today: accent-coloured bold number with a small dot underneath */
+
 .cdp-day-today {
   color: var(--accent);
   font-weight: 800;
@@ -5875,7 +5866,7 @@ white-space: nowrap;
   border-radius: 50%;
   background: currentColor;
 }
-/* Selected date: solid accent-filled circle */
+
 .cdp-day-selected,
 .cdp-day-selected:hover:not(:disabled) {
   background: var(--accent);

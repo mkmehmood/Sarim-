@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: utilities-core.js
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, generateUUID, getTimestamp, isSyncing, loadAllData, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
@@ -8,8 +7,6 @@ import { calculateDynamicCost, currentFactorySettingsStore, currentFactorySummar
 import { showGlassConfirm, showToast } from './customers.js';
 import { calculateRepAnalytics, currentRepAnalyticsMode, refreshRepUI, renderRepCustomerTable, repTransactionMode } from './rep-sales.js';
 
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
 export let currentEntityId;
 window.currentEntityId = currentEntityId;
 export function _set_currentEntityId(v) { currentEntityId = v; window.currentEntityId = v; }
@@ -398,16 +395,7 @@ finalError: item.finalError
 }
 };
 if (typeof window._firestoreNetworkDisabled === 'undefined') window._firestoreNetworkDisabled = false;
-// Single source of truth for the top network/status bar. Every other
-// network-related indicator in the app (the old bottom "weak signal"
-// banner, the Firestore connecting/error dot updates in sync.js, the
-// payments-tab connection dot) now feeds its state into this one function
-// instead of independently touching its own copy of the DOM - previously
-// several of those wrote to a `#connection-indicator` element that was
-// never actually present in index.html (and was separately forced
-// display:none in CSS even where referenced), so those updates were
-// silent no-ops. See _setCloudConnectionState()/_setSlowConnectionState()
-// below for how other modules report into this.
+
 export function updateOfflineBanner() {
 const banner = document.getElementById('offline-banner');
 const badge = document.getElementById('offline-queue-badge');
@@ -418,7 +406,7 @@ const pending = (typeof OfflineQueue !== 'undefined') ? OfflineQueue.queue.lengt
 const failed = (typeof OfflineQueue !== 'undefined') ? OfflineQueue.deadLetterQueue.length : 0;
 const isSlow = isOnline && !!window._isSlowConnection;
 const slowDetail = window._slowConnectionDetail || 'Weak signal';
-const cloudState = window._cloudConnectionState || null; // 'connecting' | 'loading' | 'error' | null
+const cloudState = window._cloudConnectionState || null;
 
 let show = true;
 let message = '';
@@ -499,18 +487,11 @@ OfflineQueue._renderDeadLetterPanel();
 }
 }
 
-// Reported by sync.js's Firestore connection lifecycle (SDK loading,
-// realtime listener connecting/erroring/reconnecting). Replaces the old
-// updateSignalUI()/initializeFirebaseSystem()/retryFirebaseInit() writes
-// to the nonexistent #connection-indicator element.
 export function _setCloudConnectionState(state) {
-window._cloudConnectionState = state; // 'connecting' | 'loading' | 'error' | 'signed-out' | null
+window._cloudConnectionState = state;
 updateOfflineBanner();
 }
 
-// Reported by the connection-speed monitor below. Kept as a separate
-// setter (rather than inlining into checkConnection()) so any other module
-// can flag a slow link the same way without duplicating banner logic.
 export function _setSlowConnectionState(isSlow, detail) {
 window._isSlowConnection = isSlow;
 window._slowConnectionDetail = detail || null;
@@ -612,11 +593,6 @@ showToast('Offline — changes will be saved locally', 'warning', 4000);
     return false;
   }
 
-  // Reports into the single top status bar (see _setSlowConnectionState /
-  // updateOfflineBanner above) instead of creating its own separate
-  // bottom banner - previously this and the offline banner were two
-  // independent fixed-position bars that had to manually coordinate their
-  // own stacking order (see the old bottom-offset hack this replaced).
   function checkConnection() {
     if (!navigator.onLine) { _setSlowConnectionState(false); return; }
     const slow = isConnectionSlow();
@@ -3868,8 +3844,6 @@ export const SarimChart = (() => {
   return SarimChart;
 })();
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.toggleDarkMode = toggleDarkMode;
 window.syncState = syncState;
 window.OfflineQueue = OfflineQueue;
@@ -3964,9 +3938,6 @@ window.previewPhotoClick = previewPhotoClick;
 window.loadScript = loadScript;
 window.SarimChart = SarimChart;
 
-// Setters for module-level state that other modules need to write to.
-// (plain `import { x }` bindings are read-only in real ES modules,
-// so cross-file writes have to go through a function instead.)
 export function _set_autoSyncTimeout(v) { autoSyncTimeout = v; }
 export function _set_custPaymentChart(v) { custPaymentChart = v; }
 export function _set_custSalesChart(v) { custSalesChart = v; }

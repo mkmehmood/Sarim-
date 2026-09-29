@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: admin-data.js
 import { CryptoEngine, _safeErr, _triggerFileDownload, compareRecordVersions, currentUser, ensureArray, ensureRecordIntegrity, firebaseDB, fmtAmt, generateUUID, getDeviceId, sqliteStore, validateUUID } from './business.js';
 import { _commitMergedBatch, emitSyncUpdate, performOneClickSync, pushDataToCloud, sanitizeForFirestore } from './sync.js';
 import { defaultSettings } from './utilities-core.js';
@@ -3400,13 +3399,8 @@ window._showDeltaSyncDetails = showDeltaSyncDetails;
 window._runUnifiedCleanup = runUnifiedCleanup;
 window._showCloseFinancialYearDialog = showCloseFinancialYearDialog;
 
-// var declarations that live inside a nested block (define-once guards) —
-// still hoisted to module scope, exported explicitly since `export` can't
-// be written inline inside the block.
 export { closeYearInProgress, closeYearAbortController, _fyVerifiedPassword, pendingFirestoreYearClose, pendingFirestoreRestore, _hasMergeCommitFailure };
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.updateDeltaSyncStatsDisplay = updateDeltaSyncStatsDisplay;
 window.showDeltaSyncDetails = showDeltaSyncDetails;
 window.closeYearInProgress = closeYearInProgress;
@@ -3443,8 +3437,5 @@ window.verifyCompleteTimestampConsistency = verifyCompleteTimestampConsistency;
 window.extractTimestampValue = extractTimestampValue;
 window.runUnifiedCleanup = runUnifiedCleanup;
 
-// Setters for module-level state that other modules need to write to.
-// (plain `import { x }` bindings are read-only in real ES modules,
-// so cross-file writes have to go through a function instead.)
 export function _set_pendingFirestoreRestore(v) { pendingFirestoreRestore = v; }
 export function _set_pendingFirestoreYearClose(v) { pendingFirestoreYearClose = v; }

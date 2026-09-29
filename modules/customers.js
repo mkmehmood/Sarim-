@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: customers.js
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, currentRepProfile, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
@@ -201,7 +200,7 @@ return null;
 }
 tbody.innerHTML = '';
 const _fragC = document.createDocumentFragment();
-customers.forEach((c, i) => { const el = buildCustomerRow(c, i); if (el) _fragC.appendChild(el); });
+customers.forEach((c, i) => { const el = buildCustomerRow(c); if (el) _fragC.appendChild(el); });
 tbody.appendChild(_fragC);
 }
 const _setCustH = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
@@ -1226,8 +1225,6 @@ setTimeout(() => { if (!settled && best) finish(best); }, GPS_MAX_WAIT_MS);
 });
 }
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.selectCustomer = selectCustomer;
 window.calculateCustomerStatsForDisplay = calculateCustomerStatsForDisplay;
 window.renderCustomersTable = renderCustomersTable;
@@ -1259,7 +1256,4 @@ window.closeCustomerEditModal = closeCustomerEditModal;
 window.saveCustomerDetails = saveCustomerDetails;
 window.fetchDeviceLocation = fetchDeviceLocation;
 
-// Setters for module-level state that other modules need to write to.
-// (plain `import { x }` bindings are read-only in real ES modules,
-// so cross-file writes have to go through a function instead.)
 export function _set_currentManagingRepCustomer(v) { currentManagingRepCustomer = v; }

@@ -26,14 +26,6 @@ function read(filePath) { return readFileSync(filePath, 'utf8'); }
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
 
-// --- App modules: bundle with real ESM code-splitting -----------------------
-// modules/main.js statically imports the 8 "core" files (constants, business,
-// admin-data, sync, utilities-core, utilities-sales, utilities-payments,
-// customers) and dynamically import()s factory.js / rep-sales.js on demand.
-// esbuild's --splitting factors out whatever the lazy chunks share with the
-// core bundle (business.js, utilities-core.js, etc.) into one shared chunk,
-// so there's still only ever a single instance of each module's state (e.g.
-// SQLiteCrypto's in-memory session key) -- never a duplicate copy.
 const metafile = join(DIST, 'meta.json');
 run([
   join(ROOT, 'modules/main.js'),
@@ -58,9 +50,8 @@ if (!mainOut || !factoryOut || !repOut) {
 }
 rmSync(metafile);
 
-const coreHash = contentHash(join(DIST, mainOut)); // used for SW cache-busting key
+const coreHash = contentHash(join(DIST, mainOut));
 
-// --- CSS ---------------------------------------------------------------------
 const cssMinTmp = join(DIST, '_app_min.css');
 run([join(ROOT, 'app.css'), '--bundle=false', '--minify', `--outfile=${cssMinTmp}`]);
 const cssHash = contentHash(cssMinTmp);
@@ -68,12 +59,10 @@ const cssOut  = `app.${cssHash}.css`;
 copyFileSync(cssMinTmp, join(DIST, cssOut));
 rmSync(cssMinTmp);
 
-// --- Static assets -------------------------------------------------------------
 for (const f of ['manifest.json', '192.png', '512.png', 'sql-wasm.js', 'sql-wasm.wasm', 'sql.js']) {
   copyFileSync(join(ROOT, f), join(DIST, f));
 }
 
-// --- index.html ----------------------------------------------------------------
 let html = read(join(ROOT, 'index.html'));
 
 html = html.replace(
@@ -91,7 +80,6 @@ html = html.replace(
 
 write(join(DIST, 'index.html'), html);
 
-// --- Service worker --------------------------------------------------------------
 const ASSETS_TO_CACHE_BLOCK =
 `const ASSETS_TO_CACHE = [
   './',
@@ -112,7 +100,6 @@ sw = sw.replace(/const BUILD_HASH = '[^']+';/, `const BUILD_HASH = 'sarim-${core
 sw = sw.replace(/const ASSETS_TO_CACHE = \[[\s\S]*?\];/, ASSETS_TO_CACHE_BLOCK);
 write(join(DIST, 'sw.js'), sw);
 
-// --- Summary -----------------------------------------------------------------
 const kb = f => (readFileSync(join(DIST, f)).length / 1024).toFixed(1);
 console.log('\nBuild complete:\n');
 for (const c of allChunks) {

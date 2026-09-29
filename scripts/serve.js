@@ -1,5 +1,3 @@
-// Tiny static server for local testing (service workers need http://localhost).
-// Usage: node scripts/serve.js [dir] [port]     e.g. npm run serve
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, resolve, dirname, normalize } from 'node:path';

@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: sync.js
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { OfflineAuth, SQLiteCrypto, _clearDeviceIdStorage, _safeErr, _set_auth, _set_currentRepProfile, _set_currentUser, _set_database, _set_firebaseDB, _set_isSyncing, _set_salesRepsList, _set_userRolesList, appMode, auth, compareRecordVersions, currentRepProfile, currentUser, database, ensureArray, ensureRecordIntegrity, esc, firebaseDB, getDeviceId, getTimestamp, initDeviceShard, isSyncing, loadAllData, refreshDeviceIdAnchors, registerDevice, salesRepsList, sqliteStore, userRolesList, validateAllDataOnStartup, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, closeYearInProgress, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
@@ -1382,12 +1381,6 @@ export async function _flushSyncLockQueue() {
   }
 }
 
-// Reports Firestore's realtime-listener connection lifecycle into the
-// single top status bar (see _setCloudConnectionState/updateOfflineBanner
-// in utilities-core.js) instead of writing to #connection-indicator, which
-// never existed in index.html - these writes were previously silent
-// no-ops. Function name/signature kept as-is since it's called from ~15
-// sites across this file's realtime-listener error handling.
 export function updateSignalUI(status) {
   if (typeof _setCloudConnectionState !== 'function') return;
   if (status === 'online') {
@@ -1395,19 +1388,11 @@ export function updateSignalUI(status) {
   } else if (status === 'connecting') {
     _setCloudConnectionState('connecting');
   } else {
-    // 'error' and the listener's own 'offline' (permission-denied /
-    // failed-precondition on the Firestore listener itself, which can
-    // happen even while the device's network is up) both mean "cloud
-    // isn't reachable right now" from the UI's point of view.
+
     _setCloudConnectionState('error');
   }
 }
 
-// Brief visual acknowledgement that a realtime update was just pushed to
-// Firestore. Pulses the status dot inside the merged top bar via a CSS
-// class (so it picks up the live theme's accent color) rather than
-// hardcoding an inline box-shadow color that wouldn't adapt between
-// light/dark themes.
 export function flashLivePulse() {
   const dot = document.getElementById('network-status-dot');
   if (!dot) return;
@@ -4571,8 +4556,6 @@ syncBtn.style.color = '#fff';
 
 }
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.saveWithTracking = saveWithTracking;
 window.SQLiteToFirestoreMap = SQLiteToFirestoreMap;
 window.FirestoreToSQLiteMap = FirestoreToSQLiteMap;

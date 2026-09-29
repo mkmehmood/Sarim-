@@ -385,11 +385,8 @@ self.addEventListener('fetch', function (event) {
 
   if (method !== 'GET') return;
 
-  // Ignore chrome-extension://, data:, blob: etc. Cache API only supports http(s).
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-  // Never intercept Google Identity Services. accounts.google.com sends no CORS
-  // headers, so re-fetching the <script> request in 'cors' mode fails.
   if (url.origin === 'https://accounts.google.com') return;
 
   if (url.origin === 'https://cdnjs.cloudflare.com' &&

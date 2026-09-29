@@ -1,12 +1,9 @@
-// Auto-migrated to an ES module. Source: business.js
 import { APP_CONFIG } from './constants.js';
 import { OfflineQueue, _set_defaultSettings, cleanupOldDeletions, defaultSettings, loadUIState, triggerAutoSync } from './utilities-core.js';
 import { DeltaSync, UUIDSyncRegistry } from './utilities-sales.js';
 import { listenForDeviceCommands, listenForTeamChanges } from './utilities-payments.js';
 import { showToast } from './customers.js';
 
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
 export let appMode;
 window.appMode = appMode;
 export function _set_appMode(v) { appMode = v; window.appMode = v; }
@@ -498,10 +495,7 @@ export const SQLiteCrypto = (() => {
 
   return {
     async initialize() {
-      try { return true; } catch (e) {
-        console.error('SQLiteCrypto: Initialization failed:', _safeErr(e));
-        return false;
-      }
+      return true;
     },
     preWarm() {
       if (!_preWarmPromise) {
@@ -2911,8 +2905,6 @@ if (totalFixed > 0) {
 return { totalFixed, totalValid, totalRecords };
 }
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window._safeErr = _safeErr;
 window.escapeHtml = escapeHtml;
 window.esc = esc;

@@ -1,6 +1,3 @@
-// Verifies that every local file referenced by index.html and the service
-// worker's ASSETS_TO_CACHE exists.   Usage: node scripts/verify.js [dir]
-// `dir` defaults to the project root (source); pass "dist" for the build.
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: utilities-sales.js
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
 import { CryptoEngine, OfflineAuth, _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, compareRecordVersions, compareTimestamps, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
@@ -11,8 +10,6 @@ import { calculateRepAnalytics, calculateRepSalePreview, getPosition, refreshRep
 
 const _cap = (s) => { s = String(s ?? ''); return s.charAt(0).toUpperCase() + s.slice(1); };
 
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
 export let currentCashTrackerMode = 'day';
 window.currentCashTrackerMode = currentCashTrackerMode;
 export function _set_currentCashTrackerMode(v) { currentCashTrackerMode = v; window.currentCashTrackerMode = v; }
@@ -50,7 +47,6 @@ export let currentCustomerChartMode = 'week';
 window.currentCustomerChartMode = currentCustomerChartMode;
 export function _set_currentCustomerChartMode(v) { currentCustomerChartMode = v; window.currentCustomerChartMode = v; }
 
-// Re-sync module bindings from the persisted UI state once it has loaded.
 (window.__uiSyncers = window.__uiSyncers || []).push(() => {
   try { const v = window.currentMfgMode; if (v !== undefined) currentMfgMode = v; } catch (_) {}
   try { const v = window.currentCustomerChartMode; if (v !== undefined) currentCustomerChartMode = v; } catch (_) {}
@@ -65,7 +61,6 @@ export function _set_currentCustomerChartMode(v) { currentCustomerChartMode = v;
   try { const v = window.custTransactionMode; if (v !== undefined) custTransactionMode = v; } catch (_) {}
   try { const v = window.currentFactoryDate; if (v !== undefined) currentFactoryDate = v; } catch (_) {}
 });
-
 
 export function setCashTrackerMode(mode) {
 currentCashTrackerMode = mode; window.currentCashTrackerMode = currentCashTrackerMode;
@@ -2836,7 +2831,7 @@ margin: { left: 14, right: 14 }
 const afterY = doc.lastAutoTable.finalY + 6;
 if (afterY < pageH - 25) {
 doc.setFontSize(8); doc.setFont(undefined,'normal'); doc.setTextColor(100,100,100);
-doc.text(`Customers with outstanding debt: ${cntDebtors} | Settled accounts: ${cntSettled} | Total outstanding: ${fmtAmt(Math.max(totNet), 2)}`, 14, afterY);
+doc.text(`Customers with outstanding debt: ${cntDebtors} | Settled accounts: ${cntSettled} | Total outstanding: ${fmtAmt(totNet)}`, 14, afterY);
 if (hasMergedEntries) {
   const noteY = afterY + 6;
   if (noteY < pageH - 12) {
@@ -6603,8 +6598,6 @@ showToast('Failed to remove transfer. Please try again.', 'error');
 }
 window.deleteStockTransfer = deleteStockTransfer;
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.setCashTrackerMode = setCashTrackerMode;
 window.calculateCashTracker = calculateCashTracker;
 window.updateEconomicDashboardWithNetValues = updateEconomicDashboardWithNetValues;

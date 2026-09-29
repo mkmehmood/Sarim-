@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: factory.js
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, generateUUID, getTimestamp, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
 import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
@@ -6,8 +5,6 @@ import { _set_currentFactoryEntryStore, calculateCashTracker, calculateNetCash, 
 import { _filterFactoryHistoryByMode, formatCurrency, refreshPaymentTab, renderUnifiedTable, safeValue } from './utilities-payments.js';
 import { showGlassConfirm, showToast } from './customers.js';
 
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
 export let currentFactorySettingsStore = 'standard';
 window.currentFactorySettingsStore = currentFactorySettingsStore;
 export function _set_currentFactorySettingsStore(v) { currentFactorySettingsStore = v; window.currentFactorySettingsStore = v; }
@@ -21,13 +18,11 @@ export let currentStore = 'STORE_A';
 window.currentStore = currentStore;
 export function _set_currentStore(v) { currentStore = v; window.currentStore = v; }
 
-// Re-sync module bindings from the persisted UI state once it has loaded.
 (window.__uiSyncers = window.__uiSyncers || []).push(() => {
   try { const v = window.currentStore; if (v !== undefined) currentStore = v; } catch (_) {}
   try { const v = window.currentFactorySettingsStore; if (v !== undefined) currentFactorySettingsStore = v; } catch (_) {}
   try { const v = window.currentFactorySummaryMode; if (v !== undefined) currentFactorySummaryMode = v; } catch (_) {}
 });
-
 
 export async function getCostPerUnit(storeType) {
 const factoryDefaultFormulas = (await sqliteStore.get('factory_default_formulas')) || {};
@@ -1638,8 +1633,6 @@ showToast(' Failed to delete entry. Please try again.', 'error');
 }
 }
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.getCostPerUnit = getCostPerUnit;
 window.calculateFactoryInventoryValue = calculateFactoryInventoryValue;
 window.updateFactoryInventoryDisplay = updateFactoryInventoryDisplay;

@@ -1,4 +1,3 @@
-// Auto-migrated to an ES module. Source: utilities-payments.js
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { CryptoEngine, SQLiteCrypto, _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
@@ -10,8 +9,6 @@ import { calculateRepCustomerStatsForDisplay, checkBiometricLock, disableBiometr
 
 const _cap = (s) => { s = String(s ?? ''); return s.charAt(0).toUpperCase() + s.slice(1); };
 
-// Implicit globals (previously assigned only via window.X / bare X = ...,
-// no formal var/let/const anywhere) -- now real module bindings.
 export let currentCompMode = 'all';
 window.currentCompMode = currentCompMode;
 export function _set_currentCompMode(v) { currentCompMode = v; window.currentCompMode = v; }
@@ -34,14 +31,12 @@ export let currentExpenseOverlayName;
 window.currentExpenseOverlayName = currentExpenseOverlayName;
 export function _set_currentExpenseOverlayName(v) { currentExpenseOverlayName = v; window.currentExpenseOverlayName = v; }
 
-// Re-sync module bindings from the persisted UI state once it has loaded.
 (window.__uiSyncers = window.__uiSyncers || []).push(() => {
   try { const v = window.currentCompMode; if (v !== undefined) currentCompMode = v; } catch (_) {}
   try { const v = window.currentSalesSummaryMode; if (v !== undefined) currentSalesSummaryMode = v; } catch (_) {}
   try { const v = window.currentPerfOverviewMode; if (v !== undefined) currentPerfOverviewMode = v; } catch (_) {}
   try { const v = window.entityViewMode; if (v !== undefined) entityViewMode = v; } catch (_) {}
 });
-
 
 export async function toggleCustomerCreditReceived(id, event) {
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
@@ -1796,18 +1791,7 @@ updated = true;
 }
 return transaction;
 });
-// Only drop records too malformed to ever render or be acted on (no id,
-// no usable type/amount). entityId is deliberately NOT a requirement here:
-// unlike id/date/amount/type above, nothing repairs a missing entityId, so
-// requiring it here silently and PERMANENTLY deleted any transaction that
-// ever ended up without one (e.g. synced from an older schema, a restored
-// backup, or any other edge case that leaves entityId blank) - every time
-// the app loaded, since this filtered array gets written straight back to
-// storage a few lines down. The history list already renders a graceful
-// "Unknown Entity" fallback for exactly this case (see refreshPaymentTab's
-// `entity ? entity.name : (transaction.entityName || 'Unknown Entity')`),
-// so there's no reason to destroy the record instead of just displaying it
-// with that fallback.
+
 localTransactions = localTransactions.filter(t =>
 t && t.id && (t.type === 'IN' || t.type === 'OUT') && typeof t.amount === 'number'
 );
@@ -1816,13 +1800,7 @@ await sqliteStore.set('payment_transactions', localTransactions);
 } catch (e) {
 }
 }
-// business.js and utilities-payments.js import from each other (a circular
-// dependency), so when this module's top-level code first runs — as part of
-// business.js resolving ITS import of utilities-payments.js — business.js
-// itself hasn't yet reached the line that assigns `sqliteStore`. Calling
-// sqliteStore.get(...) here synchronously used to throw "Cannot read
-// properties of undefined (reading 'get')". Deferring both calls with
-// setTimeout(0) lets the whole module graph finish evaluating first.
+
 setTimeout(() => { initPaymentData(); }, 0);
 setTimeout(async function initExpenseManager() {
 const expenseRecords = await sqliteStore.get('expenses') || [];
@@ -1852,10 +1830,7 @@ if (!query || query.length < 1) {
 resultsDiv.classList.add('hidden');
 return;
 }
-// Show BOTH expense categories and payment entities together so the user can
-// pick whichever name they mean — the Transaction Type toggle (Operating
-// Expense / Payment IN / Payment OUT) still drives what gets saved, and
-// selecting a name below auto-adjusts that toggle via selectExpense().
+
 const expenseMatches = expenseCategories.filter(name => {
 if (!name || typeof name !== 'string') return false;
 return name.toLowerCase().includes(query);
@@ -2840,7 +2815,7 @@ return tr;
 }
 tbody.innerHTML = '';
 const _fragU = document.createDocumentFragment();
-rows.forEach((row, i) => { const el = buildUnifiedRow(row, i); if (el) _fragU.appendChild(el); });
+rows.forEach((row, i) => { const el = buildUnifiedRow(row); if (el) _fragU.appendChild(el); });
 tbody.appendChild(_fragU);
 if (viewMode === 'entities') {
 if (footerLabel) footerLabel.textContent = 'Net Balance:';
@@ -6134,11 +6109,7 @@ repProfile: {
 localKey: 'repProfile',
 localVariable: 'currentRepProfile',
 type: 'string',
-// NOTE: this is a static reference/documentation object evaluated once at
-// module load time, before salesRepsList (imported from business.js) has
-// been populated — so salesRepsList[0] was always undefined here and threw
-// "Cannot read properties of undefined (reading '0')". The real runtime
-// default is computed lazily wherever repProfile is actually read/used.
+
 defaultValue: 'NORAN SHAH',
 description: 'Active sales-representative profile name'
 },
@@ -6180,10 +6151,7 @@ defaultValue: '',
 description: 'WebAuthn biometric credential ID'
 }
 };
-// Delegates to the single top status bar (updateOfflineBanner) instead of
-// writing to the #connection-indicator element, which never existed in
-// index.html and was independently forced display:none in CSS anyway -
-// this function's writes were previously silent no-ops.
+
 export function updateConnectionStatus() {
 if (!navigator.onLine) {
 _setCloudConnectionState(null);
@@ -7758,8 +7726,6 @@ showToast('Failed to remove transfer. Please try again.', 'error');
 }
 window.deletePaymentTransfer = deletePaymentTransfer;
 
-// --- Back-compat: keep every top-level export reachable as window.X ---
-// (inline HTML event handlers and any dynamic window[...] lookups rely on this)
 window.toggleCustomerCreditReceived = toggleCustomerCreditReceived;
 window.calculateComparisonData = calculateComparisonData;
 window.createReportHTML = createReportHTML;
