@@ -423,7 +423,13 @@
         }
       }
     });
-    mo.observe(document.body, { childList: true, subtree: true });
+    if (document.body) {
+      mo.observe(document.body, { childList: true, subtree: true });
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        if (document.body) mo.observe(document.body, { childList: true, subtree: true });
+      });
+    }
   }
 
   if (document.readyState === 'loading') {

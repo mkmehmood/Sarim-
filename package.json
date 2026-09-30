@@ -6,6 +6,8 @@
   "type": "module",
   "engines": { "node": ">=18" },
   "scripts": {
+    "dev": "node scripts/serve.js",
+    "lint": "node --check modules/*.js scripts/*.js tests/*.test.js sw.js build.js && node scripts/verify.js",
     "build": "node build.js",
     "verify": "node scripts/verify.js",
     "test": "node --test tests/*.test.js",

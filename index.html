@@ -16,7 +16,7 @@
               https://unpkg.com
               https://accounts.google.com;
   font-src    https://fonts.gstatic.com;
-  img-src     'self' data:
+  img-src     'self' data: blob:
               https://*.tile.openstreetmap.org
               https://www.gstatic.com
               https://*.googleusercontent.com;
@@ -35,7 +35,7 @@
   frame-src   https://apis.google.com
               https://*.firebaseapp.com
               https://*.google.com;
-  worker-src  'self';
+  worker-src  'self' blob: https://cdnjs.cloudflare.com;
   manifest-src 'self';
   base-uri    'self';
   form-action 'self';
@@ -51,6 +51,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="192.png">
 <link rel="apple-touch-icon" href="192.png">
 <title>GULL AND ZUBAIR NASWAR DEALERS</title>
+<meta name="description" content="Offline-first PWA for business management, production tracking, sales, inventory, and credits.">
+<meta property="og:title" content="Gull and Zubair Naswar Dealers">
+<meta property="og:description" content="Offline-first PWA for business management, production tracking, sales, inventory, and credits.">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
 
@@ -218,7 +221,14 @@ if ('serviceWorker' in navigator) {
 
       setInterval(function() { reg.update(); }, 30 * 60 * 1000);
 
-    }).catch(function(e) { console.error('[SW]', (e&&e.message)||String(e)||'(unknown)'); });
+    }).catch(function(e) {
+      var msg = (e && e.message) || String(e) || '';
+      if (msg.indexOf('redirect') !== -1 || msg.indexOf('disallowed') !== -1) {
+        console.warn('[SW] ServiceWorker registration skipped in preview redirect environment:', msg);
+        return;
+      }
+      console.error('[SW]', msg || '(unknown)');
+    });
   });
 }
 </script>

@@ -1706,11 +1706,16 @@ showToast('Failed to delete item. Please try again.', 'error');
 }
 
 export async function initPaymentData() {
-const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));
-const paymentEntities = ensureArray(await sqliteStore.get('payment_entities'));
-const paymentTransactions = ensureArray(await sqliteStore.get('payment_transactions'));
-const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
-const deletedRecordIds = new Set(ensureArray(await sqliteStore.get('deleted_records')));
+const store = (typeof sqliteStore !== 'undefined' && sqliteStore) || (typeof window !== 'undefined' && window.sqliteStore);
+if (!store || typeof store.get !== 'function') {
+  setTimeout(initPaymentData, 200);
+  return;
+}
+const expenseCategories = ensureArray(await store.get('expense_categories'));
+const paymentEntities = ensureArray(await store.get('payment_entities'));
+const paymentTransactions = ensureArray(await store.get('payment_transactions'));
+const expenseRecords = ensureArray(await store.get('expenses'));
+const deletedRecordIds = new Set(ensureArray(await store.get('deleted_records')));
 try {
 let localEntities = [...paymentEntities];
 let localTransactions = [...paymentTransactions];
@@ -1800,23 +1805,28 @@ await sqliteStore.set('payment_transactions', localTransactions);
 }
 }
 
-setTimeout(() => { initPaymentData(); }, 0);
+setTimeout(() => { initPaymentData(); }, 300);
 setTimeout(async function initExpenseManager() {
-const expenseRecords = await sqliteStore.get('expenses') || [];
-let savedCategories = await sqliteStore.get('expense_categories') || [];
+const store = (typeof sqliteStore !== 'undefined' && sqliteStore) || (typeof window !== 'undefined' && window.sqliteStore);
+if (!store || typeof store.get !== 'function') {
+  setTimeout(initExpenseManager, 200);
+  return;
+}
+const expenseRecords = await store.get('expenses') || [];
+let savedCategories = await store.get('expense_categories') || [];
 const categoriesFromRecords = [...new Set(
 expenseRecords
 .filter(e => e && e.name && typeof e.name === 'string')
 .map(e => e.name)
 )];
 const expCatMerged = [...new Set([...savedCategories, ...categoriesFromRecords])];
-await sqliteStore.set('expense_categories', expCatMerged);
+await store.set('expense_categories', expCatMerged);
 const expenseDateInput = document.getElementById('expenseDate');
 if (expenseDateInput) {
 expenseDateInput.value = localDateStr();
 }
 renderRecentExpenses();
-}, 0);
+}, 300);
 export async function handleExpenseSearch() {
 const expenseRecords = ensureArray(await sqliteStore.get('expenses'));
 const expenseCategories = ensureArray(await sqliteStore.get('expense_categories'));

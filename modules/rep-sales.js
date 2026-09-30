@@ -1426,7 +1426,7 @@ const controller = new AbortController();
 const apiTimeout = setTimeout(() => controller.abort(), 10000);
 const response = await fetch(
 `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&extratags=1&namedetails=1`,
-{ headers: { 'User-Agent': 'NaswarApp/1.0' }, signal: controller.signal }
+{ signal: controller.signal }
 );
 clearTimeout(apiTimeout);
 if (!response.ok) throw new Error('Map API Error');

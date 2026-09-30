@@ -678,13 +678,25 @@ console.error('Failed to invalidate caches.', _safeErr(e));
 }
 
 export async function triggerAutoSync() {
-if (typeof currentUser === 'undefined' || !currentUser) {
+let user = null;
+try {
+  user = (typeof window !== 'undefined' && window.currentUser) ? window.currentUser : (typeof currentUser !== 'undefined' ? currentUser : null);
+} catch (_) {
+  user = null;
+}
+if (!user) {
 return;
 }
 if (typeof pushDataToCloud !== 'function') {
 return;
 }
-if (typeof isSyncing !== 'undefined' && isSyncing) {
+let syncing = false;
+try {
+  syncing = (typeof window !== 'undefined' && window.isSyncing) ? window.isSyncing : (typeof isSyncing !== 'undefined' ? isSyncing : false);
+} catch (_) {
+  syncing = false;
+}
+if (syncing) {
 return;
 }
 if (autoSyncTimeout) {
@@ -1003,7 +1015,7 @@ await reloadDataFromStorage();
 syncState.pendingUpdates.add('all');
 processSync();
 };
-triggerAutoSync();
+setTimeout(() => { try { triggerAutoSync(); } catch (_) {} }, 1000);
 window._notifyOnTabChange = function(tab) {
 setTimeout(() => {
 if (typeof notifyDataChange === 'function') notifyDataChange(tab);
@@ -3181,9 +3193,9 @@ showToast("Error generating PDF: " + error.message, "error");
 }
 export const SCRIPT_INTEGRITY = {
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js':
-    'sha256-4C8gBRoAE0XFxW0C7SsQ+X/TBkHSFM3YMwVaF4F8hk=',
+    'sha256-mMzxeqEMILsTAXYmGPzJtqs6Tn8mtgcdZNC0EVTfOHU=',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js':
-    'sha256-0ZQJSA5vPBL+6L5uyIjovZ/m7VBpAOUGc7BHOH/RBHE='
+    'sha256-iQWUsO+u9rPj2uc1m13fZG9V4W2wef4jIt5gMh2dRac='
 };
 export const _scriptLoadPromises = {};
 
