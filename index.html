@@ -166,7 +166,7 @@ function _showUpdateDialog(reg) {
     + '\n\u2022 All your data is safe and stays on this device'
     + '\n\u2022 Unsynced changes are saved locally and will sync after reload'
     + '\n\nTap Later to update on your next visit.',
-    { title: 'Update Available', confirmText: 'Update & Reload', cancelText: 'Later', icon: '\u2191' }
+    { title: 'Update Available', confirmText: 'Update & Reload', cancelText: 'Later' }
   ).then(function(confirmed) {
     window._swDialogShown = false;
     if (!confirmed) return;

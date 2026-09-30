@@ -772,7 +772,8 @@ window.showToast = showToast;
 export const _gcIcons = {
   delete:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11 L10 31 A2 2 0 0 0 12 33 H24 A2 2 0 0 0 26 31 L28 11 Z" fill="var(--danger)" fill-opacity="0.12" stroke="var(--danger)" stroke-width="1.5" stroke-linejoin="round"/><line x1="6" y1="11" x2="30" y2="11" stroke="var(--danger)" stroke-width="1.6" stroke-linecap="round"/><path d="M14 8 H22 M14 8 A1 1 0 0 1 15 7 H21 A1 1 0 0 1 22 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/><line x1="14" y1="17" x2="14" y2="27" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.6"/><line x1="22" y1="17" x2="22" y2="27" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.6"/></svg>',
   remove:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="13" fill="var(--danger)" fill-opacity="0.12" stroke="var(--danger)" stroke-width="1.5"/><line x1="13" y1="13" x2="23" y2="23" stroke="var(--danger)" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="13" x2="13" y2="23" stroke="var(--danger)" stroke-width="2" stroke-linecap="round"/></svg>',
-  warning:  '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M27 10 H33 L29 17 H31 L27 24 H33 L29 17 H31 Z" fill="var(--warning)" opacity="0.6" stroke="var(--warning)" stroke-width="1" stroke-linejoin="round"/><rect x="5" y="10" width="18" height="18" rx="2.5" fill="var(--warning)" fill-opacity="0.12" stroke="var(--warning)" stroke-width="1.4"/><line x1="14" y1="15" x2="14" y2="21" stroke="var(--warning)" stroke-width="1.4" stroke-linecap="round"/><circle cx="14" cy="24" r="1" fill="var(--warning)"/></svg>',
+  warning:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  update:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>',
   restore:  '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 8 A10 10 0 0 1 28 18" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" fill="none"/><polyline points="25,6 28,10 24,11" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M26 28 A10 10 0 0 1 8 18" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" fill="none"/><polyline points="11,30 8,26 12,25" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="18" r="3" fill="var(--accent)" opacity="0.3" stroke="var(--accent)" stroke-width="1.2"/></svg>',
   backup:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="6" width="24" height="24" rx="4" fill="var(--accent)" fill-opacity="0.10" stroke="var(--accent)" stroke-width="1.6"/><circle cx="17" cy="18" r="6" stroke="var(--accent)" stroke-width="1.4" fill="var(--accent)" fill-opacity="0.15"/><circle cx="17" cy="18" r="2.5" fill="var(--accent)" opacity="0.7"/><line x1="17" y1="12" x2="17" y2="14.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/><line x1="17" y1="21.5" x2="17" y2="24" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/><line x1="11" y1="18" x2="13.5" y2="18" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/><line x1="20.5" y1="18" x2="23" y2="18" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/></svg>',
   upload:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="6" width="24" height="24" rx="4" fill="var(--accent)" fill-opacity="0.08" stroke="var(--accent)" stroke-width="1.6"/><line x1="18" y1="24" x2="18" y2="14" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/><polyline points="13,18 18,13 23,18" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><line x1="12" y1="27" x2="24" y2="27" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/></svg>',
@@ -783,10 +784,52 @@ export const _gcIcons = {
   credit:   '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="10" width="28" height="18" rx="3" fill="var(--accent-gold)" fill-opacity="0.10" stroke="var(--accent-gold)" stroke-width="1.5"/><line x1="4" y1="17" x2="32" y2="17" stroke="var(--accent-gold)" stroke-width="1.4"/><rect x="8" y="21" width="8" height="3" rx="1" fill="var(--accent-gold)" opacity="0.55"/><ellipse cx="28" cy="16" rx="4" ry="1.5" fill="var(--accent-gold)" opacity="0.4" stroke="var(--accent-gold)" stroke-width="1"/></svg>',
   confirm:  '<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="13" fill="var(--success)" fill-opacity="0.15" stroke="var(--success)" stroke-width="1.5"/><polyline points="10,18 15,23 26,12" stroke="var(--success)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
 };
-export function _gcPickIcon(title, confirmText, danger) {
+const _GC_WARN_RE = /warning|insufficient|exceed|over-?collect|overpay|high credit|caution|unsaved|mismatch|cannot|can't|not enough|shortage|short by|already (used|sold|has)|outstanding/i;
+
+export function _gcPickTone(title, message, confirmText, danger, tone) {
+  if (tone) return tone;
+  if (danger) return 'danger';
+  const t = String(title || '');
+  const m = String(message || '');
+  if (_GC_WARN_RE.test(t) || /^\s*(warning|caution)/i.test(m)) return 'warning';
+  return 'primary';
+}
+
+export function _gcFormatMessage(message) {
+  const lines = String(message == null ? '' : message).replace(/\r/g, '').split('\n').map(l => l.replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, ''));
+  const out = [];
+  let list = null, rows = null;
+  const flush = () => {
+    if (list) { out.push('<ul class="gc-list">' + list.join('') + '</ul>'); list = null; }
+    if (rows) { out.push('<div class="gc-rows">' + rows.join('') + '</div>'); rows = null; }
+  };
+  let prevBlank = false;
+  for (const line of lines) {
+    if (!line) { flush(); prevBlank = true; continue; }
+    const bullet = line.match(/^[\u2022\u00B7\u25CF*\-\u2013]\s+(.*)$/);
+    const kv = !bullet && line.match(/^([A-Za-z][A-Za-z0-9 ()\/&'.-]{1,30}):\s+(.+)$/);
+    if (bullet) {
+      if (rows) flush();
+      (list = list || []).push('<li>' + esc(bullet[1]) + '</li>');
+    } else if (kv && kv[2].length <= 48) {
+      if (list) flush();
+      (rows = rows || []).push('<div class="gc-row"><span>' + esc(kv[1]) + '</span><b>' + esc(kv[2]) + '</b></div>');
+    } else {
+      flush();
+      out.push('<p class="gc-p' + (prevBlank ? ' gc-gap' : '') + '">' + esc(line) + '</p>');
+    }
+    prevBlank = false;
+  }
+  flush();
+  return out.join('');
+}
+
+export function _gcPickIcon(title, confirmText, danger, tone) {
   const t = (title || '').toLowerCase();
   const c = (confirmText || '').toLowerCase();
   if (t.includes('delete') || c.includes('delete')) return _gcIcons.delete;
+  if (tone === 'warning') return _gcIcons.warning;
+  if (t.includes('update available') || c.includes('update & reload')) return _gcIcons.update;
   if (t.includes('remove')) return _gcIcons.remove;
   if (t.includes('restore') || c.includes('restore')) return _gcIcons.restore;
   if (t.includes('backup') || c.includes('backup') || c.includes('download')) return _gcIcons.backup;
@@ -805,22 +848,28 @@ title = 'Confirm',
 confirmText = 'Confirm',
 cancelText = 'Cancel',
 danger = false,
-icon = null
+icon = null,
+tone = null
 } = {}) {
 return new Promise(resolve => {
-const svgIcon = icon !== null ? icon : _gcPickIcon(title, confirmText, danger);
-const iconClass = danger ? 'icon-danger' : 'icon-primary';
+const _tone = _gcPickTone(title, message, confirmText, danger, tone);
+const _looksLikeGlyph = typeof icon === 'string' && icon.length > 0 && icon.indexOf('<') === -1;
+const svgIcon = (icon !== null && !_looksLikeGlyph) ? icon : _gcPickIcon(title, confirmText, danger, _tone);
+const iconClass = _tone === 'danger' ? 'icon-danger' : (_tone === 'warning' ? 'icon-warning' : 'icon-primary');
+const btnClass = _tone === 'danger' ? 'danger' : (_tone === 'warning' ? 'warning' : 'primary');
 const backdrop = document.createElement('div');
 backdrop.className = 'glass-confirm-backdrop';
 backdrop.innerHTML = `
-<div class="glass-confirm-box${danger ? ' is-danger' : ''}">
+<div class="glass-confirm-box${_tone === 'danger' ? ' is-danger' : (_tone === 'warning' ? ' is-warning' : '')}" role="alertdialog" aria-modal="true">
+<div class="glass-confirm-head">
 <div class="glass-confirm-icon ${iconClass}">${svgIcon}</div>
-<div class="glass-confirm-title">${esc(title)}</div>
-<div class="glass-confirm-msg">${esc(String(message)).replace(/\n/g, '<br>')}</div>
+<div class="glass-confirm-title">${esc(String(title).trim())}</div>
+</div>
+<div class="glass-confirm-msg">${_gcFormatMessage(message)}</div>
 <div class="glass-confirm-divider"></div>
 <div class="glass-confirm-btns">
 <button class="glass-confirm-btn gc-cancel">${esc(cancelText)}</button>
-<button class="glass-confirm-btn ${danger ? 'danger' : 'primary'} gc-confirm">${esc(confirmText)}</button>
+<button class="glass-confirm-btn ${btnClass} gc-confirm">${esc(confirmText)}</button>
 </div>
 </div>
 `;

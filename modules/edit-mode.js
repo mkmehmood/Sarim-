@@ -49,7 +49,8 @@ export function beginEditMode(kind, original, opts = {}) {
     const banner = document.createElement('div');
     banner.id = 'edit-mode-banner';
     banner.className = 'edit-mode-banner';
-    banner.innerHTML = '<span>Editing an existing entry. Saving updates the original.</span>';
+    banner.setAttribute('role', 'status');
+    banner.innerHTML = '<div class="emb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div><div class="emb-text"><b>Editing entry</b><span>Saving updates the original record.</span></div>';
     const cancel = document.createElement('button');
     cancel.type = 'button';
     cancel.textContent = 'Cancel';
