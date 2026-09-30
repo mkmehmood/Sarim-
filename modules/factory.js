@@ -1,3 +1,4 @@
+import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, localDateStr, lockedSaleValue, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
 import { OfflineQueue, notifyDataChange, triggerAutoSync, updatePaymentStatusVisibility } from './utilities-core.js';
@@ -1110,7 +1111,27 @@ const _prodCostEl = document.getElementById('factoryTotalProductionCostDisplay')
 if (_prodCostEl) _prodCostEl.innerText = await formatCurrency(baseCost);
 }
 
+function _resetFactoryForm() {
+const u = document.getElementById('factoryProductionUnits'); if (u) u.value = '1';
+if (typeof calculateFactoryProduction === 'function') calculateFactoryProduction();
+}
+
+export async function startEditFactoryEntry(id) {
+const hist = ensureArray(await sqliteStore.get('factory_production_history'));
+const rec = hist.find(h => h && String(h.id) === String(id));
+if (!rec || rec.isMerged) { showToast('This batch cannot be edited.', 'warning'); return; }
+if (typeof showTab === 'function') showTab('factory');
+const _ft = rec.formulaType || (typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(rec.store) : 'standard');
+selectFactoryEntryStore(rec.store, null);
+document.querySelectorAll('#factory-formula-selector .factory-store-opt').forEach(o => o.classList.toggle('active', (o.getAttribute('onclick') || '').includes(`'${_ft}'`)));
+const u = document.getElementById('factoryProductionUnits'); if (u) u.value = rec.units;
+if (typeof calculateFactoryProduction === 'function') await calculateFactoryProduction();
+beginEditMode('factory', rec, { buttonId: 'btn-save-factory-production', label: 'Update Batch', anchorId: 'factoryProductionUnits', cancelFn: _resetFactoryForm });
+}
+registerEditHandler('factory', startEditFactoryEntry);
+
 export async function saveFactoryProductionEntry() {
+const _ed = getEditCtx('factory');
 
 if (!currentFactoryEntryStore) {
 showToast('Please select a formula type (Standard or Asaan) before saving.', 'warning', 3000);
@@ -1138,6 +1159,32 @@ const settings = factoryDefaultFormulas[_sfpeType] || factoryDefaultFormulas[cur
 if (!settings || settings.length === 0) {
 showToast('No formula configured for this store. Please set up Factory Formulas before recording production.', 'warning', 5000);
 return;
+}
+let _edHistIdx = -1;
+if (_ed) {
+const o = _ed.original;
+const oType = o.formulaType || (typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(o.store) : 'standard');
+const tr = await updateFormulaInventory();
+const avail = tr?.[oType]?.available || 0;
+const delta = (oType === _sfpeType) ? (units - (o.units || 0)) : -(o.units || 0);
+if (avail + delta < -1e-9) {
+throw new Error(`Cannot change this batch: its units are already used in manufacturing entries. Delete or reduce those first.`);
+}
+const restore = (Array.isArray(o.materialsUsed) && o.materialsUsed.length > 0)
+? o.materialsUsed
+: (factoryDefaultFormulas[oType] || []).map(m => ({ id: m.id, name: m.name, quantity: m.quantity * (o.units || 0) }));
+for (const m of restore) {
+let inv = factoryInventoryData.find(i => String(i.id) === String(m.id));
+if (!inv && m.name) inv = factoryInventoryData.find(i => i.name && i.name.trim().toLowerCase() === m.name.trim().toLowerCase());
+if (inv) {
+inv.quantity = parseFloat(((inv.quantity || 0) + m.quantity).toFixed(6));
+inv.totalValue = inv.quantity * inv.cost;
+if (inv.conversionFactor && inv.conversionFactor !== 1) inv.purchaseQuantity = inv.quantity / inv.conversionFactor;
+inv.updatedAt = getTimestamp();
+}
+}
+_edHistIdx = factoryProductionHistory.findIndex(h => h && h.id === o.id);
+if (_edHistIdx >= 0) factoryProductionHistory.splice(_edHistIdx, 1);
 }
 const additionalCost = factoryAdditionalCosts[_sfpeType] || factoryAdditionalCosts[currentFactoryEntryStore] || 0;
 let baseCost = 0;
@@ -1179,7 +1226,7 @@ throw new Error(`Insufficient "${inventoryItem.name}" in inventory! Available: $
 }
 }
 }
-let factProdId = generateUUID('fprod');
+let factProdId = _ed ? _ed.id : generateUUID('fprod');
 if (!validateUUID(factProdId)) factProdId = generateUUID('fprod');
 const factProdCreatedAt = getTimestamp();
 const _savedFormulaType = typeof getStoreFormulaType === 'function' ? await getStoreFormulaType(currentFactoryEntryStore) : (currentFactoryEntryStore === 'STORE_C' ? 'asaan' : 'standard');
@@ -1202,8 +1249,15 @@ syncedAt: new Date().toISOString(),
 managedBy: (appMode === 'factory' && window._assignedManagerName) ? window._assignedManagerName : null,
 createdBy: (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null
 };
-const validatedRecord = ensureRecordIntegrity(productionRecord);
-factoryProductionHistory.unshift(validatedRecord);
+if (_ed) {
+const o = _ed.original;
+stampEdit(productionRecord, o);
+productionRecord.date = o.date;
+productionRecord.time = o.time;
+if (o.managedBy) productionRecord.managedBy = o.managedBy;
+}
+const validatedRecord = ensureRecordIntegrity(productionRecord, !!_ed);
+if (_ed && _edHistIdx >= 0) factoryProductionHistory.splice(_edHistIdx, 0, validatedRecord); else factoryProductionHistory.unshift(validatedRecord);
 await unifiedSave('factory_production_history', factoryProductionHistory, validatedRecord);
 if (inventoryUpdated) {
 const inventoryIds = factoryInventoryData.filter(i => i && i.id).map(i => i.id);
@@ -1217,9 +1271,10 @@ await syncFactoryProductionStats();
 await refreshFactoryTab();
 calculateNetCash();
 calculateCashTracker();
+if (_ed) endEditMode();
 document.getElementById('factoryProductionUnits').value = '1';
 
-showToast('Production saved successfully!', 'success');
+showToast(_ed ? 'Production batch updated!' : 'Production saved successfully!', 'success');
 } catch (error) {
 factoryInventoryData.length = 0;
 factoryInventoryData.push(...inventorySnapshot);
@@ -1351,7 +1406,7 @@ ${totalAdditionalCost > 0 ? `<div class="factory-summary-row"><span class="facto
 <div class="factory-summary-row"><span class="factory-summary-label">Total Cost</span><span class="rev-val">${await formatCurrency(entry.totalCost)}</span></div>
 <div class="factory-summary-row"><span class="factory-summary-label">Raw Materials Used</span><span class="qty-val">${fmtNum(safeNumber(entry.rawMaterialsUsed, 0))} kg</span></div>
 ${matsBreakdownHtml}
-${entry.isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="deleteFactoryEntry('${entry.id}')">Delete & Restore Inventory</button>`}`;
+${entry.isMerged ? '' : actionRowHtml('factory', entry.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="deleteFactoryEntry('${entry.id}')">Delete & Restore</button>`)}`;
 _fhFrag.appendChild(div);
 }
 list.replaceChildren(_fhFrag);

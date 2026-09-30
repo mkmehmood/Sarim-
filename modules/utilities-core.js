@@ -2032,7 +2032,7 @@ item.innerHTML = `
       </svg>
       Photo
     </button>
-    ${(t.isMerged || t.isSettled) ? '' : `<button class="btn btn-sm u-p-4-8" style="color:var(--accent);border:1px solid var(--accent);background:transparent;" onclick="startEdit('${t.isTransfer ? 'transfer' : 'payment'}','${esc(t.isTransfer ? t.transferPairId : t.id)}')">✎</button>`}<button class="btn btn-sm btn-danger u-p-4-8" onclick="${t.isTransfer ? `(async()=>{await deletePaymentTransfer('${esc(t.transferPairId)}');const _ent=(await sqliteStore.get('payment_entities')||[]).find(e=>String(e.id)===String(currentEntityId));if(_ent)renderEntityOverlayContent(_ent);})()` : `deleteEntityTransaction('${esc(t.id)}')`}">⌫</button>
+    ${(t.isMerged || t.isSettled) ? '' : `<button class="btn btn-sm u-p-4-8" style="color:var(--accent);border:1px solid var(--accent);background:transparent;" onclick="startEdit('${t.isTransfer ? 'paytransfer' : 'payment'}','${esc(t.isTransfer ? t.transferPairId : t.id)}')">✎</button>`}<button class="btn btn-sm btn-danger u-p-4-8" onclick="${t.isTransfer ? `(async()=>{await deletePaymentTransfer('${esc(t.transferPairId)}');const _ent=(await sqliteStore.get('payment_entities')||[]).find(e=>String(e.id)===String(currentEntityId));if(_ent)renderEntityOverlayContent(_ent);})()` : `deleteEntityTransaction('${esc(t.id)}')`}">⌫</button>
   </div>
 </div>`;
 _entityFrag.appendChild(item);

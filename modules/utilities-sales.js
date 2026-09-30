@@ -3474,7 +3474,7 @@ ${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(
 <p style="color:${isOutSide ? 'var(--danger)' : 'var(--accent-emerald)'};font-size:0.75rem;font-style:italic;">${isOutSide ? `Stock Transfer Out &rarr; ${esc(peerLabel)}` : `Stock Transfer In &larr; ${esc(peerLabel)}`}</p>
 <p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(Math.abs(item.net)))} kg</span></p>
 ${item.transferNote ? `<p><span>Note:</span> <span style="color:var(--text-muted);">${esc(item.transferNote)}</span></p>` : ''}
-<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>
+${actionRowHtml('stocktransfer', item.transferPairId, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`)}
 `;
 } else {
 div.innerHTML = `
@@ -6483,8 +6483,8 @@ renderCustomersTable();
 updateCustomerCharts();
 }
 
-export async function computeStoreStockSnapshot(store, date) {
-const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
+export async function computeStoreStockSnapshot(store, date, excludeIds = null) {
+const db = ensureArray(await sqliteStore.get('mfg_pro_pkr')).filter(x => !(excludeIds && excludeIds.includes(x.id)));
 const stockReturns = ensureArray(await sqliteStore.get('stock_returns'));
 const customerSales = ensureArray(await sqliteStore.get('customer_sales'));
 let production = 0;
@@ -6554,6 +6554,7 @@ el.style.color = snap.available > 0 ? 'var(--accent-emerald)' : 'var(--danger)';
 window.updateStockTransferAvailability = updateStockTransferAvailability;
 
 export async function saveStockTransfer() {
+const _ed = getEditCtx('stocktransfer');
 if (appMode === 'userrole' && !(window._userRoleAllowedTabs || []).includes('sales')) {
 showToast('Access Denied — Stock Transfer not in your assigned tabs', 'warning', 3000);
 return;
@@ -6567,7 +6568,19 @@ if (!date) { showToast('Please select a date.', 'warning', 3000); return; }
 if (!fromStore || !toStore) { showToast('Please select both stores.', 'warning', 3000); return; }
 if (fromStore === toStore) { showToast('From and To stores must be different.', 'warning', 3000); return; }
 if (quantity <= 0) { showToast('Please enter a valid quantity.', 'warning', 3000); return; }
-const snapshot = await computeStoreStockSnapshot(fromStore, date);
+const _pairIds = _ed ? _ed.original.records.map(r => r.id) : null;
+const snapshot = await computeStoreStockSnapshot(fromStore, date, _pairIds);
+if (_ed) {
+const o = _ed.original.records.find(r => r.transferDirection === 'in');
+if (o) {
+const oldTo = await computeStoreStockSnapshot(o.store, o.date, _pairIds);
+const adj = (o.store === toStore && o.date === date ? quantity : 0) - (o.store === fromStore && o.date === date ? quantity : 0);
+if (oldTo.available + adj < -1e-6) {
+showToast(` Cannot change: ${getStoreLabel(o.store)} would go short by ${fmtNum(-(oldTo.available + adj))} kg on ${o.date} (already sold or transferred).`, 'error', 6000);
+return;
+}
+}
+}
 if (quantity > snapshot.available) {
 showToast(` Insufficient stock at ${getStoreLabel(fromStore)}. Available: ${fmtNum(safeNumber(snapshot.available, 0))} kg, Requested: ${fmtNum(safeNumber(quantity, 0))} kg.`, 'error', 6000);
 return;
@@ -6581,12 +6594,14 @@ const ampm = hours >= 12 ? 'PM' : 'AM';
 hours = hours % 12;
 hours = hours ? hours : 12;
 const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
-let pairId = generateUUID('trfpair');
+const _oOut = _ed ? _ed.original.records.find(r => r.transferDirection === 'out') : null;
+const _oIn = _ed ? _ed.original.records.find(r => r.transferDirection === 'in') : null;
+let pairId = _ed ? _ed.original.pairId : generateUUID('trfpair');
 if (!validateUUID(pairId)) pairId = generateUUID('trfpair');
-const createdAt = Date.now();
-let outId = generateUUID('trf');
+const createdAt = _ed ? (_oOut?.createdAt || Date.now()) : Date.now();
+let outId = _oOut ? _oOut.id : generateUUID('trf');
 if (!validateUUID(outId)) outId = generateUUID('trf');
-let inId = generateUUID('trf');
+let inId = _oIn ? _oIn.id : generateUUID('trf');
 if (!validateUUID(inId)) inId = generateUUID('trf');
 const createdBy = (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null;
 let outEntry = {
@@ -6603,13 +6618,18 @@ isTransfer: true, transferDirection: 'in', transferPairId: pairId, transferPeerS
 transferNote: note, createdAt: createdAt, updatedAt: createdAt, timestamp: createdAt,
 createdBy: createdBy, syncedAt: new Date().toISOString()
 };
-outEntry = ensureRecordIntegrity(outEntry, false);
-inEntry = ensureRecordIntegrity(inEntry, false);
-db.push(outEntry, inEntry);
+if (_ed) {
+if (_oOut) { stampEdit(outEntry, _oOut); outEntry.time = _oOut.time; }
+if (_oIn) { stampEdit(inEntry, _oIn); inEntry.time = _oIn.time; }
+}
+outEntry = ensureRecordIntegrity(outEntry, !!_ed);
+inEntry = ensureRecordIntegrity(inEntry, !!_ed);
+if (_ed) { replaceRecord(db, outEntry); replaceRecord(db, inEntry); } else { db.push(outEntry, inEntry); }
 await unifiedSave('mfg_pro_pkr', db, null, [outEntry.id, inEntry.id]);
 notifyDataChange('production');
 emitSyncUpdate({ mfg_pro_pkr: null });
-showToast(`Transferred ${fmtNum(safeNumber(quantity, 0))} kg: ${getStoreLabel(fromStore)} → ${getStoreLabel(toStore)}`, 'success');
+if (_ed) endEditMode();
+showToast(`${_ed ? 'Transfer updated' : 'Transferred'} ${fmtNum(safeNumber(quantity, 0))} kg: ${getStoreLabel(fromStore)} → ${getStoreLabel(toStore)}`, 'success');
 const qtyInput = document.getElementById('stock-transfer-qty'); if (qtyInput) qtyInput.value = '';
 const noteInput = document.getElementById('stock-transfer-note'); if (noteInput) noteInput.value = '';
 await updateStockTransferAvailability();
@@ -6619,6 +6639,35 @@ if (typeof syncFactoryProductionStats === 'function') { try { await syncFactoryP
 triggerAutoSync();
 }
 window.saveStockTransfer = saveStockTransfer;
+
+function _resetStockTransferForm() {
+const q = document.getElementById('stock-transfer-qty'); if (q) q.value = '';
+const n = document.getElementById('stock-transfer-note'); if (n) n.value = '';
+}
+
+export async function startEditStockTransfer(pairId) {
+const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
+const records = db.filter(r => r && r.isTransfer === true && r.transferPairId === pairId);
+const out = records.find(r => r.transferDirection === 'out');
+const inn = records.find(r => r.transferDirection === 'in');
+if (!out || !inn || out.isMerged || inn.isMerged) { showToast('This transfer cannot be edited.', 'warning'); return; }
+const scr = document.getElementById('stock-transfer-screen');
+if (scr && getComputedStyle(scr).display === 'none') {
+if (typeof openStandaloneScreen === 'function') openStandaloneScreen('stock-transfer-screen');
+await prepareStockTransferScreen();
+}
+const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v; };
+set('stock-transfer-from-value', out.store);
+set('stock-transfer-to-value', inn.store);
+const fsp = document.querySelector('#stockTransferFromBtn span'); if (fsp) fsp.textContent = getStoreLabel(out.store) + ' ';
+const tsp = document.querySelector('#stockTransferToBtn span'); if (tsp) tsp.textContent = getStoreLabel(inn.store) + ' ';
+set('stock-transfer-date', out.date);
+set('stock-transfer-qty', Math.abs(out.net));
+set('stock-transfer-note', out.transferNote || '');
+beginEditMode('stocktransfer', { id: out.id, pairId, records: JSON.parse(JSON.stringify(records)), createdAt: out.createdAt }, { buttonId: 'btn-save-stock-transfer', label: 'Update Transfer', anchorId: 'stock-transfer-qty', cancelFn: _resetStockTransferForm });
+await updateStockTransferAvailability();
+}
+registerEditHandler('stocktransfer', startEditStockTransfer, { keepScreens: ['stock-transfer-screen'] });
 
 export async function renderStockTransferHistory() {
 const list = document.getElementById('stockTransferHistoryList');
@@ -6642,7 +6691,7 @@ ${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(
 <p><span style="color:var(--accent);">${escapeHtml(getStoreLabel(item.store))}</span> <span style="color:var(--text-muted);"> &rarr; </span> <span style="color:var(--accent-emerald);">${escapeHtml(getStoreLabel(item.transferPeerStore))}</span></p>
 <p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(Math.abs(item.net)))} kg</span></p>
 ${item.transferNote ? `<p><span>Note:</span> <span style="color:var(--text-muted);">${escapeHtml(item.transferNote)}</span></p>` : ''}
-<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteStockTransfer('${escapeHtml(item.transferPairId)}') })()">Delete</button>
+${actionRowHtml('stocktransfer', item.transferPairId, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteStockTransfer('${escapeHtml(item.transferPairId)}') })()">Delete</button>`)}
 `;
 fragment.appendChild(div);
 });

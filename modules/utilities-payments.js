@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler } from './edit-mode.js';
+import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, localDateStr, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, currentEntityId, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
@@ -7630,6 +7630,7 @@ await renderPaymentTransferHistory();
 window.prepareEntityTransferScreen = prepareEntityTransferScreen;
 
 export async function saveEntityTransfer() {
+const _ed = getEditCtx('paytransfer');
 if (appMode === 'userrole' && !(window._userRoleAllowedTabs || []).includes('payments')) {
 showToast('Access Denied — Payment Transfer not in your assigned tabs', 'warning', 3000);
 return;
@@ -7649,12 +7650,18 @@ const fromEntity = paymentEntities.find(e => String(e.id) === String(fromId));
 const toEntity = paymentEntities.find(e => String(e.id) === String(toId));
 if (!fromEntity || !toEntity) { showToast('Selected entity not found.', 'error', 3000); return; }
 if (fromEntity.isExpenseEntity === true || toEntity.isExpenseEntity === true) { showToast('Expense-only entities cannot be used in a transfer.', 'warning', 4000); return; }
-let pairId = generateUUID('trfpair');
+const _oOut = _ed ? _ed.original.records.find(r => r.type === 'OUT') : null;
+const _oIn = _ed ? _ed.original.records.find(r => r.type === 'IN') : null;
+if (_ed) {
+const avail = await getAvailableCashInHand();
+if (avail < 0) { showToast('Cash position is negative; fix that before editing transfers.', 'warning', 4000); return; }
+}
+let pairId = _ed ? _ed.original.pairId : generateUUID('trfpair');
 if (!validateUUID(pairId)) pairId = generateUUID('trfpair');
 const createdAt = getTimestamp();
-let outId = generateUUID('pay');
+let outId = _oOut ? _oOut.id : generateUUID('pay');
 if (!validateUUID(outId)) outId = generateUUID('pay');
-let inId = generateUUID('pay');
+let inId = _oIn ? _oIn.id : generateUUID('pay');
 if (!validateUUID(inId)) inId = generateUUID('pay');
 const createdBy = (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null;
 let outTx = {
@@ -7671,9 +7678,13 @@ isPayable: false, isExpense: false, isTransfer: true, transferPairId: pairId,
 transferPeerEntityId: fromEntity.id, transferPeerEntityName: fromEntity.name,
 createdBy: createdBy
 };
-outTx = ensureRecordIntegrity(outTx, false);
-inTx = ensureRecordIntegrity(inTx, false);
-paymentTransactions.push(outTx, inTx);
+if (_ed) {
+if (_oOut) { stampEdit(outTx, _oOut); outTx.time = _oOut.time; }
+if (_oIn) { stampEdit(inTx, _oIn); inTx.time = _oIn.time; }
+}
+outTx = ensureRecordIntegrity(outTx, !!_ed);
+inTx = ensureRecordIntegrity(inTx, !!_ed);
+if (_ed) { replaceRecord(paymentTransactions, outTx); replaceRecord(paymentTransactions, inTx); } else { paymentTransactions.push(outTx, inTx); }
 await unifiedSave('payment_transactions', paymentTransactions, null, [outTx.id, inTx.id]);
 if (window._paymentTransferPendingPhoto) {
 try {
@@ -7695,13 +7706,44 @@ await sqliteStore.set('person_photos_timestamp', Date.now());
 }
 notifyDataChange('payments');
 emitSyncUpdate({ payment_transactions: null });
-showToast(`Transferred ${fmtAmt(amount)}: ${fromEntity.name} → ${toEntity.name}`, 'success');
+if (_ed) endEditMode();
+showToast(`${_ed ? 'Transfer updated' : 'Transferred'} ${fmtAmt(amount)}: ${fromEntity.name} → ${toEntity.name}`, 'success');
 if (typeof prepareEntityTransferScreen === 'function') await prepareEntityTransferScreen();
 if (typeof refreshPaymentTab === 'function') { try { await refreshPaymentTab(true); } catch (_) {} }
 if (typeof calculateNetCash === 'function') { try { calculateNetCash(); } catch (_) {} }
 triggerAutoSync();
 }
 window.saveEntityTransfer = saveEntityTransfer;
+
+function _resetPaymentTransferForm() {
+['payment-transfer-amount', 'payment-transfer-note'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+export async function startEditPaymentTransfer(pairId) {
+const txs = ensureArray(await sqliteStore.get('payment_transactions'));
+const records = txs.filter(r => r && r.isTransfer === true && r.transferPairId === pairId);
+const out = records.find(r => r.type === 'OUT');
+const inn = records.find(r => r.type === 'IN');
+if (!out || !inn || out.isMerged || inn.isMerged) { showToast('This transfer cannot be edited.', 'warning'); return; }
+const scr = document.getElementById('payment-transfer-screen');
+if (scr && getComputedStyle(scr).display === 'none') {
+if (typeof openStandaloneScreen === 'function') openStandaloneScreen('payment-transfer-screen');
+await prepareEntityTransferScreen();
+}
+const set = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v; };
+set('payment-transfer-from-value', out.entityId);
+set('payment-transfer-from-search', out.entityName);
+const fs = document.getElementById('payment-transfer-from-search'); if (fs) fs.setAttribute('data-entity-id', out.entityId);
+set('payment-transfer-to-value', inn.entityId);
+set('payment-transfer-to-search', inn.entityName);
+const ts = document.getElementById('payment-transfer-to-search'); if (ts) ts.setAttribute('data-entity-id', inn.entityId);
+set('payment-transfer-date', out.date);
+set('payment-transfer-amount', out.amount);
+const prefix = `Transfer to ${inn.entityName}: `;
+set('payment-transfer-note', (out.description || '').startsWith(prefix) ? out.description.slice(prefix.length) : '');
+beginEditMode('paytransfer', { id: out.id, pairId, records: JSON.parse(JSON.stringify(records)), createdAt: out.createdAt }, { buttonId: 'btn-save-payment-transfer', label: 'Update Transfer', anchorId: 'payment-transfer-amount', cancelFn: _resetPaymentTransferForm });
+}
+registerEditHandler('paytransfer', startEditPaymentTransfer, { keepScreens: ['payment-transfer-screen'] });
 
 export function openPaymentTransferPhotoCapture() {
 openPhotoCapture('paytransfer');
@@ -7773,7 +7815,7 @@ item.innerHTML = `
     </button>
   </div>
 </div>
-<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deletePaymentTransfer('${esc(t.transferPairId)}') })()">Delete</button>
+${actionRowHtml('paytransfer', t.transferPairId, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deletePaymentTransfer('${esc(t.transferPairId)}') })()">Delete</button>`)}
 `;
 fragment.appendChild(item);
 if (t.id) {

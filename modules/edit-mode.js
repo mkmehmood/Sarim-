@@ -2,8 +2,11 @@ import { getTimestamp } from './business.js';
 
 const _handlers = {};
 
-export function registerEditHandler(kind, fn) {
+const _keep = {};
+
+export function registerEditHandler(kind, fn, opts = {}) {
   _handlers[kind] = fn;
+  _keep[kind] = opts.keepScreens || [];
 }
 
 export async function startEdit(kind, id) {
@@ -14,7 +17,7 @@ export async function startEdit(kind, id) {
   }
   try {
     document.querySelectorAll('.standalone-screen').forEach(s => {
-      if (s.id && getComputedStyle(s).display !== 'none' && typeof window.closeStandaloneScreen === 'function') window.closeStandaloneScreen(s.id);
+      if (s.id && !(_keep[kind] || []).includes(s.id) && getComputedStyle(s).display !== 'none' && typeof window.closeStandaloneScreen === 'function') window.closeStandaloneScreen(s.id);
     });
     await h(id);
   } catch (e) {

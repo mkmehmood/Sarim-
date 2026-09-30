@@ -864,7 +864,7 @@ input:checked + .theme-toggle-track::before { transform: translateX(22px); }
         <input type="text" id="stock-transfer-note" placeholder="e.g. Balancing stock ahead of weekend rush" maxlength="120">
       </div>
       <div id="stockTransferAvailability" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;"></div>
-      <button class="btn btn-noman" style="width:100%;" onclick="(async()=>{await saveStockTransfer()})()">Transfer Stock</button>
+      <button class="btn btn-noman" id="btn-save-stock-transfer" style="width:100%;" onclick="(async()=>{await saveStockTransfer()})()">Transfer Stock</button>
     </div>
 
     <p class="settings-group-label">Transfer History</p>
@@ -933,7 +933,7 @@ input:checked + .theme-toggle-track::before { transform: translateX(22px); }
         </div>
         <input type="file" id="payment-transfer-photo-file" accept="image/*" style="display:none" onchange="handlePaymentTransferPhotoFile(event)">
       </div>
-      <button class="btn btn-noman" style="width:100%;" onclick="(async()=>{await saveEntityTransfer()})()">Transfer Payment</button>
+      <button class="btn btn-noman" id="btn-save-payment-transfer" style="width:100%;" onclick="(async()=>{await saveEntityTransfer()})()">Transfer Payment</button>
     </div>
 
     <p class="settings-group-label">Transfer History</p>
@@ -2324,7 +2324,7 @@ No records found
 <div id="factoryFormulaDisplay" class="formula-display">
 Select a store...
 </div>
-<button class="btn btn-noman" onclick="(async () => { await saveFactoryProductionEntry() })()">Save Production Entry</button>
+<button class="btn btn-noman" id="btn-save-factory-production" onclick="(async () => { await saveFactoryProductionEntry() })()">Save Production Entry</button>
 </div>
 <div class="section liquid-card">
 <div class="section-header">
