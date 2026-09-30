@@ -1,3 +1,4 @@
+import { deleteProdPhotos } from './prod-photos.js';
 import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, localDateStr, lockedSaleValue, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
@@ -1126,7 +1127,7 @@ selectFactoryEntryStore(rec.store, null);
 document.querySelectorAll('#factory-formula-selector .factory-store-opt').forEach(o => o.classList.toggle('active', (o.getAttribute('onclick') || '').includes(`'${_ft}'`)));
 const u = document.getElementById('factoryProductionUnits'); if (u) u.value = rec.units;
 if (typeof calculateFactoryProduction === 'function') await calculateFactoryProduction();
-beginEditMode('factory', rec, { buttonId: 'btn-save-factory-production', label: 'Update Batch', anchorId: 'factoryProductionUnits', cancelFn: _resetFactoryForm });
+beginEditMode('factory', rec, { buttonId: 'btn-save-factory-production', watchIds: ['factoryProductionUnits'], label: 'Update Batch', anchorId: 'factoryProductionUnits', cancelFn: _resetFactoryForm });
 }
 registerEditHandler('factory', startEditFactoryEntry);
 
@@ -1694,6 +1695,7 @@ const record = db.find(item => item.id === id);
 if (record) { record.deletedAt = getTimestamp(); record.updatedAt = getTimestamp(); ensureRecordIntegrity(record, true); }
 const dbWithoutDeleted = db.filter(item => item.id !== id);
 await unifiedDelete('mfg_pro_pkr', dbWithoutDeleted, id, { strict: true }, record || null);
+if (record) await deleteProdPhotos(record).catch(() => {});
 notifyDataChange('production');
 void syncFactoryProductionStats().catch(() => {});
 await refreshUI();

@@ -251,7 +251,7 @@ if (rec.customerPhone) {
 const pc = document.getElementById('rep-new-customer-phone-container'); if (pc) pc.classList.remove('hidden');
 set('rep-new-cust-phone', rec.customerPhone);
 }
-beginEditMode('repsale', rec, { buttonId: 'btn-save-rep-transaction', label: 'Update Transaction', anchorId: 'rep-cust-name', cancelFn: _resetRepForm });
+beginEditMode('repsale', rec, { buttonId: 'btn-save-rep-transaction', watchIds: ['rep-cust-name','rep-quantity','rep-amount-collected','rep-date','rep-new-cust-phone'], label: 'Update Transaction', anchorId: 'rep-cust-name', cancelFn: _resetRepForm });
 }
 registerEditHandler('repsale', startEditRepSale);
 

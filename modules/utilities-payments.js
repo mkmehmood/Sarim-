@@ -1,5 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
-import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
+import { actionRowHtml, beginEditMode, confirmEditChanges, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, localDateStr, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
 import { OfflineQueue, PDF_MERGED_HDR_COLOR, PDF_MERGED_ROW_COLOR, SarimChart, _applyExpensePendingPhoto, _captureRecordSnapshot, _compressPhoto, _pdfDrawMergedSectionHeader, _pdfMergedCountLabel, _pdfMergedPeriodLabel, _setCloudConnectionState, _set_salesCompChart, _set_salesPerfChart, clearPersonPhoto, currentEntityId, defaultSettings, initSplashScreen, invalidateAllCaches, loadPersonPhotoIntoEditor, loadScript, notifyDataChange, openEntityDetailsOverlay, openPhotoCapture, registerDeletion, renderEntityOverlayContent, salesCompChart, salesPerfChart, savePersonPhoto, triggerAutoSync, updateOfflineBanner } from './utilities-core.js';
@@ -2001,6 +2001,13 @@ return;
 }
 const t = paymentTransactions.find(x => x && x.id === o.id);
 if (!t) { showToast('Original transaction not found.', 'error'); return; }
+const _proceed = await confirmEditChanges([
+{ label: 'Name', from: o.entityName || '', to: v.name },
+{ label: 'Amount', from: fmtAmt(o.amount || 0), to: fmtAmt(v.amount) },
+{ label: 'Date', from: o.date || '', to: v.date },
+{ label: 'Note', from: (o.description || '').slice(0, 40), to: (v.description || (o.isExpense ? `Expense: ${v.name}` : `Payment ${o.type}: ${v.name}`)).slice(0, 40) }
+], o.isExpense ? 'Update Expense?' : 'Update Payment?');
+if (!_proceed) return;
 const tBefore = { ...t };
 const e = o.expenseId ? expenseRecords.find(x => x && x.id === o.expenseId) : null;
 const eBefore = e ? { ...e } : null;
@@ -2073,7 +2080,7 @@ set('expenseName', t.entityName || '');
 set('expenseAmount', t.amount);
 set('expenseDate', t.date);
 set('expenseDescription', t.description || '');
-beginEditMode('payment', t, { buttonId: 'btn-save-expense', label: 'Update Transaction', anchorId: 'expenseName', cancelFn: _resetExpenseForm });
+beginEditMode('payment', t, { buttonId: 'btn-save-expense', watchIds: ['expenseName','expenseAmount','expenseDate','expenseDescription'], label: 'Update Transaction', anchorId: 'expenseName', cancelFn: _resetExpenseForm });
 }
 
 export async function startEditExpenseRecord(expenseId) {
@@ -7665,6 +7672,14 @@ const _oIn = _ed ? _ed.original.records.find(r => r.type === 'IN') : null;
 if (_ed) {
 const avail = await getAvailableCashInHand();
 if (avail < 0) { showToast('Cash position is negative; fix that before editing transfers.', 'warning', 4000); return; }
+const _oo = _ed.original.records.find(r => r.type === 'OUT');
+const _ok = await confirmEditChanges([
+{ label: 'From', from: _oo?.entityName || '', to: fromEntity.name },
+{ label: 'To', from: _oIn?.entityName || '', to: toEntity.name },
+{ label: 'Amount', from: fmtAmt(_oo?.amount || 0), to: fmtAmt(amount) },
+{ label: 'Date', from: _oo?.date || '', to: date }
+], 'Update Transfer?');
+if (!_ok) return;
 }
 let pairId = _ed ? _ed.original.pairId : generateUUID('trfpair');
 if (!validateUUID(pairId)) pairId = generateUUID('trfpair');
@@ -7751,7 +7766,7 @@ set('payment-transfer-date', out.date);
 set('payment-transfer-amount', out.amount);
 const prefix = `Transfer to ${inn.entityName}: `;
 set('payment-transfer-note', (out.description || '').startsWith(prefix) ? out.description.slice(prefix.length) : '');
-beginEditMode('paytransfer', { id: out.id, pairId, records: JSON.parse(JSON.stringify(records)), createdAt: out.createdAt }, { buttonId: 'btn-save-payment-transfer', label: 'Update Transfer', anchorId: 'payment-transfer-amount', cancelFn: _resetPaymentTransferForm });
+beginEditMode('paytransfer', { id: out.id, pairId, records: JSON.parse(JSON.stringify(records)), createdAt: out.createdAt }, { buttonId: 'btn-save-payment-transfer', watchIds: ['payment-transfer-from-value','payment-transfer-to-value','payment-transfer-date','payment-transfer-amount','payment-transfer-note'], label: 'Update Transfer', anchorId: 'payment-transfer-amount', cancelFn: _resetPaymentTransferForm });
 }
 registerEditHandler('paytransfer', startEditPaymentTransfer, { keepScreens: ['payment-transfer-screen'] });
 

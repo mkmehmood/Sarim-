@@ -1,0 +1,269 @@
+import { esc, fmtNum, sqliteStore, ensureArray } from './business.js';
+
+const getStoreLabel = (s) => (typeof window.getStoreLabel === 'function' ? window.getStoreLabel(s) : s);
+
+const MAX_PHOTOS = 6;
+const _thumbCache = new Map();
+let _picker = [];
+const _selected = new Set();
+
+function _toast(msg, type = 'info', ms = 3000) {
+  if (window.showToast) window.showToast(msg, type, ms);
+}
+
+function _readFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+async function _compress(dataUrl, maxDim = 1400, quality = 0.82) {
+  if (typeof window._compressPhoto === 'function') return window._compressPhoto(dataUrl, maxDim, quality);
+  return dataUrl;
+}
+
+async function _photoStore() {
+  const stored = await sqliteStore.get('person_photos');
+  return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+}
+
+async function _writePhotoKeys(setMap, deleteKeys) {
+  const photos = await _photoStore();
+  const ts = (await sqliteStore.get('person_photos_timestamps')) || {};
+  const dirty = (await sqliteStore.get('person_photos_dirty_keys')) || [];
+  const now = Date.now();
+  for (const [k, v] of Object.entries(setMap)) {
+    photos[k] = v;
+    ts[k] = now;
+    if (!dirty.includes(k)) dirty.push(k);
+    _thumbCache.set(k, v);
+  }
+  for (const k of deleteKeys) {
+    delete photos[k];
+    delete ts[k];
+    if (!dirty.includes(k)) dirty.push(k);
+    _thumbCache.delete(k);
+  }
+  await sqliteStore.set('person_photos', photos);
+  await sqliteStore.set('person_photos_timestamps', ts);
+  await sqliteStore.set('person_photos_dirty_keys', dirty);
+  await sqliteStore.set('person_photos_timestamp', now);
+  if (typeof window.triggerAutoSync === 'function') { try { window.triggerAutoSync(); } catch (_) {} }
+}
+
+function _renderPicker() {
+  const box = document.getElementById('prod-photo-thumbs');
+  const count = document.getElementById('prod-photo-count');
+  if (count) count.textContent = _picker.length ? `${_picker.length}/${MAX_PHOTOS}` : '';
+  if (!box) return;
+  box.innerHTML = _picker.map((p, i) => `<div class="pp-thumb"><img src="${p.dataUrl}" alt="Product photo ${i + 1}" onclick="openPhotoLightbox(this.src)"><button type="button" class="pp-remove" aria-label="Remove photo" onclick="removeProdPhoto(${i})">&times;</button></div>`).join('');
+}
+
+export async function addProdPhotos(fileList) {
+  const files = Array.from(fileList || []).filter(f => f && /^image\//.test(f.type));
+  if (!files.length) return;
+  const room = MAX_PHOTOS - _picker.length;
+  if (room <= 0) { _toast(`You can attach up to ${MAX_PHOTOS} photos per entry.`, 'warning'); return; }
+  const use = files.slice(0, room);
+  if (files.length > room) _toast(`Only ${room} more photo${room === 1 ? '' : 's'} allowed — extra files skipped.`, 'warning');
+  for (const f of use) {
+    try {
+      const raw = await _readFile(f);
+      const small = await _compress(raw, 1400, 0.82);
+      _picker.push({ key: null, dataUrl: small, isNew: true });
+    } catch (e) {
+      console.warn('[prod photo] read failed', e);
+    }
+  }
+  _renderPicker();
+}
+
+export function removeProdPhoto(i) {
+  _picker.splice(i, 1);
+  _renderPicker();
+}
+
+export function resetProdPhotos() {
+  _picker = [];
+  const a = document.getElementById('prod-photo-file'); if (a) a.value = '';
+  const b = document.getElementById('prod-photo-camera'); if (b) b.value = '';
+  _renderPicker();
+}
+
+export async function loadProdPhotosForEdit(rec) {
+  _picker = [];
+  const keys = Array.isArray(rec && rec.photoKeys) ? rec.photoKeys : [];
+  const photos = await _photoStore();
+  keys.forEach(k => { if (photos[k]) _picker.push({ key: k, dataUrl: photos[k], isNew: false }); });
+  _renderPicker();
+}
+
+export function getProdPhotoKeys(prodId) {
+  const keep = [];
+  const stamp = Date.now();
+  _picker.forEach((p, i) => {
+    if (!p.key) p.key = `prod:${prodId}:${stamp.toString(36)}${i}`;
+    keep.push(p.key);
+  });
+  return keep;
+}
+
+export async function persistProdPhotos(prodId, previousKeys = []) {
+  const setMap = {};
+  _picker.forEach(p => { if (p.isNew && p.key) setMap[p.key] = p.dataUrl; });
+  const keepSet = new Set(_picker.map(p => p.key));
+  const del = (previousKeys || []).filter(k => !keepSet.has(k));
+  if (Object.keys(setMap).length || del.length) await _writePhotoKeys(setMap, del);
+  resetProdPhotos();
+}
+
+export async function deleteProdPhotos(rec) {
+  const keys = Array.isArray(rec && rec.photoKeys) ? rec.photoKeys : [];
+  if (keys.length) await _writePhotoKeys({}, keys);
+}
+
+export function prodPhotoStripHtml(item) {
+  const keys = Array.isArray(item.photoKeys) ? item.photoKeys : [];
+  if (!keys.length || item.isReturn || item.isTransfer) return '';
+  const shown = keys.slice(0, 4);
+  const extra = keys.length - shown.length;
+  const thumbs = shown.map(k => `<img class="pp-strip-img" data-photo-key="${esc(k)}" alt="Product photo" onclick="openProdPhoto('${esc(k)}')">`).join('');
+  const more = extra > 0 ? `<span class="pp-more">+${extra}</span>` : '';
+  const checked = _selected.has(item.id) ? ' checked' : '';
+  return `<div class="pp-strip">${thumbs}${more}</div><div class="pp-actions"><label class="pp-select"><input type="checkbox" data-pp-select="${esc(item.id)}"${checked} onchange="toggleProdPhotoSelect('${esc(item.id)}', this.checked)"> Select</label><button type="button" class="tbl-action-btn pp-share" onclick="shareProdPhotos(['${esc(item.id)}'])">Share on WhatsApp</button></div>`;
+}
+
+export async function hydrateProdPhotoThumbs(root = document) {
+  const imgs = Array.from(root.querySelectorAll('img[data-photo-key]:not([src])'));
+  if (!imgs.length) return;
+  const photos = await _photoStore();
+  imgs.forEach(img => {
+    const k = img.getAttribute('data-photo-key');
+    const v = _thumbCache.get(k) || photos[k];
+    if (v) { img.src = v; _thumbCache.set(k, v); } else { img.classList.add('pp-missing'); }
+  });
+}
+
+export async function openProdPhoto(key) {
+  const photos = await _photoStore();
+  const v = photos[key];
+  if (v && typeof window.openPhotoLightbox === 'function') window.openPhotoLightbox(v);
+}
+
+function _updateShareBar() {
+  let bar = document.getElementById('pp-sharebar');
+  if (_selected.size === 0) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'pp-sharebar';
+    bar.className = 'pp-sharebar';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `<span><b>${_selected.size}</b> entr${_selected.size === 1 ? 'y' : 'ies'} selected</span><div><button type="button" class="pp-bar-clear" onclick="clearProdPhotoSelection()">Clear</button><button type="button" class="pp-bar-share" onclick="shareProdPhotos()">Share on WhatsApp</button></div>`;
+}
+
+export function toggleProdPhotoSelect(id, on) {
+  if (on) _selected.add(id); else _selected.delete(id);
+  _updateShareBar();
+}
+
+export function clearProdPhotoSelection() {
+  _selected.clear();
+  document.querySelectorAll('input[data-pp-select]').forEach(c => { c.checked = false; });
+  _updateShareBar();
+}
+
+function _wrapText(ctx, text, maxWidth) {
+  const words = String(text).split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxWidth && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+async function _captionedBlob(dataUrl, captionLines) {
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = dataUrl; });
+  const W = Math.min(1280, img.width);
+  const H = Math.round(img.height * (W / img.width));
+  const pad = Math.round(W * 0.03);
+  const fs = Math.max(20, Math.round(W * 0.034));
+  const measure = document.createElement('canvas').getContext('2d');
+  measure.font = `600 ${fs}px sans-serif`;
+  const lines = captionLines.flatMap(l => _wrapText(measure, l, W - pad * 2));
+  const bandH = pad * 2 + lines.length * Math.round(fs * 1.3);
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H + bandH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, W, H);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, H, W, bandH);
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = `600 ${fs}px sans-serif`;
+  ctx.textBaseline = 'top';
+  lines.forEach((l, i) => {
+    if (i > 0) ctx.font = `500 ${Math.round(fs * 0.9)}px sans-serif`;
+    ctx.fillText(l, pad, H + pad + i * Math.round(fs * 1.3));
+  });
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+}
+
+export async function shareProdPhotos(ids) {
+  const wanted = (ids && ids.length ? ids : Array.from(_selected));
+  if (!wanted.length) { _toast('Select at least one entry with photos.', 'warning'); return; }
+  _toast('Preparing photos…', 'info', 1500);
+  const db = ensureArray(await sqliteStore.get('mfg_pro_pkr'));
+  const photos = await _photoStore();
+  const files = [];
+  const textLines = [];
+  for (const id of wanted) {
+    const rec = db.find(r => r && r.id === id);
+    if (!rec) continue;
+    const keys = (rec.photoKeys || []).filter(k => photos[k]);
+    if (!keys.length) continue;
+    const store = getStoreLabel(rec.store) || rec.store || '';
+    const head = `${store} • ${rec.date || ''}`;
+    const detail = `Net ${fmtNum(rec.net || 0)} kg${rec.formulaUnits ? ` • ${fmtNum(rec.formulaUnits)} unit${rec.formulaUnits === 1 ? '' : 's'}` : ''}`;
+    textLines.push(`${head} — ${detail}`);
+    for (let i = 0; i < keys.length; i++) {
+      try {
+        const blob = await _captionedBlob(photos[keys[i]], [head, detail]);
+        files.push(new File([blob], `production-${rec.date || 'entry'}-${store.replace(/\W+/g, '')}-${files.length + 1}.jpg`, { type: 'image/jpeg' }));
+      } catch (e) { console.warn('[prod photo] caption failed', e); }
+    }
+  }
+  if (!files.length) { _toast('No photos found for the selected entries.', 'warning'); return; }
+  const text = textLines.join('\n');
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try {
+      await navigator.share({ files, title: 'Production photos', text });
+      _toast(`Shared ${files.length} photo${files.length === 1 ? '' : 's'}`, 'success');
+      clearProdPhotoSelection();
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') { _toast('Share cancelled', 'info'); return; }
+      console.warn('[prod photo] Web Share failed, falling back', err);
+    }
+  }
+  files.forEach((f, i) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(f);
+    a.download = f.name;
+    document.body.appendChild(a);
+    setTimeout(() => { a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, i * 250);
+  });
+  _toast(`Saved ${files.length} photo${files.length === 1 ? '' : 's'} — opening WhatsApp…`, 'success', 4000);
+  setTimeout(() => window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'), files.length * 250 + 500);
+  clearProdPhotoSelection();
+}
+
+Object.assign(window, {
+  addProdPhotos, removeProdPhoto, openProdPhoto, toggleProdPhotoSelect, clearProdPhotoSelection, shareProdPhotos, resetProdPhotos
+});

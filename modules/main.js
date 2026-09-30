@@ -4,6 +4,7 @@ import './admin-data.js';
 import './sync.js';
 import './utilities-core.js';
 import './utilities-sales.js';
+import './prod-photos.js';
 import './utilities-payments.js';
 import './customers.js';
 

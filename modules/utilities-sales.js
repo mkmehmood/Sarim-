@@ -1,4 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
+import { hydrateProdPhotoThumbs, loadProdPhotosForEdit, prodPhotoStripHtml, resetProdPhotos } from './prod-photos.js';
 import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, localDateStr, OfflineAuth, round2, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { _set_pendingFirestoreRestore, _set_pendingFirestoreYearClose, pendingFirestoreRestore, pendingFirestoreYearClose } from './admin-data.js';
@@ -1284,7 +1285,7 @@ const pc = document.getElementById('new-customer-phone-container'); if (pc) pc.c
 set('new-cust-phone', rec.customerPhone);
 }
 calculateCustomerSale();
-beginEditMode('sale', rec, { buttonId: 'btn-save-cust-transaction', label: 'Update Sale', anchorId: 'cust-name', cancelFn: _resetSaleForm });
+beginEditMode('sale', rec, { buttonId: 'btn-save-cust-transaction', label: 'Update Sale', watchIds: ['cust-name','cust-quantity','cust-date','sales-rep-value','supply-store-value','new-cust-phone'], anchorId: 'cust-name', cancelFn: _resetSaleForm });
 }
 
 export async function startEditCollection(id) {
@@ -1302,13 +1303,14 @@ const pc = document.getElementById('new-customer-phone-container'); if (pc) pc.c
 set('new-cust-phone', rec.customerPhone);
 }
 updateCollectionPreview();
-beginEditMode('collection', rec, { buttonId: 'btn-save-cust-transaction', label: 'Update Collection', anchorId: 'cust-amount-collected', cancelFn: _resetSaleForm });
+beginEditMode('collection', rec, { buttonId: 'btn-save-cust-transaction', label: 'Update Collection', watchIds: ['cust-name','cust-amount-collected','cust-date','new-cust-phone'], anchorId: 'cust-amount-collected', cancelFn: _resetSaleForm });
 }
 registerEditHandler('sale', startEditSale);
 registerEditHandler('collection', startEditCollection);
 
 function _resetProdForm() {
 ['gross-wt', 'cont-wt', 'net-wt'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+resetProdPhotos();
 const fu = document.getElementById('formula-units'); if (fu) fu.value = '1';
 if (typeof window.calculateDynamicProductionCost === 'function') window.calculateDynamicProductionCost();
 }
@@ -1329,9 +1331,10 @@ set('formula-units', rec.formulaUnits || 1);
 set('gross-wt', rec.grossWt || '');
 set('cont-wt', rec.contWt || '');
 set('net-wt', rec.net);
+await loadProdPhotosForEdit(rec);
 if (rec.grossWt && typeof window.calcNet === 'function') window.calcNet();
 if (typeof window.calculateDynamicProductionCost === 'function') await window.calculateDynamicProductionCost();
-beginEditMode('prod', rec, { buttonId: 'btn-save-production', label: 'Update Production', anchorId: 'sys-date', cancelFn: _resetProdForm });
+beginEditMode('prod', rec, { buttonId: 'btn-save-production', watchIds: ['sys-date','storeSelector','formula-units','gross-wt','cont-wt','net-wt'], label: 'Update Production', anchorId: 'sys-date', cancelFn: _resetProdForm });
 }
 registerEditHandler('prod', startEditProd);
 
@@ -3502,6 +3505,7 @@ ${item.contWt ? `<p><span>Container:</span> <span style="color:var(--text-muted)
 <p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(item.profit))}</span></p>
 ${item.formulaUnits ? `<p><span>Formula Units:</span> <span class="qty-val">${fmtNum(safeValue(item.formulaUnits))}</span></p>` : ''}
 ${item.formulaCost ? `<p><span>Formula Cost:</span> <span class="cost-val">${fmtAmt(safeValue(item.formulaCost))}</span></p>` : ''}
+${prodPhotoStripHtml(item)}
 ${item.isMerged ? '' : actionRowHtml('prod', item.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`)}
 `}
 `;
@@ -3509,6 +3513,7 @@ ${item.isMerged ? '' : actionRowHtml('prod', item.id, `<button class="tbl-action
 fragment.appendChild(div);
 });
 histContainer.replaceChildren(fragment);
+hydrateProdPhotoThumbs(histContainer);
 }
 const updateStats = (idPrefix, statObj) => {
 const _st = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
@@ -6664,7 +6669,7 @@ const tsp = document.querySelector('#stockTransferToBtn span'); if (tsp) tsp.tex
 set('stock-transfer-date', out.date);
 set('stock-transfer-qty', Math.abs(out.net));
 set('stock-transfer-note', out.transferNote || '');
-beginEditMode('stocktransfer', { id: out.id, pairId, records: JSON.parse(JSON.stringify(records)), createdAt: out.createdAt }, { buttonId: 'btn-save-stock-transfer', label: 'Update Transfer', anchorId: 'stock-transfer-qty', cancelFn: _resetStockTransferForm });
+beginEditMode('stocktransfer', { id: out.id, pairId, records: JSON.parse(JSON.stringify(records)), createdAt: out.createdAt }, { buttonId: 'btn-save-stock-transfer', watchIds: ['stock-transfer-from-value','stock-transfer-to-value','stock-transfer-date','stock-transfer-qty','stock-transfer-note'], label: 'Update Transfer', anchorId: 'stock-transfer-qty', cancelFn: _resetStockTransferForm });
 await updateStockTransferAvailability();
 }
 registerEditHandler('stocktransfer', startEditStockTransfer, { keepScreens: ['stock-transfer-screen'] });
