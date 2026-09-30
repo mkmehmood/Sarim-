@@ -3321,47 +3321,176 @@ export async function _compressPhoto(dataUrl, maxDim, quality) {
   });
 }
 
-export async function openPhotoCapture(prefix) {
-  _photoCaptureTarget = prefix;
-  const modal = document.getElementById('photo-capture-modal');
-  const video = document.getElementById('photo-capture-video');
-  if (!modal || !video) return;
-  modal.style.display = 'flex';
-  const torchBtn = document.getElementById('torch-btn');
-  if (torchBtn) { torchBtn.style.color = 'var(--text-muted)'; torchBtn.style.background = 'none'; }
-  window._torchOn = false;
-  try {
-    _photoCaptureStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:  { ideal: 4096 },
-        height: { ideal: 4096 }
-      },
-      audio: false
-    });
-    video.srcObject = _photoCaptureStream;
-    const track = _photoCaptureStream.getVideoTracks()[0];
-    const caps = track && track.getCapabilities ? track.getCapabilities() : {};
-    if (torchBtn) torchBtn.style.display = caps.torch ? 'flex' : 'none';
-  } catch(e) {
-    modal.style.display = 'none';
-    showToast('Camera not available. Please use Gallery instead.', 'warning');
-  }
+let _camFacing = 'environment';
+let _camZoom = 1;
+let _camCaps = { min: 1, max: 4, hw: false };
+let _camRaf = 0;
+let _camPinch = null;
+const _camPointers = new Map();
+
+function _camEls() {
+  return {
+    modal: document.getElementById('photo-capture-modal'),
+    video: document.getElementById('photo-capture-video'),
+    view: document.getElementById('cam-view'),
+    stage: document.getElementById('cam-stage'),
+    badge: document.getElementById('cam-zoom-badge'),
+    range: document.getElementById('cam-zoom-range'),
+    pills: document.getElementById('cam-pills'),
+    torch: document.getElementById('torch-btn'),
+    flip: document.getElementById('cam-flip-btn')
+  };
 }
 
-export function closePhotoCapture() {
-  const modal = document.getElementById('photo-capture-modal');
-  const video = document.getElementById('photo-capture-video');
-  if (modal) modal.style.display = 'none';
+function _camLayout() {
+  const { video, view, stage } = _camEls();
+  if (!video || !view || !stage) return;
+  const vw = video.videoWidth || 3, vh = video.videoHeight || 4;
+  const ar = vw / vh;
+  const W = stage.clientWidth, H = stage.clientHeight;
+  if (!W || !H) return;
+  let w = W, h = W / ar;
+  if (h > H) { h = H; w = H * ar; }
+  view.style.width = Math.floor(w) + 'px';
+  view.style.height = Math.floor(h) + 'px';
+}
+
+function _camRenderPills() {
+  const { pills } = _camEls();
+  if (!pills) return;
+  const max = _camCaps.max;
+  const opts = [1, 2, 3, 5, 8].filter(z => z >= _camCaps.min && z <= max + 0.001);
+  pills.innerHTML = opts.map(z => `<button type="button" class="cam-pill${Math.abs(_camZoom - z) < 0.06 ? ' on' : ''}" onclick="setCameraZoom(${z})">${z}×</button>`).join('');
+}
+
+function _camApplyZoom(z) {
+  const { video, badge, range } = _camEls();
+  _camZoom = Math.min(_camCaps.max, Math.max(_camCaps.min, z));
+  if (range) range.value = String(_camZoom);
+  if (badge) {
+    badge.textContent = _camZoom.toFixed(1).replace(/\.0$/, '.0') + '×';
+    badge.classList.add('show');
+    clearTimeout(badge._t);
+    badge._t = setTimeout(() => badge.classList.remove('show'), 1100);
+  }
+  if (_camCaps.hw && _photoCaptureStream) {
+    const track = _photoCaptureStream.getVideoTracks()[0];
+    if (track && track.applyConstraints) {
+      cancelAnimationFrame(_camRaf);
+      _camRaf = requestAnimationFrame(() => { track.applyConstraints({ advanced: [{ zoom: _camZoom }] }).catch(() => {}); });
+    }
+    if (video) video.style.transform = _camFacing === 'user' ? 'scaleX(-1)' : '';
+  } else if (video) {
+    video.style.transform = `${_camFacing === 'user' ? 'scaleX(-1) ' : ''}scale(${_camZoom})`;
+  }
+  _camRenderPills();
+}
+
+export function setCameraZoom(z) { _camApplyZoom(Number(z) || 1); }
+export function stepCameraZoom(dir) {
+  const step = _camCaps.max > 6 ? 0.5 : 0.25;
+  _camApplyZoom(_camZoom + dir * step * 2);
+}
+
+function _camInstallGestures() {
+  const { view } = _camEls();
+  if (!view || view._camBound) return;
+  view._camBound = true;
+  const dist = () => { const p = [..._camPointers.values()]; return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y); };
+  view.addEventListener('pointerdown', (e) => {
+    view.setPointerCapture && view.setPointerCapture(e.pointerId);
+    _camPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (_camPointers.size === 2) _camPinch = { d: dist(), z: _camZoom };
+  });
+  view.addEventListener('pointermove', (e) => {
+    if (!_camPointers.has(e.pointerId)) return;
+    _camPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (_camPointers.size === 2 && _camPinch && _camPinch.d > 0) _camApplyZoom(_camPinch.z * (dist() / _camPinch.d));
+  });
+  const end = (e) => { _camPointers.delete(e.pointerId); if (_camPointers.size < 2) _camPinch = null; };
+  view.addEventListener('pointerup', end);
+  view.addEventListener('pointercancel', end);
+  let lastTap = 0;
+  view.addEventListener('pointerup', () => {
+    const now = Date.now();
+    if (now - lastTap < 280 && _camPointers.size === 0) _camApplyZoom(_camZoom > 1.4 ? 1 : Math.min(2, _camCaps.max));
+    lastTap = now;
+  });
+  view.addEventListener('wheel', (e) => { e.preventDefault(); _camApplyZoom(_camZoom * (e.deltaY < 0 ? 1.08 : 0.93)); }, { passive: false });
+  window.addEventListener('resize', _camLayout);
+}
+
+async function _camStart() {
+  const { video, torch, flip } = _camEls();
+  _camStopStream();
+  _photoCaptureStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: _camFacing }, width: { ideal: 4096 }, height: { ideal: 4096 } },
+    audio: false
+  });
+  video.srcObject = _photoCaptureStream;
+  video.style.transform = _camFacing === 'user' ? 'scaleX(-1)' : '';
+  const track = _photoCaptureStream.getVideoTracks()[0];
+  const caps = track && track.getCapabilities ? track.getCapabilities() : {};
+  if (torch) torch.style.display = caps.torch ? 'flex' : 'none';
+  if (flip) flip.style.display = 'flex';
+  if (caps.zoom && typeof caps.zoom.max === 'number' && caps.zoom.max > caps.zoom.min) {
+    _camCaps = { min: Math.max(1, caps.zoom.min), max: Math.min(caps.zoom.max, 10), hw: true };
+  } else {
+    _camCaps = { min: 1, max: 4, hw: false };
+  }
+  const { range } = _camEls();
+  if (range) { range.min = String(_camCaps.min); range.max = String(_camCaps.max); }
+  _camZoom = _camCaps.min;
+  _camApplyZoom(_camZoom);
+  const ready = () => { _camLayout(); };
+  if (video.readyState >= 1) ready(); else video.addEventListener('loadedmetadata', ready, { once: true });
+  setTimeout(_camLayout, 250);
+}
+
+function _camStopStream() {
   if (_photoCaptureStream) {
     try {
       const track = _photoCaptureStream.getVideoTracks()[0];
-      if (track && track.applyConstraints) track.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
-    } catch(_) {}
+      if (track && track.applyConstraints && window._torchOn) track.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+    } catch (_) {}
     _photoCaptureStream.getTracks().forEach(t => t.stop());
     _photoCaptureStream = null;
   }
-  if (video) video.srcObject = null;
+}
+
+export async function openPhotoCapture(prefix) {
+  _photoCaptureTarget = prefix;
+  const { modal, video, torch } = _camEls();
+  if (!modal || !video) return;
+  modal.style.display = 'flex';
+  _camFacing = 'environment';
+  window._torchOn = false;
+  if (torch) torch.classList.remove('on');
+  _camInstallGestures();
+  try {
+    await _camStart();
+  } catch (e) {
+    modal.style.display = 'none';
+    _photoCaptureTarget = null;
+    showToast('Camera not available. Check the camera permission for this app.', 'warning');
+  }
+}
+
+export async function flipCamera() {
+  _camFacing = _camFacing === 'environment' ? 'user' : 'environment';
+  window._torchOn = false;
+  const { torch } = _camEls();
+  if (torch) torch.classList.remove('on');
+  try { await _camStart(); } catch (_) { _camFacing = _camFacing === 'environment' ? 'user' : 'environment'; showToast('Could not switch camera', 'warning'); try { await _camStart(); } catch (__) {} }
+}
+
+export function closePhotoCapture() {
+  const { modal, video } = _camEls();
+  if (modal) modal.style.display = 'none';
+  _camStopStream();
+  if (video) { video.srcObject = null; video.style.transform = ''; }
+  _camPointers.clear();
+  _camPinch = null;
   window._torchOn = false;
   _photoCaptureTarget = null;
 }
@@ -3374,40 +3503,43 @@ export async function toggleTorch() {
   try {
     await track.applyConstraints({ advanced: [{ torch: window._torchOn }] });
     const btn = document.getElementById('torch-btn');
-    if (btn) {
-      btn.style.color = window._torchOn ? '#f59e0b' : 'var(--text-muted)';
-      btn.style.background = window._torchOn ? 'rgba(245,158,11,0.15)' : 'none';
-      btn.style.borderColor = window._torchOn ? '#f59e0b' : 'var(--glass-border)';
-    }
-  } catch(e) {
+    if (btn) btn.classList.toggle('on', !!window._torchOn);
+  } catch (e) {
     showToast('Flashlight not supported on this device', 'warning');
     window._torchOn = false;
   }
 }
 
 export function capturePhotoFromCamera() {
-  const video = document.getElementById('photo-capture-video');
+  const { video } = _camEls();
   const canvas = document.getElementById('photo-capture-canvas');
   if (!video || !canvas || !_photoCaptureTarget) return;
-  const w = video.videoWidth  || 1920;
+  const w = video.videoWidth || 1920;
   const h = video.videoHeight || 1080;
+  const z = _camCaps.hw ? 1 : _camZoom;
+  const sw = w / z, sh = h / z;
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(video, 0, 0, w, h);
+  ctx.drawImage(video, (w - sw) / 2, (h - sh) / 2, sw, sh, 0, 0, w, h);
   const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+  const fl = document.getElementById('cam-flash');
+  if (fl) { fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go'); }
+  try { if (navigator.vibrate) navigator.vibrate(25); } catch (_) {}
   const target = _photoCaptureTarget;
-  closePhotoCapture();
-  if (target === 'expense') {
-    _applyExpensePendingPhoto(dataUrl);
-  } else if (target === 'paytransfer') {
-    if (typeof _applyPaymentTransferPendingPhoto === 'function') _applyPaymentTransferPendingPhoto(dataUrl);
-  } else if (target === 'prod') {
-    if (typeof window.addProdPhotoDataUrl === 'function') window.addProdPhotoDataUrl(dataUrl);
-  } else {
-    applyPersonPhoto(target, dataUrl);
-  }
+  setTimeout(() => {
+    closePhotoCapture();
+    if (target === 'expense') {
+      _applyExpensePendingPhoto(dataUrl);
+    } else if (target === 'paytransfer') {
+      if (typeof _applyPaymentTransferPendingPhoto === 'function') _applyPaymentTransferPendingPhoto(dataUrl);
+    } else if (target === 'prod') {
+      if (typeof window.addProdPhotoDataUrl === 'function') window.addProdPhotoDataUrl(dataUrl);
+    } else {
+      applyPersonPhoto(target, dataUrl);
+    }
+  }, 120);
 }
 
 window._expensePendingPhoto = null;
@@ -3971,6 +4103,9 @@ window._compressPhoto = _compressPhoto;
 window.openPhotoCapture = openPhotoCapture;
 window.closePhotoCapture = closePhotoCapture;
 window.toggleTorch = toggleTorch;
+window.flipCamera = flipCamera;
+window.setCameraZoom = setCameraZoom;
+window.stepCameraZoom = stepCameraZoom;
 window.capturePhotoFromCamera = capturePhotoFromCamera;
 window.openExpensePhotoCapture = openExpensePhotoCapture;
 window.handleExpensePhotoFile = handleExpensePhotoFile;

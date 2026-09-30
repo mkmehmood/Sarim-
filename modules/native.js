@@ -121,6 +121,8 @@ function isVisible(el) {
 
 let lastBack = 0;
 function handleBack() {
+  const cam = document.getElementById('photo-capture-modal');
+  if (cam && isVisible(cam) && typeof window.closePhotoCapture === 'function') { window.closePhotoCapture(); return; }
   const gc = document.querySelector('.glass-confirm-backdrop:not(.closing) .gc-cancel');
   if (gc) { gc.click(); return; }
   const lb = document.getElementById('photo-lightbox-modal');
