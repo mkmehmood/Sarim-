@@ -147,7 +147,8 @@ export async function deleteProdPhotos(rec) {
 }
 
 const VIEW_SVG = '<svg width="11" height="11" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><rect x="3" y="7" width="30" height="22" rx="3" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="18" cy="18" r="6" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="18" cy="18" r="2.5" fill="currentColor"/><rect x="22" y="4" width="8" height="5" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>';
-const WA_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.8 8.6c.2-.4.5-.4.7-.4l.5.9c.1.2 0 .4-.1.6l-.4.5c.6 1.2 1.6 2.1 2.8 2.7l.6-.7c.2-.2.4-.2.6-.1l1 .5c.2.1.2.3.1.6-.3.9-1.4 1.3-2.2 1.1-2.3-.6-4.2-2.5-4.7-4.6-.1-.5 0-.9.3-1.1z" fill="currentColor"/></svg>';
+const LONG_PRESS_MS = 3000;
+const BOX_SVG = '<svg class="pp-box-ring" viewBox="0 0 28 28" aria-hidden="true"><rect class="pp-box-track" x="2" y="2" width="24" height="24" rx="7"/><rect class="pp-box-fill" x="2" y="2" width="24" height="24" rx="7" pathLength="100"/><path class="pp-box-check" d="M8.5 14.5l3.8 3.8 7.2-7.6" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 export async function toggleProdPhotoPanel(btn, id, singleKey) {
   if (singleKey) { await openProdPhoto(singleKey); return; }
@@ -163,8 +164,8 @@ export function prodPhotoStripHtml(item) {
   if (!keys.length || item.isReturn || item.isTransfer) return '';
   const id = String(item.id).replace(/[^a-z0-9_-]/gi, '');
   const thumbs = keys.map(k => `<img class="pp-strip-img" data-photo-key="${esc(k)}" alt="Product photo" onclick="openProdPhoto('${esc(k)}')">`).join('');
-  const checked = _selected.has(item.id) ? ' checked' : '';
-  return `<div class="pp-actions"><button type="button" class="pp-badge" title="View photos" onclick="toggleProdPhotoPanel(this,'${id}'${keys.length === 1 ? `,'${esc(keys[0])}'` : ''})">${VIEW_SVG}Photo${keys.length > 1 ? ' \u00d7' + keys.length : ''}</button><label class="pp-select"><input type="checkbox" data-pp-select="${esc(item.id)}"${checked} onchange="toggleProdPhotoSelect('${esc(item.id)}', this.checked)"> Select</label><button type="button" class="pp-share-btn" title="Share on WhatsApp" aria-label="Share on WhatsApp" onclick="shareProdPhotos(['${esc(item.id)}'])">${WA_SVG}</button></div><div class="pp-strip" id="pp-panel-${id}" style="display:none;">${thumbs}</div>`;
+  const checked = _selected.has(item.id);
+  return `<div class="pp-actions"><button type="button" class="pp-badge" title="View photos" onclick="toggleProdPhotoPanel(this,'${id}'${keys.length === 1 ? `,'${esc(keys[0])}'` : ''})">${VIEW_SVG}Photo${keys.length > 1 ? ' \u00d7' + keys.length : ''}</button><button type="button" class="pp-box${checked ? ' on' : ''}" data-pp-box="${esc(item.id)}" aria-pressed="${checked ? 'true' : 'false'}" title="Tap to mark \u2022 hold 3 seconds to share" aria-label="Mark or share">${BOX_SVG}</button></div><div class="pp-strip" id="pp-panel-${id}" style="display:none;">${thumbs}</div>`;
 }
 
 export async function hydrateProdPhotoThumbs(root = document) {
@@ -198,12 +199,54 @@ function _updateShareBar() {
 
 export function toggleProdPhotoSelect(id, on) {
   if (on) _selected.add(id); else _selected.delete(id);
+  document.querySelectorAll('[data-pp-box]').forEach(b => {
+    if (b.getAttribute('data-pp-box') === id) { b.classList.toggle('on', !!on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  });
   _updateShareBar();
 }
 
+let _hold = null;
+function _endHold(box, fired) {
+  if (!_hold) return;
+  clearTimeout(_hold.timer);
+  const h = _hold;
+  _hold = null;
+  h.box.classList.remove('holding');
+  if (!fired && h.box === box && !h.fired) toggleProdPhotoSelect(h.id, !_selected.has(h.id));
+}
+
+function _installBoxGestures() {
+  if (window.__ppBoxGestures) return;
+  window.__ppBoxGestures = true;
+  document.addEventListener('pointerdown', (e) => {
+    const box = e.target.closest && e.target.closest('[data-pp-box]');
+    if (!box || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const id = box.getAttribute('data-pp-box');
+    box.classList.add('holding');
+    _hold = { id, box, fired: false, timer: setTimeout(() => {
+      if (!_hold) return;
+      _hold.fired = true;
+      box.classList.remove('holding');
+      try { if (navigator.vibrate) navigator.vibrate(40); } catch (_) {}
+      try { const H = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics; if (H) H.impact({ style: 'MEDIUM' }); } catch (_) {}
+      shareProdPhotos([id]);
+    }, LONG_PRESS_MS) };
+  });
+  const up = (e) => {
+    if (!_hold) return;
+    const box = e.target.closest ? e.target.closest('[data-pp-box]') : null;
+    const fired = _hold.fired;
+    _endHold(fired ? _hold.box : box, fired);
+  };
+  document.addEventListener('pointerup', up);
+  document.addEventListener('pointercancel', () => { if (_hold) { clearTimeout(_hold.timer); _hold.box.classList.remove('holding'); _hold = null; } });
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('[data-pp-box]')) e.preventDefault(); });
+}
+_installBoxGestures();
+
 export function clearProdPhotoSelection() {
   _selected.clear();
-  document.querySelectorAll('input[data-pp-select]').forEach(c => { c.checked = false; });
+  document.querySelectorAll('[data-pp-box]').forEach(b => { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
   _updateShareBar();
 }
 

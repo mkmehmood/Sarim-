@@ -33,7 +33,7 @@ if (_bioBtn) {
 }
 }
 } catch (e) {
-showToast("Setup failed: " + e.message, "error");
+if (!(e && e.name === 'NotAllowedError')) showToast("Setup failed: " + e.message, "error");
 }
 }
 

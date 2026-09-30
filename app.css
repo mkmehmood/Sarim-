@@ -6137,11 +6137,20 @@ font-feature-settings: "tnum" 1;
   display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border: none; border-radius: 6px; cursor: pointer;
   font-size: 0.62rem; font-weight: 700; background: rgba(99, 102, 241, 0.15); color: #818cf8; white-space: nowrap;
 }
-.pp-share-btn {
-  flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; border: 1px solid #25d366; background: rgba(37, 211, 102, 0.08);
-  color: #25d366; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;
+.pp-box {
+  margin-left: auto; flex-shrink: 0; width: 28px; height: 28px; padding: 0; border: none; background: transparent;
+  cursor: pointer; position: relative; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
-.pp-actions .pp-select { margin-left: auto; }
+.pp-box-ring { width: 28px; height: 28px; display: block; overflow: visible; }
+.pp-box-track { fill: transparent; stroke: var(--glass-border-strong); stroke-width: 1.6; transition: fill 0.15s, stroke 0.15s; }
+.pp-box-fill { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0; }
+.pp-box-check { stroke: transparent; transition: stroke 0.15s; }
+.pp-box.on .pp-box-track { fill: var(--accent); stroke: var(--accent); }
+.pp-box.on .pp-box-check { stroke: #06251f; }
+.pp-box.holding .pp-box-fill { opacity: 1; animation: ppBoxHold 3s linear forwards; }
+.pp-box.holding { transform: scale(0.94); }
+@keyframes ppBoxHold { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 .pp-sharebar {
   position: fixed; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 9000;
   display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px;

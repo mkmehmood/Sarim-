@@ -5289,8 +5289,36 @@ showToast('Upload failed: ' + err.message, 'error');
 _set_isSyncing(false);
 }
 }
+const _nativeBio = () => {
+const C = window.Capacitor;
+if (!(C && typeof C.isNativePlatform === 'function' && C.isNativePlatform())) return null;
+return (C.Plugins && C.Plugins.NativeBiometric) || null;
+};
+const _bioErrorMessage = (code) => ({
+1: 'Biometrics are not available on this device.',
+2: 'Too many failed attempts. Try again later or use your device PIN.',
+3: 'No fingerprint or face is enrolled. Add one in Android Settings > Security.',
+4: 'Too many failed attempts. Please wait a moment and try again.',
+10: 'Fingerprint not recognised. Please try again.',
+14: 'Set a screen lock (PIN, pattern or password) in Android Settings first.'
+}[code] || 'Biometric authentication failed.');
+const _nativeBioError = (e) => {
+const code = e && (e.code !== undefined ? Number(e.code) : NaN);
+const cancelled = code === 11 || code === 15 || code === 13 || /cancel/i.test(String((e && e.message) || ''));
+const err = new Error(cancelled ? 'Authentication cancelled' : _bioErrorMessage(code) || (e && e.message) || 'Biometric authentication failed.');
+err.name = cancelled ? 'NotAllowedError' : 'BiometricError';
+err.code = code;
+return err;
+};
 export const BiometricAuth = {
 isAvailable: async () => {
+const nb = _nativeBio();
+if (nb) {
+try {
+const r = await nb.isAvailable({ useFallback: true });
+return !!(r && (r.isAvailable || r.deviceIsSecure));
+} catch (_) { return false; }
+}
 if (!window.PublicKeyCredential) return false;
 const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
 return available;
@@ -5317,6 +5345,22 @@ return bytes.buffer;
 },
 register: async (username = 'User') => {
 try {
+const nb = _nativeBio();
+if (nb) {
+let info = null;
+try { info = await nb.isAvailable({ useFallback: true }); } catch (_) {}
+if (!info || !(info.isAvailable || info.deviceIsSecure)) {
+throw Object.assign(new Error(_bioErrorMessage(info && info.errorCode !== undefined ? info.errorCode : 3)), { name: 'BiometricError' });
+}
+try {
+await nb.verifyIdentity({ reason: 'Confirm to enable the app lock', title: 'Enable App Lock', subtitle: 'Gull & Zubair', description: 'Verify with your fingerprint, face or device PIN', useFallback: true, maxAttempts: 3 });
+} catch (e) { throw _nativeBioError(e); }
+await sqliteStore.set('bio_cred_id', 'native');
+await sqliteStore.set('bio_enabled', 'true');
+notifyDataChange('all');
+triggerAutoSync();
+return true;
+}
 if (!await BiometricAuth.isAvailable()) {
 throw new Error("Biometrics not available on this device.");
 }
@@ -5352,13 +5396,24 @@ triggerAutoSync();
 return true;
 } catch (err) {
 console.error('[BiometricAuth] registration failed:', _safeErr(err));
-showToast('Biometric setup failed. Please try again.', 'error');
+if (!(err && err.name === 'NotAllowedError')) showToast('Biometric setup failed. ' + (err && err.message ? err.message : 'Please try again.'), 'error');
 throw err;
 }
 },
 authenticate: async () => {
 try {
+const nb = _nativeBio();
+if (nb) {
+try {
+await nb.verifyIdentity({ reason: 'Unlock the app', title: 'Unlock', subtitle: 'Gull & Zubair', description: 'Use your fingerprint, face or device PIN', useFallback: true, maxAttempts: 3 });
+return true;
+} catch (e) { throw _nativeBioError(e); }
+}
 const savedCredId = await sqliteStore.get('bio_cred_id');
+if (savedCredId === 'native') {
+console.warn('[BiometricAuth] lock was enabled from the Android app; cannot be enforced in the browser');
+return true;
+}
 if (!savedCredId) throw new Error("No credential found. Please disable and re-enable Fingerprint Lock.");
 const challenge = new Uint8Array(32);
 window.crypto.getRandomValues(challenge);
