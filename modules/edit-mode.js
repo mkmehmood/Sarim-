@@ -1,23 +1,25 @@
 import { getTimestamp } from './business.js';
 
-const _handlers = {};
-
-const _keep = {};
+function _reg() {
+  if (!window.__editRegistry) window.__editRegistry = { handlers: {}, keep: {} };
+  return window.__editRegistry;
+}
 
 export function registerEditHandler(kind, fn, opts = {}) {
-  _handlers[kind] = fn;
-  _keep[kind] = opts.keepScreens || [];
+  const r = _reg();
+  r.handlers[kind] = fn;
+  r.keep[kind] = opts.keepScreens || [];
 }
 
 export async function startEdit(kind, id) {
-  const h = _handlers[kind];
+  const h = _reg().handlers[kind];
   if (!h) {
     if (window.showToast) window.showToast('Editing is not available for this entry.', 'warning');
     return;
   }
   try {
     document.querySelectorAll('.standalone-screen').forEach(s => {
-      if (s.id && !(_keep[kind] || []).includes(s.id) && getComputedStyle(s).display !== 'none' && typeof window.closeStandaloneScreen === 'function') window.closeStandaloneScreen(s.id);
+      if (s.id && !(_reg().keep[kind] || []).includes(s.id) && getComputedStyle(s).display !== 'none' && typeof window.closeStandaloneScreen === 'function') window.closeStandaloneScreen(s.id);
     });
     await h(id);
   } catch (e) {
