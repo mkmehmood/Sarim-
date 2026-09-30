@@ -41,10 +41,7 @@ export function beginEditMode(kind, original, opts = {}) {
     original: JSON.parse(JSON.stringify(original)),
     buttonId: opts.buttonId || null,
     cancelFn: opts.cancelFn || null,
-    watchIds: opts.watchIds || [],
-    snapshot: {},
   };
-  window._editCtx.snapshot = _readWatched(window._editCtx.watchIds);
   const btn = opts.buttonId ? document.getElementById(opts.buttonId) : null;
   if (btn) {
     if (btn.dataset.editOrig === undefined) btn.dataset.editOrig = btn.textContent;
@@ -57,15 +54,9 @@ export function beginEditMode(kind, original, opts = {}) {
     const cancel = document.createElement('button');
     cancel.type = 'button';
     cancel.textContent = 'Cancel';
-    cancel.onclick = () => requestCancelEdit();
+    cancel.onclick = () => cancelEdit();
     banner.appendChild(cancel);
-    let host = btn.parentNode;
-    let cs = host && host !== document.body ? getComputedStyle(host) : null;
-    if (cs && (cs.display === 'flex' || cs.display === 'grid' || cs.display === 'inline-flex') && host.parentNode) {
-      host.parentNode.insertBefore(banner, host);
-    } else {
-      btn.parentNode.insertBefore(banner, btn);
-    }
+    btn.parentNode.insertBefore(banner, btn);
   }
   const anchor = (opts.anchorId && document.getElementById(opts.anchorId)) || btn;
   if (anchor && anchor.scrollIntoView) setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
@@ -83,44 +74,6 @@ export function endEditMode() {
     }
   }
   window._editCtx = null;
-}
-
-function _readWatched(ids) {
-  const snap = {};
-  (ids || []).forEach(id => { const el = document.getElementById(id); snap[id] = el ? String(el.value ?? '') : ''; });
-  return snap;
-}
-
-export function isEditDirty() {
-  const c = window._editCtx;
-  if (!c || !c.watchIds || !c.watchIds.length) return false;
-  const now = _readWatched(c.watchIds);
-  return c.watchIds.some(id => (now[id] || '') !== (c.snapshot[id] || ''));
-}
-
-export async function requestCancelEdit() {
-  if (isEditDirty() && typeof window.showGlassConfirm === 'function') {
-    const ok = await window.showGlassConfirm(
-      'You have unsaved changes to this entry.\n\u2022 Discarding restores the form to empty\n\u2022 The original entry stays unchanged',
-      { title: 'Discard Changes?', confirmText: 'Discard', cancelText: 'Keep Editing', tone: 'warning' }
-    );
-    if (!ok) return;
-  }
-  cancelEdit();
-}
-
-export async function confirmEditChanges(rows, title = 'Update Entry?') {
-  const changed = (rows || []).filter(r => String(r.from) !== String(r.to));
-  if (changed.length === 0) {
-    if (window.showToast) window.showToast('No changes to save.', 'info');
-    return false;
-  }
-  if (typeof window.showGlassConfirm !== 'function') return true;
-  const lines = ['Review the changes before saving:'];
-  changed.forEach(r => lines.push(`${r.label}: ${r.from === '' || r.from == null ? '\u2014' : r.from} \u2192 ${r.to === '' || r.to == null ? '\u2014' : r.to}`));
-  lines.push('');
-  lines.push('The original entry will be replaced and synced.');
-  return window.showGlassConfirm(lines.join('\n'), { title, confirmText: 'Update', cancelText: 'Review', tone: 'warning' });
 }
 
 export function cancelEdit() {
@@ -166,4 +119,3 @@ export function markEditedBadge(rec) {
 
 window.startEdit = startEdit;
 window.cancelEdit = cancelEdit;
-window.requestCancelEdit = requestCancelEdit;

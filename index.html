@@ -193,7 +193,7 @@ window._onShowGlassConfirmReady = function() {
   }
 };
 
-if ('serviceWorker' in navigator && !(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())) {
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('./sw.js').then(function(reg) {
 
@@ -1887,16 +1887,6 @@ Units of factory mixture consumed
 </div>
 <div id="insufficientUnitsWarning" class="warning-message hidden">
 Insufficient formula units available! Please reduce formula units used.
-</div>
-<div class="pp-block" id="prod-photo-block">
-<div class="pp-head"><span>Product Photos <small>(optional)</small></span><span id="prod-photo-count" class="pp-count"></span></div>
-<div class="pp-btns">
-<button type="button" class="btn btn-sm pp-add" onclick="document.getElementById('prod-photo-camera').click()">Take Photo</button>
-<button type="button" class="btn btn-sm pp-add" onclick="document.getElementById('prod-photo-file').click()">Add from Gallery</button>
-</div>
-<input type="file" id="prod-photo-camera" accept="image/*" capture="environment" style="display:none" onchange="addProdPhotos(this.files); this.value=''">
-<input type="file" id="prod-photo-file" accept="image/*" multiple style="display:none" onchange="addProdPhotos(this.files); this.value=''">
-<div id="prod-photo-thumbs" class="pp-thumbs"></div>
 </div>
 <button class="btn btn-main" id="btn-save-production" onclick="(async () => { await recordEntry() })()">Save Production</button>
 </div>

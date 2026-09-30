@@ -1,6 +1,5 @@
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { endEditMode, getEditCtx, replaceRecord, stampEdit } from './edit-mode.js';
-import { getProdPhotoKeys, persistProdPhotos, resetProdPhotos } from './prod-photos.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getTimestamp, isSyncing, loadAllData, localDateStr, lockedUnitPrice, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
 import { DeltaSync, calculateCashTracker, calculateCustomerSale, calculateNetCash, currentActiveTab, currentCashTrackerMode, currentCustomerChartMode, currentFactoryDate, currentFactoryEntryStore, currentIndMetric, currentIndMode, currentMfgMode, currentOverviewMode, currentProductionView, currentStoreComparisonMetric, custTransactionMode, getStoreFormulaType, getStoreLabel, refreshCustomerSales, refreshFactoryTab, refreshUI, renderEntityTable, trackFirestoreWrite, updateFactorySummaryCard, updateFactoryUnitsAvailableStats, updateMfgCharts } from './utilities-sales.js';
@@ -1261,10 +1260,8 @@ timestamp: prodCreatedAt,
 recordDate: new Date(inputDate).getTime(),
 syncedAt: new Date().toISOString(),
 managedBy: (appMode === 'production' && window._assignedManagerName) ? window._assignedManagerName : null,
-createdBy: (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null,
-photoKeys: getProdPhotoKeys(prodId)
+createdBy: (appMode === 'userrole' && window._assignedManagerName) ? window._assignedManagerName : null
 };
-if (newEntry.photoKeys.length === 0) delete newEntry.photoKeys;
 if (_ed) {
 const o = _ed.original;
 stampEdit(newEntry, o);
@@ -1277,7 +1274,6 @@ const _edIdx = _ed ? db.findIndex(r => r && r.id === _ed.id) : -1;
 try {
 if (_ed) replaceRecord(db, newEntry); else db.push(newEntry);
 await unifiedSave('mfg_pro_pkr', db, newEntry);
-await persistProdPhotos(prodId, _ed ? (_ed.original.photoKeys || []) : []);
 notifyDataChange('production');
 emitSyncUpdate({ mfg_pro_pkr: null});
 } catch (error) {
