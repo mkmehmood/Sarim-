@@ -54,7 +54,8 @@
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "differentialPackage": false
     },
     "portable": {
       "artifactName": "Gull-Zubair-Desktop-${os}-${arch}-portable.${ext}"
@@ -91,7 +92,12 @@
       "icon": "build/icon.png",
       "maintainer": "Gull & Zubair",
       "synopsis": "Business management app"
-    }
+    },
+    "publish": null
   },
-  "homepage": "https://mkmehmood.github.io/sarim/"
+  "homepage": "https://mkmehmood.github.io/sarim/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mkmehmood/sarim.git"
+  }
 }
