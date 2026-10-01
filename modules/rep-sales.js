@@ -103,6 +103,12 @@ splash.addEventListener('pointerdown', () => { if (window.__appLocked) unlock();
 setTimeout(unlock, 350);
 }
 
+function _resetRepForm() {
+['rep-cust-name', 'rep-quantity', 'rep-amount-collected', 'rep-new-cust-phone'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+const pc = document.getElementById('rep-new-customer-phone-container'); if (pc) pc.classList.add('hidden');
+setRepMode('sale');
+}
+
 export async function startEditRepSale(id) {
 const repSales = ensureArray(await sqliteStore.get('rep_sales'));
 const rec = repSales.find(s => s && String(s.id) === String(id));

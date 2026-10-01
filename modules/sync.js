@@ -3652,101 +3652,59 @@ const existing = document.getElementById('auth-overlay');
 if (existing) existing.remove();
 const overlay = document.createElement('div');
 overlay.id = 'auth-overlay';
-overlay.style.cssText = `
-position: fixed; inset: 0;
-background: linear-gradient(135deg, rgba(240, 248, 255, 1) 0%, rgba(230, 240, 255, 1) 100%);
-z-index: 99999; display: flex; align-items: center; justify-content: center;
-overflow-y: auto; padding: 24px 0; box-sizing: border-box;
-animation: auth-fade-in 0.25s ease;
-`;
-
-if (!document.getElementById('auth-overlay-style')) {
-const s = document.createElement('style');
-s.id = 'auth-overlay-style';
-s.textContent = '@keyframes auth-fade-in{from{opacity:0;transform:scale(1.015)}to{opacity:1;transform:scale(1)}}@keyframes auth-fade-out{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(0.97)}}' +
-'body.dark-mode #auth-google-btn{background:#303030!important;border-color:#555!important;color:#e8eaed!important;}' +
-'body.dark-mode #auth-google-btn:hover{border-color:#8ab4f8!important;box-shadow:0 2px 8px rgba(138,180,248,0.22)!important;}' +
-'#auth-google-btn:disabled{cursor:not-allowed;}';
-document.head.appendChild(s);
-}
-if (document.body.classList.contains('dark-mode')) {
-overlay.style.background = 'linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 1) 100%)';
-}
+overlay.className = 'auth-screen';
+overlay.setAttribute('role', 'dialog');
+overlay.setAttribute('aria-modal', 'true');
+overlay.setAttribute('aria-label', 'Sign in');
+const logo = typeof BRAND_LOGO_JPEG_BASE64 !== 'undefined' ? BRAND_LOGO_JPEG_BASE64 : '';
 overlay.innerHTML = `
-<div class="liquid-card" style="max-width: 440px; width: 90%; padding: 40px 30px; text-align: center; border: 1px solid var(--glass-border); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08); position: relative; margin: auto;">
-<img src="${typeof BRAND_LOGO_JPEG_BASE64 !== 'undefined' ? BRAND_LOGO_JPEG_BASE64 : ''}" alt="Gull And Zubair Naswar Dealers" style="width:100%;max-width:320px;border-radius:14px;object-fit:cover;box-shadow:0 6px 24px rgba(0,0,0,0.18);display:block;margin:0 auto 16px auto;">
-<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px;">
-<svg width="14" height="14" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 3 L30 8 V18 C30 25 24 31 18 33 C12 31 6 25 6 18 V8 Z" fill="#1de9b6" opacity="0.12" stroke="#1de9b6" stroke-width="1.6" stroke-linejoin="round"/><rect x="14" y="19" width="8" height="7" rx="1.5" fill="#1de9b6" opacity="0.3" stroke="#1de9b6" stroke-width="1.3"/><path d="M15 19 V17 A3 3 0 0 1 21 17 V19" stroke="#1de9b6" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="18" cy="22.5" r="1.2" fill="#1de9b6"/></svg>
-<span style="font-size:0.7rem;color:var(--accent);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">Login Required</span>
+<div class="auth-blob auth-blob-a"></div>
+<div class="auth-blob auth-blob-b"></div>
+<div class="auth-wrap">
+<div class="auth-brand">
+<div class="auth-logo-ring"><img src="${logo}" alt="Gull And Zubair Naswar Dealers"></div>
+<div class="auth-brand-name">GULL AND ZUBAIR</div>
+<div class="auth-brand-sub">Naswar Dealers</div>
 </div>
-<p style="color: var(--text-muted); margin-bottom: 22px; font-size: 0.82rem; line-height: 1.5;">
-Your account protects your data with enterprise-grade encryption.
-</p>
+<div class="auth-card">
+<h2 class="auth-title">Welcome back</h2>
+<p class="auth-sub">Sign in to unlock and sync your business data.</p>
 
-<button id="auth-google-btn" type="button" onclick="_handleGoogleBtnClick()" aria-label="Sign in with Google" style="
-  display:inline-flex;align-items:center;justify-content:center;
-  width:52px;height:52px;border-radius:50%;
-  border:1.5px solid #dadce0;
-  background:#fff;
-  cursor:pointer;
-  box-shadow:0 1px 3px rgba(0,0,0,0.10);
-  margin-bottom:16px;
-  transition:box-shadow 0.15s,border-color 0.15s,transform 0.12s,opacity 0.15s;
-  -webkit-tap-highlight-color:transparent;
-  padding:0;
-" onmouseover="this.style.boxShadow='0 3px 10px rgba(66,133,244,0.28)';this.style.borderColor='#4285F4';this.style.transform='scale(1.08)';"
-   onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.10)';this.style.borderColor='#dadce0';this.style.transform='scale(1)';">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="26" height="26">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-  </svg>
+<button id="auth-google-btn" class="auth-google" type="button" onclick="_handleGoogleBtnClick()" aria-label="Continue with Google">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
+<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+</svg>
+<span>Continue with Google</span>
 </button>
 <div id="gsi-btn-container" style="display:none;"></div>
 
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-  <div style="flex:1;height:1px;background:var(--glass-border);"></div>
-  <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;white-space:nowrap;">or sign in with email</span>
-  <div style="flex:1;height:1px;background:var(--glass-border);"></div>
-</div>
+<div class="auth-divider"><span>or use email</span></div>
 
-<form id="auth-form" style="display: flex; flex-direction: column; gap: 13px;">
-<input type="email" id="auth-email" placeholder="Email Address" required autocomplete="username"
-style="width: 100%; padding: 13px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; box-sizing: border-box; color: var(--text-main); font-size:0.9rem;">
-<input type="password" id="auth-password" placeholder="Password" required autocomplete="current-password"
-style="width: 100%; padding: 13px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; box-sizing: border-box; color: var(--text-main); font-size:0.9rem;">
-<div style="margin-top: 8px;">
-<button type="submit" class="btn btn-main" style="
-width:100%; padding: 13px; font-size: 1rem; border-radius: 12px;
-background-color: #1de9b6 !important;
-background-image: none !important;
-color: #003d2e !important;
-font-weight:700;
-">
-Sign In
+<form id="auth-form" class="auth-form" novalidate>
+<label class="auth-field">
+<svg class="auth-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
+<input type="email" id="auth-email" placeholder="Email address" required autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false">
+</label>
+<label class="auth-field">
+<svg class="auth-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+<input type="password" id="auth-password" placeholder="Password" required autocomplete="current-password">
+<button type="button" class="auth-eye" id="auth-eye" aria-label="Show password" onclick="(function(b){var i=document.getElementById('auth-password');var show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('on',show);b.setAttribute('aria-label',show?'Hide password':'Show password');})(this)">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="auth-eye-slash" d="M4 4l16 16"/></svg>
 </button>
-</div>
-<p style="font-size:0.72rem;color:var(--text-muted);margin-top:14px;line-height:1.5;">
-Don\'t have access? <strong style="color:var(--text-main);">Contact the administrator</strong> to have your account added.
-</p>
+</label>
+<button type="submit" class="auth-submit">Sign In</button>
 </form>
-<div id="auth-message" style="font-size: 0.8rem; margin-top: 15px; min-height: 20px;"></div>
-<div style="margin-top:16px;padding:10px 14px;background:var(--input-bg);border-radius:10px;border:1px solid var(--glass-border);">
-<div style="font-size:0.63rem;color:var(--text-muted);line-height:1.8;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px;">
-  <span><strong style="color:var(--text-main)">AES-256-GCM</strong> encryption</span>
-  <span style="opacity:0.35;">·</span>
-  <span><strong style="color:var(--text-main)">PBKDF2-SHA-512</strong> · 210 000 iters</span>
-  <span style="opacity:0.35;">·</span>
-  <span><strong style="color:var(--text-main)">UID-bound</strong> keys</span>
-  <span style="opacity:0.35;">·</span>
-  <span><strong style="color:var(--text-main)">Per-user</strong> random salt</span>
-  <span style="opacity:0.35;">·</span>
-  <span>Crypto <strong style="color:var(--text-main)">v4</strong></span>
+<div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
+<p class="auth-help">No account? <strong>Contact the administrator</strong> to have yours added.</p>
 </div>
+<div class="auth-secure">
+<svg width="14" height="14" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M18 3 L30 8 V18 C30 25 24 31 18 33 C12 31 6 25 6 18 V8 Z" fill="currentColor" opacity="0.14" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.5 18.5l4 4 7-8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span>End-to-end encrypted &middot; AES-256-GCM &middot; PBKDF2-SHA-512</span>
 </div>
-</div>
-`;
+</div>`;
 document.body.appendChild(overlay);
 
 _initGSIInOverlay();
@@ -3755,9 +3713,11 @@ if(form) form.addEventListener('submit', handleSignIn);
 
 try {
   const email = await OfflineAuth.getSavedEmail();
-  if (email) {
-    const emailInput = document.getElementById('auth-email');
-    if (emailInput) { emailInput.value = email; }
+  const emailInput = document.getElementById('auth-email');
+  if (email && emailInput) {
+    emailInput.value = email;
+    const pw = document.getElementById('auth-password');
+    if (pw && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) setTimeout(() => pw.focus(), 60);
   }
 } catch (_e) {}
 }

@@ -74,3 +74,7 @@ The Android app is a native shell (Capacitor) that bundles the whole web app ins
 **Signing:** builds are signed with `android/app/sarim-sideload.keystore` by default so updates always install over each other. To use your own key, add the repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Changing the key later means uninstalling first, which erases on-device data, so back up first.
 
 **Sign-in note:** email/password sign-in works in the app. Google One-Tap sign-in depends on Google allowing it inside an app web view; if it is blocked use email/password.
+
+## Desktop apps (Windows, Linux, macOS)
+
+The `Desktop apps` workflow builds Electron installers on every push to `main` and publishes them to the **desktop-latest** release: a Windows installer and portable `.exe`, a Linux `.AppImage` and `.deb`, and a macOS `.dmg`/`.zip`. The web app is bundled inside, so it works offline. Builds are unsigned, so Windows SmartScreen and macOS Gatekeeper show a warning the first time (choose *More info > Run anyway* / right-click > *Open*).

@@ -1,0 +1,84 @@
+name: Desktop apps
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: desktop-apps
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+          - os: ubuntu-latest
+            name: linux
+          - os: macos-latest
+            name: macos
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Bundle web app into the desktop shell
+        shell: bash
+        run: |
+          rm -rf desktop/web
+          mkdir -p desktop/web
+          cp -R dist/. desktop/web/
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Build installers
+        working-directory: desktop
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm version "1.0.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+          npx electron-builder --publish never
+      - name: Collect installers
+        shell: bash
+        run: |
+          mkdir -p out
+          find desktop/release -maxdepth 1 -type f \( -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.dmg" -o -name "*.zip" \) -exec cp {} out/ \;
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          pattern: desktop-*
+          merge-multiple: true
+      - name: Publish to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -la assets
+          gh release delete desktop-latest --yes --cleanup-tag || true
+          gh release create desktop-latest assets/* \
+            --title "Gull & Zubair desktop apps (build ${{ github.run_number }})" \
+            --notes "Windows: run the .exe installer (or the portable .exe). Linux: use the .AppImage (chmod +x) or the .deb. macOS: open the .dmg (unsigned: right-click > Open the first time). The app works offline and keeps its data on your computer." \
+            --target "${{ github.sha }}"

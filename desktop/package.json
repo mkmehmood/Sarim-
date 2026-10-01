@@ -1,0 +1,28 @@
+{
+  "name": "gull-zubair-desktop",
+  "productName": "Gull & Zubair",
+  "version": "1.0.0",
+  "description": "Gull & Zubair Naswar Dealers business manager (desktop)",
+  "author": "Gull & Zubair",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.gullzubair.sarim.desktop",
+    "productName": "Gull & Zubair",
+    "directories": { "output": "release", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "web/**/*", "package.json"],
+    "win": { "target": ["nsis", "portable"], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false },
+    "linux": { "target": ["AppImage", "deb"], "category": "Office", "icon": "build/icon.png", "maintainer": "Gull & Zubair <noreply@example.com>" },
+    "mac": { "target": ["dmg", "zip"], "category": "public.app-category.business", "icon": "build/icon.png" },
+    "artifactName": "Gull-Zubair-${version}-${os}-${arch}.${ext}"
+  }
+}
