@@ -3658,18 +3658,34 @@ overlay.setAttribute('aria-modal', 'true');
 overlay.setAttribute('aria-label', 'Sign in');
 const logo = typeof BRAND_LOGO_JPEG_BASE64 !== 'undefined' ? BRAND_LOGO_JPEG_BASE64 : '';
 overlay.innerHTML = `
-<div class="auth-blob auth-blob-a"></div>
-<div class="auth-blob auth-blob-b"></div>
+<div class="auth-bg" aria-hidden="true"><i class="auth-orb auth-orb-a"></i><i class="auth-orb auth-orb-b"></i></div>
 <div class="auth-wrap">
-<div class="auth-brand">
-<div class="auth-logo-ring"><img src="${logo}" alt="Gull And Zubair Naswar Dealers"></div>
-<div class="auth-brand-name">GULL AND ZUBAIR</div>
+<div class="auth-hero">
+<div class="auth-logo"><img src="${logo}" alt="Gull And Zubair Naswar Dealers"></div>
+<div class="auth-brand-main">GULL AND ZUBAIR</div>
 <div class="auth-brand-sub">Naswar Dealers</div>
 </div>
-<div class="auth-card">
+<div class="auth-sheet">
 <h2 class="auth-title">Welcome back</h2>
 <p class="auth-sub">Sign in to unlock and sync your business data.</p>
-
+<form id="auth-form" class="auth-form" novalidate>
+<div class="auth-field">
+<input type="email" id="auth-email" placeholder=" " required autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false">
+<label for="auth-email">Email address</label>
+<svg class="auth-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
+</div>
+<div class="auth-field">
+<input type="password" id="auth-password" placeholder=" " required autocomplete="current-password">
+<label for="auth-password">Password</label>
+<svg class="auth-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+<button type="button" class="auth-eye" id="auth-eye" aria-label="Show password" onclick="(function(b){var i=document.getElementById('auth-password');var show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('on',show);b.setAttribute('aria-label',show?'Hide password':'Show password');})(this)">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="auth-eye-slash" d="M4 4l16 16"/></svg>
+</button>
+</div>
+<button type="submit" class="auth-submit">Sign In</button>
+</form>
+<div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
+<div class="auth-divider"><span>or</span></div>
 <button id="auth-google-btn" class="auth-google" type="button" onclick="_handleGoogleBtnClick()" aria-label="Continue with Google">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -3680,29 +3696,11 @@ overlay.innerHTML = `
 <span>Continue with Google</span>
 </button>
 <div id="gsi-btn-container" style="display:none;"></div>
-
-<div class="auth-divider"><span>or use email</span></div>
-
-<form id="auth-form" class="auth-form" novalidate>
-<label class="auth-field">
-<svg class="auth-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
-<input type="email" id="auth-email" placeholder="Email address" required autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false">
-</label>
-<label class="auth-field">
-<svg class="auth-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
-<input type="password" id="auth-password" placeholder="Password" required autocomplete="current-password">
-<button type="button" class="auth-eye" id="auth-eye" aria-label="Show password" onclick="(function(b){var i=document.getElementById('auth-password');var show=i.type==='password';i.type=show?'text':'password';b.classList.toggle('on',show);b.setAttribute('aria-label',show?'Hide password':'Show password');})(this)">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="auth-eye-slash" d="M4 4l16 16"/></svg>
-</button>
-</label>
-<button type="submit" class="auth-submit">Sign In</button>
-</form>
-<div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
 <p class="auth-help">No account? <strong>Contact the administrator</strong> to have yours added.</p>
-</div>
 <div class="auth-secure">
 <svg width="14" height="14" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M18 3 L30 8 V18 C30 25 24 31 18 33 C12 31 6 25 6 18 V8 Z" fill="currentColor" opacity="0.14" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.5 18.5l4 4 7-8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<span>End-to-end encrypted &middot; AES-256-GCM &middot; PBKDF2-SHA-512</span>
+<span>End-to-end encrypted &middot; AES-256-GCM</span>
+</div>
 </div>
 </div>`;
 document.body.appendChild(overlay);
