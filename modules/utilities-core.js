@@ -434,7 +434,13 @@ show = false;
 
 if (banner) {
 banner.classList.toggle('visible', show);
-document.body.classList.toggle('offline-active', show);
+banner.dataset.state = !isOnline ? 'offline' : (isSlow ? 'slow' : (cloudState === 'error' ? 'error' : 'sync'));
+banner.title = message;
+banner.setAttribute('aria-label', message || 'Online');
+if (!banner.__tapBound) {
+banner.__tapBound = true;
+banner.addEventListener('click', () => { if (typeof showToast === 'function' && banner.title) showToast(banner.title, 'info', 3500); });
+}
 }
 if (msgEl) msgEl.textContent = message;
 if (badge) {

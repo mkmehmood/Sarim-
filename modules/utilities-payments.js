@@ -956,7 +956,7 @@ document.addEventListener('DOMContentLoaded', async function _appBootstrap() {
   }, 60000);
   setTimeout(() => {
     const splash = document.getElementById('splash-screen');
-    if (splash) splash.style.display = 'none';
+    if (splash && !window.__appLocked) splash.style.display = 'none';
   }, 800);
 });
 export function _filterFactoryHistoryByMode(mode) {
@@ -5357,6 +5357,7 @@ await nb.verifyIdentity({ reason: 'Confirm to enable the app lock', title: 'Enab
 } catch (e) { throw _nativeBioError(e); }
 await sqliteStore.set('bio_cred_id', 'native');
 await sqliteStore.set('bio_enabled', 'true');
+try { await sqliteStore.flush(); } catch (_) {}
 notifyDataChange('all');
 triggerAutoSync();
 return true;

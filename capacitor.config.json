@@ -13,8 +13,8 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0,
-      "backgroundColor": "#0F172A",
-      "androidScaleType": "CENTER_INSIDE",
+      "launchAutoHide": true,
+      "backgroundColor": "#E8ECF0",
       "showSpinner": false
     },
     "StatusBar": {
