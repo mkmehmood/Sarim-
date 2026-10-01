@@ -60,5 +60,6 @@
       "icon": "build/icon.png"
     },
     "artifactName": "Gull-Zubair-${version}-${os}-${arch}.${ext}"
-  }
+  },
+  "homepage": "https://github.com/mkmehmood/sarim"
 }
