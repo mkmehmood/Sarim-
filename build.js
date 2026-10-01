@@ -10,10 +10,13 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT  = __dirname;
 const DIST  = join(ROOT, 'dist');
-const ESBUILD = join(ROOT, 'node_modules/.bin/esbuild');
+
+const IS_WIN = process.platform === 'win32';
+const ESBUILD_BIN = join(ROOT, 'node_modules/.bin', IS_WIN ? 'esbuild.cmd' : 'esbuild');
 
 function run(args) {
-  execFileSync(ESBUILD, args, { stdio: ['ignore', 'inherit', 'inherit'] });
+  const quoted = IS_WIN ? args.map(a => (/[\s&|^<>()]/.test(a) ? `"${a}"` : a)) : args;
+  execFileSync(ESBUILD_BIN, quoted, { stdio: ['ignore', 'inherit', 'inherit'], shell: IS_WIN });
 }
 
 function contentHash(filePath) {
