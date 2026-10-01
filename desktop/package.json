@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "Gull & Zubair Naswar Dealers - desktop app",
   "main": "main.js",
-  "author": "Gull & Zubair",
+  "author": {
+    "name": "Gull and Zubair",
+    "email": "support@gullzubair.example"
+  },
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -16,15 +19,79 @@
   },
   "build": {
     "appId": "com.gullzubair.sarim.desktop",
-    "productName": "Gull & Zubair",
+    "productName": "Gull and Zubair",
     "copyright": "Gull & Zubair Naswar Dealers",
-    "directories": { "output": "release", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "app/**/*", "package.json"],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*",
+      "package.json"
+    ],
     "artifactName": "Gull-Zubair-Desktop-${os}-${arch}.${ext}",
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }], "icon": "build/icon.png" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false, "createDesktopShortcut": true, "createStartMenuShortcut": true },
-    "portable": { "artifactName": "Gull-Zubair-Desktop-${os}-${arch}-portable.${ext}" },
-    "mac": { "target": [{ "target": "dmg" }, { "target": "zip" }], "category": "public.app-category.business", "icon": "build/icon.png", "identity": null },
-    "linux": { "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }], "category": "Office", "icon": "build/icon.png", "maintainer": "Gull & Zubair", "synopsis": "Business management app" }
-  }
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "Gull-Zubair-Desktop-${os}-${arch}-portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg"
+        },
+        {
+          "target": "zip"
+        }
+      ],
+      "category": "public.app-category.business",
+      "icon": "build/icon.png",
+      "identity": null
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Office",
+      "icon": "build/icon.png",
+      "maintainer": "Gull & Zubair",
+      "synopsis": "Business management app"
+    }
+  },
+  "homepage": "https://mkmehmood.github.io/sarim/"
 }

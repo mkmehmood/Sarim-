@@ -40,10 +40,18 @@ jobs:
         run: npm ci
       - name: Build installers
         working-directory: desktop
+        shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           GH_TOKEN: ${{ github.token }}
-        run: npx electron-builder --publish never
+        run: |
+          set -o pipefail
+          npx electron-builder --publish never 2>&1 | tee "$RUNNER_TEMP/builder.log"
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          grep -n -i -E "error|cannot|failed|invalid|unknown|must|ENOENT" "$RUNNER_TEMP/builder.log" 2>/dev/null | head -15 | while IFS= read -r l; do echo "::error::${l:0:400}"; done || true
       - name: Collect installers
         shell: bash
         run: |
