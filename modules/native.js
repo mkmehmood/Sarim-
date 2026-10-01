@@ -63,15 +63,51 @@ function installShareBridge() {
   } catch (_) {}
 }
 
-async function saveAndShareBlob(blob, name) {
-  try {
-    await nativeShareFiles([new File([blob], name, { type: blob.type || 'application/octet-stream' })], { title: name });
-    toast('File ready — choose where to save or send it.', 'success', 3500);
-  } catch (e) {
-    if (e && e.name === 'AbortError') return;
-    console.warn('[native] save failed', e);
-    toast('Could not save the file on this device.', 'error');
+const MIME_BY_EXT = { pdf: 'application/pdf', json: 'application/json', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', csv: 'text/csv', txt: 'text/plain', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', zip: 'application/zip', db: 'application/octet-stream' };
+
+function mimeFor(name, blob) {
+  const ext = String(name).split('.').pop().toLowerCase();
+  return (blob && blob.type) || MIME_BY_EXT[ext] || 'application/octet-stream';
+}
+
+function saveFilePlugin() {
+  const C = window.Capacitor;
+  if (!C) return null;
+  if (C.Plugins && C.Plugins.SaveFile) return C.Plugins.SaveFile;
+  return typeof C.registerPlugin === 'function' ? C.registerPlugin('SaveFile') : null;
+}
+
+export async function saveBlobToDevice(blob, name) {
+  const mime = mimeFor(name, blob);
+  const plugin = saveFilePlugin();
+  if (plugin) {
+    try {
+      const res = await plugin.saveToDownloads({ filename: safeName(name), mime, data: await blobToBase64(blob) });
+      toast(`Saved to ${res.path || 'Downloads'}`, 'success', 4500);
+      if (typeof window.showGlassConfirm === 'function') {
+        const open = await window.showGlassConfirm(`${safeName(name)}\nSaved in ${res.path || 'Downloads'}`, { title: 'File Saved', confirmText: 'Open', cancelText: 'Close' });
+        if (open) {
+          try { await plugin.openFile({ uri: res.uri, mime }); } catch (e) { toast('No app found to open this file. Find it in your Downloads folder.', 'info', 4500); }
+        }
+      }
+      return true;
+    } catch (e) {
+      console.warn('[native] saveToDownloads failed, falling back to share sheet', e);
+    }
   }
+  try {
+    await nativeShareFiles([new File([blob], safeName(name), { type: mime })], { title: name });
+    return true;
+  } catch (e) {
+    if (e && e.name === 'AbortError') return false;
+    console.warn('[native] save failed', e);
+    toast('Could not save the file: ' + ((e && e.message) || 'unknown error'), 'error', 5000);
+    return false;
+  }
+}
+
+async function saveAndShareBlob(blob, name) {
+  await saveBlobToDevice(blob, name);
 }
 
 function installDownloadBridge() {
@@ -193,3 +229,4 @@ if (isNative) {
 
 window.__isNativeApp = isNative;
 window.nativeShareFiles = nativeShareFiles;
+window.saveBlobToDevice = saveBlobToDevice;

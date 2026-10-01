@@ -80,6 +80,10 @@ html = html.replace(
 
 write(join(DIST, 'index.html'), html);
 
+mkdirSync(join(DIST, 'vendor'), { recursive: true });
+copyFileSync(join(ROOT, 'node_modules/jspdf/dist/jspdf.umd.min.js'), join(DIST, 'vendor/jspdf.umd.min.js'));
+copyFileSync(join(ROOT, 'node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js'), join(DIST, 'vendor/jspdf.plugin.autotable.min.js'));
+
 const ASSETS_TO_CACHE_BLOCK =
 `const ASSETS_TO_CACHE = [
   './',
@@ -92,7 +96,9 @@ const ASSETS_TO_CACHE_BLOCK =
 
   './sql-wasm.js',
   './sql-wasm.wasm',
-  './sql.js'
+  './sql.js',
+  './vendor/jspdf.umd.min.js',
+  './vendor/jspdf.plugin.autotable.min.js'
 ];`;
 
 let sw = read(join(ROOT, 'sw.js'));

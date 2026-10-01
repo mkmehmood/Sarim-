@@ -1,5 +1,6 @@
 import { APP_CONFIG, BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { endEditMode, getEditCtx, replaceRecord, stampEdit } from './edit-mode.js';
+import { installJsPdfImageLog, renderJsPdfToCanvases } from './pdf-canvas.js';
 import { getProdPhotoKeys, persistProdPhotos, resetProdPhotos } from './prod-photos.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_isSyncing, appMode, currentRepProfile, currentUser, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getTimestamp, isSyncing, loadAllData, localDateStr, lockedUnitPrice, safeReplace, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, subscribeToRealtime, triggerSeamlessBackup, unifiedDelete, unifiedSave } from './sync.js';
@@ -2395,39 +2396,21 @@ export const PDF_MERGED_ROW_COLOR  = [245, 235, 255];
 export const PDF_MERGED_TEXT_COLOR = [126, 34, 206];
 
 export async function _exportDocAsImageAndOpenWhatsApp(doc, phone, filenameBase) {
-  const PDFJS_CDN  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-  const PDFJS_WRKR = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  if (!window.pdfjsLib) {
-    await loadScript(PDFJS_CDN);
-    await new Promise(r => setTimeout(r, 300));
+  const canvases = await renderJsPdfToCanvases(doc, { scale: 3 });
+  if (!canvases.length) throw new Error('Nothing to export.');
+  const files = [];
+  for (let i = 0; i < canvases.length; i++) {
+    const blob = await new Promise(resolve => canvases[i].toBlob(resolve, 'image/jpeg', 0.92));
+    const suffix = canvases.length > 1 ? `-page${i + 1}` : '';
+    files.push(new File([blob], `${filenameBase}${suffix}.jpg`, { type: 'image/jpeg' }));
   }
-  if (!window.pdfjsLib) throw new Error('Failed to load pdf.js — please refresh and try again.');
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WRKR;
-
-  const pdfBytes = doc.output('arraybuffer');
-  const pdfDoc   = await window.pdfjsLib.getDocument({ data: pdfBytes }).promise;
-  const page     = await pdfDoc.getPage(1);
-  const viewport = page.getViewport({ scale: 8 });
-
-  const canvas   = document.createElement('canvas');
-  canvas.width   = viewport.width;
-  canvas.height  = viewport.height;
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-
-  const imageBlob = await new Promise(resolve =>
-    canvas.toBlob(resolve, 'image/jpeg', 0.95)
-  );
-  const imageFile = new File([imageBlob], `${filenameBase}.jpg`, { type: 'image/jpeg' });
 
   const hasPhone = phone && phone !== 'N/A' && phone.trim() !== '';
   const cleaned  = hasPhone ? phone.trim().replace(/[^\d+]/g, '') : '';
 
-  if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+  if (navigator.canShare && navigator.canShare({ files })) {
     try {
-      await navigator.share({
-        files: [imageFile],
-        title: 'Account Statement',
-      });
+      await navigator.share({ files, title: 'Account Statement' });
       showToast('Statement shared successfully', 'success');
       return;
     } catch (err) {
@@ -2435,21 +2418,25 @@ export async function _exportDocAsImageAndOpenWhatsApp(doc, phone, filenameBase)
         showToast('Share cancelled', 'info');
         return;
       }
-      console.warn('[PDF share] Web Share failed, falling back to download:', _safeErr(err));
+      console.warn('[statement share] Web Share failed, falling back to download:', _safeErr(err));
     }
   }
 
-  const dlLink    = document.createElement('a');
-  dlLink.href     = URL.createObjectURL(imageBlob);
-  dlLink.download = `${filenameBase}.jpg`;
-  document.body.appendChild(dlLink);
-  dlLink.click();
-  document.body.removeChild(dlLink);
-  setTimeout(() => URL.revokeObjectURL(dlLink.href), 5000);
+  files.forEach((f, i) => {
+    setTimeout(() => {
+      const dlLink = document.createElement('a');
+      dlLink.href = URL.createObjectURL(f);
+      dlLink.download = f.name;
+      document.body.appendChild(dlLink);
+      dlLink.click();
+      document.body.removeChild(dlLink);
+      setTimeout(() => URL.revokeObjectURL(dlLink.href), 5000);
+    }, i * 300);
+  });
 
   if (hasPhone) {
-    showToast('Image downloaded — opening WhatsApp to send it…', 'success');
-    setTimeout(() => window.open(`https://wa.me/${cleaned}`, '_blank'), 600);
+    showToast('Image saved — opening WhatsApp to send it\u2026', 'success');
+    setTimeout(() => window.open(`https://wa.me/${cleaned}`, '_blank'), 600 + files.length * 300);
   } else {
     showToast('Statement saved as image (no phone number on record)', 'success');
   }
@@ -3787,6 +3774,8 @@ export function previewPhotoClick(prefix) {
 }
 
 export function loadScript(url, integrity) {
+  if (/\/jspdf\/2\.5\.1\/jspdf\.umd\.min\.js$/.test(url)) { url = 'vendor/jspdf.umd.min.js'; integrity = null; }
+  else if (/\/jspdf-autotable\/3\.5\.31\/jspdf\.plugin\.autotable\.min\.js$/.test(url)) { url = 'vendor/jspdf.plugin.autotable.min.js'; integrity = null; }
   const existing = document.querySelector('script[src="' + url + '"]');
   if (existing && !existing.dataset.failed) {
     if (_scriptLoadPromises[url]) return _scriptLoadPromises[url];
@@ -3803,6 +3792,7 @@ export function loadScript(url, integrity) {
     }
     script.onload = () => {
       delete _scriptLoadPromises[url];
+      if (/jspdf\.umd/.test(url) && window.jspdf && window.jspdf.jsPDF) installJsPdfImageLog(window.jspdf.jsPDF);
       resolve();
     };
     script.onerror = () => {

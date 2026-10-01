@@ -34,6 +34,8 @@
     "@capacitor/share": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
-    "@capgo/capacitor-native-biometric": "^8.7.0"
+    "@capgo/capacitor-native-biometric": "^8.7.0",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.5.31"
   }
 }
