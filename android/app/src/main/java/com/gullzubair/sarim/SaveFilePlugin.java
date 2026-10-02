@@ -13,17 +13,41 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 
-@CapacitorPlugin(name = "SaveFile")
+@CapacitorPlugin(name = "SaveFile", permissions = {
+    @Permission(strings = {Manifest.permission.WRITE_EXTERNAL_STORAGE}, alias = "storage")
+})
 public class SaveFilePlugin extends Plugin {
 
     @PluginMethod
     public void saveToDownloads(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && getPermissionState("storage") != PermissionState.GRANTED) {
+            requestPermissionForAlias("storage", call, "storagePermsCallback");
+            return;
+        }
+        doSave(call);
+    }
+
+    @PermissionCallback
+    private void storagePermsCallback(PluginCall call) {
+        if (getPermissionState("storage") == PermissionState.GRANTED) {
+            doSave(call);
+        } else {
+            call.reject("Storage permission was denied");
+        }
+    }
+
+    private void doSave(PluginCall call) {
         String filename = call.getString("filename");
         String mime = call.getString("mime", "application/octet-stream");
         String data = call.getString("data");

@@ -3657,6 +3657,7 @@ overlay.setAttribute('role', 'dialog');
 overlay.setAttribute('aria-modal', 'true');
 overlay.setAttribute('aria-label', 'Sign in');
 const logo = typeof BRAND_LOGO_JPEG_BASE64 !== 'undefined' ? BRAND_LOGO_JPEG_BASE64 : '';
+const _showGoogle = !(window.__desktopApp || (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()));
 overlay.innerHTML = `
 <div class="auth-bg" aria-hidden="true"><i class="auth-orb auth-orb-a"></i><i class="auth-orb auth-orb-b"></i></div>
 <div class="auth-wrap">
@@ -3685,7 +3686,7 @@ overlay.innerHTML = `
 <button type="submit" class="auth-submit">Sign In</button>
 </form>
 <div id="auth-message" class="auth-message" role="status" aria-live="polite"></div>
-<div class="auth-divider"><span>or</span></div>
+${_showGoogle ? `<div class="auth-divider"><span>or</span></div>
 <button id="auth-google-btn" class="auth-google" type="button" onclick="_handleGoogleBtnClick()" aria-label="Continue with Google">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true">
 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -3695,7 +3696,7 @@ overlay.innerHTML = `
 </svg>
 <span>Continue with Google</span>
 </button>
-<div id="gsi-btn-container" style="display:none;"></div>
+<div id="gsi-btn-container" style="display:none;"></div>` : ''}
 <p class="auth-help">No account? <strong>Contact the administrator</strong> to have yours added.</p>
 <div class="auth-secure">
 <svg width="14" height="14" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M18 3 L30 8 V18 C30 25 24 31 18 33 C12 31 6 25 6 18 V8 Z" fill="currentColor" opacity="0.14" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12.5 18.5l4 4 7-8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -3947,6 +3948,7 @@ export let _gsiInitialized = false;
 
 export function _initGSIInOverlay() {
 if (_gsiInitialized) return;
+if (!document.getElementById('gsi-btn-container')) return;
 if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
 setTimeout(_initGSIInOverlay, 300);
 return;
