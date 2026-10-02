@@ -22,3 +22,4 @@ window._lazyLoadRep = function (cb) {
 };
 
 import './custom-date-picker.js';
+import './fab.js';

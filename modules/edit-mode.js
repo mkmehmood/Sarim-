@@ -68,7 +68,9 @@ export function beginEditMode(kind, original, opts = {}) {
     }
   }
   const anchor = (opts.anchorId && document.getElementById(opts.anchorId)) || btn;
-  if (anchor && anchor.scrollIntoView) setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+  if (anchor && typeof window.__fabOpenFor === 'function' && window.__fabOpenFor(anchor)) {
+    /* entry form lives in a floating-button sheet: it is now open */
+  } else if (anchor && anchor.scrollIntoView) setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
 }
 
 export function endEditMode() {
@@ -83,6 +85,7 @@ export function endEditMode() {
     }
   }
   window._editCtx = null;
+  if (typeof window.__fabCloseAll === 'function') window.__fabCloseAll();
 }
 
 function _readWatched(ids) {
