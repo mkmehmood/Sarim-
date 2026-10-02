@@ -1457,9 +1457,15 @@ snapshot: _snapshot.record || null,
 };
 if (collectionName === 'expenses' || collectionName === 'transactions') {
   try {
-    const _regPhKey = 'expense:' + id;
+    // Payment transactions store their photo under the linked expenseId, not the transaction id.
+    const _srcRec = (_snapshot && _snapshot.record) || preDeletedRecord || {};
+    const _regPhKeys = [];
+    if (collectionName === 'transactions' && _srcRec.expenseId) _regPhKeys.push('expense:' + _srcRec.expenseId);
+    _regPhKeys.push('expense:' + id);
     const _regPh = (await sqliteStore.get('person_photos')) || {};
-    if (_regPh[_regPhKey]) deletionRecord._photoDataUrl = _regPh[_regPhKey];
+    for (const _k of _regPhKeys) {
+      if (_regPh[_k]) { deletionRecord._photoDataUrl = _regPh[_k]; deletionRecord._photoKey = _k; break; }
+    }
   } catch(_regPhErr) { console.warn('[registerDeletion] photo snapshot failed', _regPhErr); }
 }
 if (!validateTimestamp(deletionRecord.deletedAt, false)) {

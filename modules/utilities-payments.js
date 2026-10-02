@@ -4105,6 +4105,7 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
   try {
     const sqliteKey = getSQLiteKey(collectionName);
     let recoveredData = null;
+    let _tombPhoto = null;
     const localDeletionRecords = await sqliteStore.get('deletion_records', []);
     const tombstoneLocal = Array.isArray(localDeletionRecords)
       ? localDeletionRecords.find(r => r.id === deletedId || r.recordId === deletedId)
@@ -4112,12 +4113,14 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
     if (tombstoneLocal && tombstoneLocal.snapshot) {
       recoveredData = tombstoneLocal.snapshot;
     }
+    if (tombstoneLocal && tombstoneLocal._photoDataUrl) _tombPhoto = tombstoneLocal._photoDataUrl;
     if (!recoveredData && firebaseDB && currentUser) {
       try {
         const userRef = firebaseDB.collection('users').doc(currentUser.uid);
         const tombDoc = await userRef.collection('deletions').doc(String(deletedId)).get();
         if (tombDoc.exists) {
           const td = tombDoc.data();
+          if (td && td._photoDataUrl && !_tombPhoto) _tombPhoto = td._photoDataUrl;
           if (td && td.snapshot) recoveredData = td.snapshot;
         }
         if (!recoveredData) {
@@ -4162,24 +4165,21 @@ const salesHistory = ensureArray(await sqliteStore.get('noman_history'));
     }
     if (collectionName === 'expenses' || collectionName === 'transactions') {
       try {
+        // A transaction's photo lives under its linked expenseId; the tombstone is purged
+        // before this point, so use the photo captured up-front (_tombPhoto).
         const _recOldPhKey = 'expense:' + oldId;
-        const _recNewPhKey = 'expense:' + newId;
+        const _recNewPhKey = 'expense:' + ((collectionName === 'transactions' && cleanRecord && cleanRecord.expenseId) ? cleanRecord.expenseId : newId);
         const _recPh = (await sqliteStore.get('person_photos')) || {};
         const _recPhTs = (await sqliteStore.get('person_photos_timestamps')) || {};
-        const _tombstone = (Array.isArray(localDeletionRecords) ? localDeletionRecords : deletionRecords).find(r => r.id === deletedId || r.recordId === deletedId);
-        const _recPhotoData = (_tombstone && _tombstone._photoDataUrl)
-          ? _tombstone._photoDataUrl
-          : (_recPh[_recOldPhKey] || null);
+        const _recPhotoData = _tombPhoto || _recPh[_recOldPhKey] || null;
         if (_recPhotoData) {
-          _recPh[_recNewPhKey] = _recPhotoData;
+          if (!_recPh[_recNewPhKey]) _recPh[_recNewPhKey] = _recPhotoData;
           _recPhTs[_recNewPhKey] = Date.now();
-          delete _recPh[_recOldPhKey];
-          delete _recPhTs[_recOldPhKey];
+          if (_recOldPhKey !== _recNewPhKey) { delete _recPh[_recOldPhKey]; delete _recPhTs[_recOldPhKey]; }
           await sqliteStore.set('person_photos', _recPh);
           await sqliteStore.set('person_photos_timestamps', _recPhTs);
           const _recDk = (await sqliteStore.get('person_photos_dirty_keys')) || [];
           if (!_recDk.includes(_recNewPhKey)) _recDk.push(_recNewPhKey);
-          if (!_recDk.includes(_recOldPhKey)) _recDk.push(_recOldPhKey);
           await sqliteStore.set('person_photos_dirty_keys', _recDk);
           await sqliteStore.set('person_photos_timestamp', Date.now());
         }
