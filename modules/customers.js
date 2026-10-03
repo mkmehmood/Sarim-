@@ -130,9 +130,9 @@ totalGlobalQty += c.quantity;
 const customers = sortedCustomers;
 const totalItems = sortedCustomers.length;
 if (!customers || !Array.isArray(customers)) {
-tbody.innerHTML = `<tr><td class="u-empty-state-danger" colspan="5" >Invalid customer data</td></tr>`;
+tbody.innerHTML = `<div class="u-empty-state-danger">Customer data could not be read. Reload the app to try again.</div>`;
 } else if (customers.length === 0) {
-tbody.innerHTML = `<tr><td class="u-empty-state-md" colspan="5" >No customers found</td></tr>`;
+tbody.innerHTML = `<div class="u-empty-state-md">No customers match. Add a customer to get started.</div>`;
 } else {
 function buildCustomerRow(c) {
 if (!c || !c.name) return null;
@@ -150,16 +150,27 @@ phone = contact?.phone || customerSaleData?.customerPhone || '-';
 } catch (phoneError) {
 console.warn('Customer data operation failed.', _safeErr(phoneError));
 }
-const creditStyle = c.credit > 0 ? 'color:var(--warning); font-weight:700;' : 'color:var(--accent-emerald); font-weight:700;';
-const row = document.createElement('tr');
-row.style.borderBottom = '1px solid var(--glass-border)';
 const safeName = esc(c.name || 'Unknown');
 const safeNameForAttr = (c.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+const initials = (c.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('') || '?';
+const owes = c.credit > 0;
+const sub = !c.lastSaleDate ? 'No orders yet' : (owes ? `Last order ${displayDate}` : 'Paid in full');
+const row = document.createElement('div');
+row.className = 'who-row';
 row.innerHTML = `
-<td class="u-table-td">${displayDate}</td>
-<td style="padding: 8px 2px; font-size: 0.8rem; color: var(--accent); font-weight: 600; cursor:pointer;" onclick="event.stopPropagation(); openCustomerManagement('${safeNameForAttr}')">${safeName}</td>
-<td class="u-table-td">${phoneActionHTML(phone)}</td>
-<td style="padding: 8px 2px; text-align: right; font-size: 0.8rem; ${creditStyle}">${fmtAmt(safeValue(c.credit))}</td>`;
+<div class="av" aria-hidden="true">${esc(initials)}</div>
+<div class="who-name">${safeName}</div>
+<button type="button" class="lrow-s" aria-expanded="false">${esc(sub)}</button>
+<div class="lrow-n ${owes ? '' : 'pos'}">${fmtAmt(safeValue(c.credit))}</div>
+<div class="lrow-more"><div>
+<dl class="lrow-dl">
+<dt>Total bought</dt><dd>${fmtNum(safeNumber(c.quantity, 0))} kg</dd>
+<dt>Owes now</dt><dd>${fmtAmt(safeValue(c.credit))}</dd>
+<dt>Last order</dt><dd>${displayDate}</dd>
+<dt>Phone</dt><dd>${phoneActionHTML(phone)}</dd>
+</dl>
+<div class="lrow-acts"><button type="button" class="tbl-action-btn" onclick="event.stopPropagation(); openCustomerManagement('${safeNameForAttr}')">Open customer</button></div>
+</div></div>`;
 return row;
 } catch (rowError) {
 console.warn('An unexpected error occurred.', _safeErr(rowError));
@@ -174,6 +185,7 @@ tbody.appendChild(_fragC);
 const _setCustH = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 _setCustH('customer-count', `${totalItems || 0} active`);
 _setCustH('customers-total-credit', `${fmtAmt(totalOutstanding)}`);
+if (window.LedgerUI) window.LedgerUI.updateSalesOwed(totalOutstanding);
 _setCustH('customers-total-quantity', fmtNum(safeNumber(totalGlobalQty, 0)) + ' kg');
 }
 

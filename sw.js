@@ -5,6 +5,8 @@ const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './app.css',
+  './fonts/bricolage-grotesque-latin-wdth-normal.woff2',
+  './fonts/bricolage-grotesque-latin-ext-wdth-normal.woff2',
   './modules/main.js',
   './modules/constants.js',
   './modules/business.js',
@@ -17,6 +19,7 @@ const ASSETS_TO_CACHE = [
   './modules/rep-sales.js',
   './modules/admin-data.js',
   './modules/custom-date-picker.js',
+  './modules/ledger-ui.js',
   './manifest.json',
   './192.png',
   './512.png',
@@ -35,7 +38,6 @@ const CDN_ASSETS_TO_PRECACHE = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
 
-  'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400;1,9..144,600&family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap',
 ];
 
 const CACHE_FIRST_ORIGINS = [

@@ -1060,7 +1060,7 @@ export const _UI_DEFAULTS = {
   currentIndMode: 'week',
   currentIndMetric: 'weight',
   currentOverviewMode: 'day',
-  currentProductionView: 'store',
+  currentProductionView: 'combined',
   currentFactoryEntryStore: 'STORE_A',
   currentFactorySettingsStore: 'standard',
   currentFactorySummaryMode: 'daily',

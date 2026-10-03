@@ -1,5 +1,5 @@
 {
-  "appId": "com.gullzubair.sarim",
+  "appId": "com.sarim.app",
   "appName": "Gull & Zubair",
   "webDir": "dist",
   "server": {
@@ -8,18 +8,18 @@
   },
   "android": {
     "allowMixedContent": false,
-    "backgroundColor": "#0F172A"
+    "backgroundColor": "#000000"
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0,
       "launchAutoHide": true,
-      "backgroundColor": "#E8ECF0",
+      "backgroundColor": "#000000",
       "showSpinner": false
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#1D4ED8",
+      "backgroundColor": "#000000",
       "overlaysWebView": false
     }
   }

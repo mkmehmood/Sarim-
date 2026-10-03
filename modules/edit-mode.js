@@ -68,9 +68,8 @@ export function beginEditMode(kind, original, opts = {}) {
     }
   }
   const anchor = (opts.anchorId && document.getElementById(opts.anchorId)) || btn;
-  if (anchor && typeof window.__fabOpenFor === 'function' && window.__fabOpenFor(anchor)) {
-    /* entry form lives in a floating-button sheet: it is now open */
-  } else if (anchor && anchor.scrollIntoView) setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+  if (window.LedgerUI && anchor) window.LedgerUI.openSheetFor(anchor);
+  if (anchor && anchor.scrollIntoView) setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
 }
 
 export function endEditMode() {
@@ -85,7 +84,7 @@ export function endEditMode() {
     }
   }
   window._editCtx = null;
-  if (typeof window.__fabCloseAll === 'function') window.__fabCloseAll();
+  if (window.LedgerUI) window.LedgerUI.closeEntrySheet(true);
 }
 
 function _readWatched(ids) {

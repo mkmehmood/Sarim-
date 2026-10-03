@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   readFileSync, writeFileSync, copyFileSync,
-  mkdirSync, rmSync,
+  mkdirSync, rmSync, readdirSync,
 } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,6 +57,11 @@ const coreHash = contentHash(join(DIST, mainOut));
 
 const cssMinTmp = join(DIST, '_app_min.css');
 run([join(ROOT, 'app.css'), '--bundle=false', '--minify', `--outfile=${cssMinTmp}`]);
+
+// Self-hosted fonts (the stylesheet references them as url(fonts/...))
+const FONT_FILES = readdirSync(join(ROOT, 'fonts')).filter(f => f.endsWith('.woff2'));
+mkdirSync(join(DIST, 'fonts'), { recursive: true });
+for (const f of FONT_FILES) copyFileSync(join(ROOT, 'fonts', f), join(DIST, 'fonts', f));
 const cssHash = contentHash(cssMinTmp);
 const cssOut  = `app.${cssHash}.css`;
 copyFileSync(cssMinTmp, join(DIST, cssOut));
@@ -93,6 +98,7 @@ const ASSETS_TO_CACHE_BLOCK =
   './index.html',
   './${cssOut}',
   ${allChunks.map(c => `'./${c}',`).join('\n  ')}
+  ${FONT_FILES.map(f => `'./fonts/${f}',`).join('\n  ')}
   './manifest.json',
   './192.png',
   './512.png',

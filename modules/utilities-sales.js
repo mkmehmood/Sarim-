@@ -1,4 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64, entityListViewType } from './constants.js';
+import { ledgerRowInner, lgStoreColor, lgCase } from './ledger-ui.js';
 import { hydrateProdPhotoThumbs, loadProdPhotosForEdit, prodPhotoStripHtml, resetProdPhotos } from './prod-photos.js';
 import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _readFileAsArrayBuffer, _readFileAsText, _safeErr, _triggerFileDownload, appMode, auth, balanceAfterHtml, compareRecordVersions, compareTimestamps, CryptoEngine, currentRepProfile, currentUser, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, escapeHtml, extractUUIDMeta, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getRecordTimestamp, getTimestamp, loadAllData, localDateStr, OfflineAuth, round2, safeNumber, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
@@ -39,7 +40,7 @@ export function _set_currentFactoryDate(v) { currentFactoryDate = v; window.curr
 export let currentFactoryEntryStore = 'STORE_A';
 window.currentFactoryEntryStore = currentFactoryEntryStore;
 export function _set_currentFactoryEntryStore(v) { currentFactoryEntryStore = v; window.currentFactoryEntryStore = v; }
-export let currentProductionView = 'store';
+export let currentProductionView = 'combined';
 window.currentProductionView = currentProductionView;
 export function _set_currentProductionView(v) { currentProductionView = v; window.currentProductionView = v; }
 export let currentOverviewMode = 'day';
@@ -1592,7 +1593,7 @@ export async function rebuildStoreUI() {
       const btn = document.createElement('button');
       btn.className = 'toggle-opt' + (i === 0 ? ' active' : '');
       btn.id = 'btn-supply-store-' + s.key.toLowerCase();
-      btn.textContent = s.name;
+      btn.textContent = lgCase(s.name);
       btn.onclick = () => selectSupplyStore(btn, s.key);
       supplyGroup.appendChild(btn);
     });
@@ -1610,7 +1611,7 @@ export async function rebuildStoreUI() {
         const btn = document.createElement('button');
         btn.className = 'toggle-opt' + (i === 0 ? ' active' : '');
         btn.id = 'ret-store-' + s.key.toLowerCase();
-        btn.textContent = s.name;
+        btn.textContent = lgCase(s.name);
         btn.onclick = () => selectReturnStore(s.key, btn);
         retGroup.appendChild(btn);
       });
@@ -1626,7 +1627,7 @@ export async function rebuildStoreUI() {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'toggle-opt' + ((cur ? s.key === cur : i === 0) ? ' active' : '');
-      btn.textContent = s.name;
+      btn.textContent = lgCase(s.name);
       btn.onclick = () => {
         storeHidden.value = s.key;
         storeTglGrp.querySelectorAll('.toggle-opt').forEach(b => b.classList.remove('active'));
@@ -3439,7 +3440,7 @@ return true;
 const totalItems = filteredProduction.length;
 const histContainer = document.getElementById('prodHistoryList');
 if (totalItems === 0) {
-histContainer.replaceChildren(Object.assign(document.createElement('p'), {textContent:'No records found for this selection.',style:'text-align:center;color:var(--text-muted);width:100%;font-size:0.85rem'}));
+histContainer.replaceChildren(Object.assign(document.createElement('p'), {textContent:'Nothing recorded for this selection. Use Record production above to add an entry.',className:'u-empty-state-md'}));
 } else {
 const fragment = document.createDocumentFragment();
 const _badgeClasses = ['store-a', 'store-b', 'store-c', 'store-d', 'store-e'];
@@ -3457,58 +3458,68 @@ if (item.isMerged) {
 mergedBadge = _mergedBadgeHtml(item, {inline:true});
 }
 const div = document.createElement('div');
-div.className = `card liquid-card ${highlightClass}${item.isReturn ? ' return-card' : ''}${item.isTransfer ? ' transfer-card' : ''}`;
+div.className = `card lrow ${highlightClass}${item.isReturn ? ' return-card' : ''}${item.isTransfer ? ' transfer-card' : ''}`.trim();
 if (item.date) div.setAttribute('data-date', item.date);
-let returnsByStoreHtml = '';
-if (item.isMerged && item.isReturn && item.returnsByStore && Object.keys(item.returnsByStore).length > 1) {
-  returnsByStoreHtml = Object.entries(item.returnsByStore).map(([s,q]) =>
-    `<p><span style="color:var(--text-muted);">${esc(typeof getStoreLabel === 'function' ? getStoreLabel(s) : s)}:</span> <span class="qty-val">${fmtNum(safeValue(q))} kg</span></p>`
-  ).join('');
-}
+const _lgColor = lgStoreColor(_storeIdx >= 0 ? _storeIdx : (item.store === 'STORE_A' ? 0 : item.store === 'STORE_B' ? 1 : 2));
+const _lgTitle = `<i class="dot" style="background:${_lgColor}"></i>${esc(storeLabel)}, ${formatDisplayDateTime(item.date, item.time)}`;
+const _lgBadgeHtml = `${mergedBadge}${item.managedBy ? `<span class="managed-by-badge">${esc(item.managedBy)}</span>` : ''}${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(item) : ''}`;
+const _lgNote = _lgBadgeHtml ? `<div class="lrow-note">${_lgBadgeHtml}</div>` : '';
+const _lgDelBtn = `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`;
 if (item.isTransfer) {
 const isOutSide = item.transferDirection === 'out';
 const peerLabel = getStoreLabel(item.transferPeerStore) || item.transferPeerStore;
-div.innerHTML = `
-${currentProductionView === 'combined' ? `<span class="store-badge ${storeBadgeClass}">${esc(storeLabel)}</span>` : ''}
-<div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
-<span class="u-fs-sm2 u-text-muted">${dateDisplay}${mergedBadge}</span>
-${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(item) : ''}
-</div>
-<p style="color:${isOutSide ? 'var(--danger)' : 'var(--accent-emerald)'};font-size:0.75rem;font-style:italic;">${isOutSide ? `Stock Transfer Out &rarr; ${esc(peerLabel)}` : `Stock Transfer In &larr; ${esc(peerLabel)}`}</p>
-<p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(Math.abs(item.net)))} kg</span></p>
-${item.transferNote ? `<p><span>Note:</span> <span style="color:var(--text-muted);">${esc(item.transferNote)}</span></p>` : ''}
-${actionRowHtml('stocktransfer', item.transferPairId, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`)}
-`;
+div.innerHTML = ledgerRowInner({
+title: _lgTitle,
+main: fmtNum(safeValue(Math.abs(item.net))),
+side: 'kg',
+summary: isOutSide ? `Stock transfer out to ${esc(peerLabel)}` : `Stock transfer in from ${esc(peerLabel)}`,
+rows: [
+['Quantity', `${fmtNum(safeValue(Math.abs(item.net)))} kg`],
+['Direction', isOutSide ? `Out to ${esc(peerLabel)}` : `In from ${esc(peerLabel)}`],
+['Note', item.transferNote ? esc(item.transferNote) : ''],
+],
+extra: _lgNote,
+actions: actionRowHtml('stocktransfer', item.transferPairId, _lgDelBtn),
+});
+} else if (item.isReturn) {
+div.innerHTML = ledgerRowInner({
+title: _lgTitle,
+main: fmtNum(safeValue(item.net)),
+side: 'kg returned',
+summary: `${item.isMerged ? 'Merged returns by' : 'Returned by'} ${esc(item.returnedBy || 'Representative')}`,
+rows: [
+['Returned', `${fmtNum(safeValue(item.net))} kg`],
+['Returned by', esc(item.returnedBy || 'Representative')],
+],
+extra: `${returnsByStoreHtml ? `<div class="lrow-extra">${returnsByStoreHtml}</div>` : ''}${_lgNote}`,
+actions: item.isMerged ? '' : `<div class="lrow-acts">${_lgDelBtn.replace(' u-w-full u-mt-8', '')}</div>`,
+});
 } else {
-div.innerHTML = `
-${currentProductionView === 'combined' ? `<span class="store-badge ${storeBadgeClass}">${esc(storeLabel)}</span>` : ''}
-${item.isMerged ? '' : paymentBadge}
-<div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:4px;">
-<span class="u-fs-sm2 u-text-muted">${dateDisplay}${mergedBadge}</span>
-${item.managedBy ? `<span class="managed-by-badge">${esc(item.managedBy)}</span>` : ''}
-${item.createdBy && typeof _creatorBadgeHtml === 'function' ? _creatorBadgeHtml(item) : ''}
-</div>
-${item.isReturn ? `
-<p style="color:var(--accent-emerald);font-size:0.75rem;font-style:italic;">${item.isMerged ? 'Merged returns by' : 'Returned by'} ${esc(item.returnedBy || 'Representative')}</p>
-<p><span>Returned:</span> <span class="qty-val">${fmtNum(safeValue(item.net))} kg</span></p>
-${returnsByStoreHtml}
-${item.isMerged ? '' : `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`}
-` : `
-${item.grossWt ? `<p><span>Gross Weight:</span> <span class="qty-val">${fmtNum(safeValue(item.grossWt))} kg</span></p>` : ''}
-${item.contWt ? `<p><span>Container:</span> <span style="color:var(--text-muted);">${fmtNum(safeValue(item.contWt))} kg</span></p>` : ''}
-<p><span>Net Weight:</span> <span class="qty-val">${fmtNum(safeValue(item.net))} kg</span></p>
-<p><span>Cost Price:</span> <span class="cost-val">${fmtNum(safeValue(item.cp))}/kg</span></p>
-<p><span>Sale Price:</span> <span class="rev-val">${fmtNum(safeValue(item.sp))}/kg</span></p>
-<hr>
-<p><span>Total Cost:</span> <span class="cost-val">${fmtAmt(safeValue(item.totalCost))}</span></p>
-<p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(item.totalSale))}</span></p>
-<p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(item.profit))}</span></p>
-${item.formulaUnits ? `<p><span>Formula Units:</span> <span class="qty-val">${fmtNum(safeValue(item.formulaUnits))}</span></p>` : ''}
-${item.formulaCost ? `<p><span>Formula Cost:</span> <span class="cost-val">${fmtAmt(safeValue(item.formulaCost))}</span></p>` : ''}
-${prodPhotoStripHtml(item)}
-${item.isMerged ? '' : actionRowHtml('prod', item.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteProdEntry('${esc(item.id)}') })()">Delete</button>`)}
-`}
-`;
+const _fu = safeValue(item.formulaUnits);
+const _sumParts = [];
+if (item.formulaUnits) _sumParts.push(`${fmtNum(_fu)} formula unit${_fu === 1 ? '' : 's'}`);
+_sumParts.push(`cost ${fmtAmt(safeValue(item.formulaCost || item.totalCost))}`);
+div.innerHTML = ledgerRowInner({
+title: _lgTitle,
+main: fmtNum(safeValue(item.net)),
+side: `+${fmtAmt(safeValue(item.profit))}`,
+sideClass: 'pos',
+summary: _sumParts.join(', '),
+rows: [
+['Gross weight', item.grossWt ? `${fmtNum(safeValue(item.grossWt))} kg` : ''],
+['Container', item.contWt ? `${fmtNum(safeValue(item.contWt))} kg` : ''],
+['Net weight', `${fmtNum(safeValue(item.net))} kg`],
+['Cost price', `${fmtNum(safeValue(item.cp))} per kg`],
+['Sale price', `${fmtNum(safeValue(item.sp))} per kg`],
+['Total cost', fmtAmt(safeValue(item.totalCost))],
+['Total value', fmtAmt(safeValue(item.totalSale))],
+['Net profit', `<span class="pos">${fmtAmt(safeValue(item.profit))}</span>`],
+['Formula units', item.formulaUnits ? fmtNum(safeValue(item.formulaUnits)) : ''],
+['Formula cost', item.formulaCost ? fmtAmt(safeValue(item.formulaCost)) : ''],
+],
+extra: `${prodPhotoStripHtml(item)}${_lgNote}`,
+actions: item.isMerged ? '' : actionRowHtml('prod', item.id, _lgDelBtn),
+});
 }
 fragment.appendChild(div);
 });
@@ -5673,6 +5684,7 @@ refreshFactoryTab();
 }
 
 export function setProductionView(view, event) {
+view = 'combined'; // ledger layout: entry, summary, details and history share one scroll
 currentProductionView = view; window.currentProductionView = currentProductionView;
 document.querySelectorAll('.production-toggle-btn').forEach(btn => btn.classList.remove('active'));
 if (event && event.target) event.target.classList.add('active');
@@ -5690,7 +5702,7 @@ if (analyticsSection) analyticsSection.classList.add('hidden');
 if (historyHeader) historyHeader.classList.remove('hidden');
 if (searchBar) searchBar.classList.remove('hidden');
 } else {
-entrySection.classList.add('hidden');
+entrySection.classList.remove('hidden');
 if (combinedOverview) combinedOverview.classList.remove('hidden');
 if (combinedChart) combinedChart.classList.remove('hidden');
 if (analyticsSection) analyticsSection.classList.remove('hidden');
@@ -5731,6 +5743,7 @@ formulaCost: 0
 };
 const allStoresGrid = document.getElementById('all-stores-grid');
 const _asgFrag = document.createDocumentFragment();
+const _lgStoresInfo = [];
 const allStoresSoldByCustomer = {};
 stores.forEach((store, index) => {
 let storeData = {
@@ -5843,56 +5856,30 @@ totalCombined.cost += storeData.cost;
 totalCombined.profit += storeData.profit;
 totalCombined.formulaUnits += storeData.formulaUnits;
 totalCombined.formulaCost += storeData.formulaCost;
-let returnsHtml = '';
-if (storeData.returns > 0) {
-returnsHtml = `<p><span>Returns Recvd:</span> <span style="color:#10b981; font-weight:800;">${fmtNum(safeValue(storeData.returns))} kg</span></p>`;
-}
-
-let soldBreakdownHtml = '';
-const soldBreakdownEntries = Object.entries(soldByCustomer).sort((a, b) => b[1] - a[1]);
-if (soldBreakdownEntries.length > 0) {
-const soldBreakdownId = `sold-breakdown-${store}-${index}`;
-const soldRowsHtml = soldBreakdownEntries.map(([cust, qty]) => `
-<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--glass-border);">
-<span style="font-size:0.7rem;color:var(--text-main);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cust)}</span>
-<span style="font-size:0.7rem;font-weight:700;color:var(--cost-val, #f59e0b);white-space:nowrap;margin-left:8px;">${fmtNum(safeValue(qty))} kg</span>
-</div>`).join('');
-soldBreakdownHtml = `
-<div style="margin-top:4px;">
-<button onclick="(function(el){var p=document.getElementById('${soldBreakdownId}');var open=p.style.display!=='none';p.style.display=open?'none':'block';el.querySelector('span').textContent=open?'▶':'▼';})(this)"
-style="display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;padding:4px 0;width:100%;">
-<span style="font-size:0.68rem;color:var(--accent);">▶</span>
-<span style="font-size:0.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;">Sold Breakdown</span>
-</button>
-<div id="${soldBreakdownId}" style="display:none;background:var(--glass-raised);border-radius:10px;padding:8px 10px;margin-top:4px;border:1px solid var(--glass-border);">
-<div style="display:flex;justify-content:space-between;padding-bottom:5px;margin-bottom:2px;">
-<span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Customer</span>
-<span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;min-width:60px;text-align:right;">Qty Sold</span>
-</div>
-${soldRowsHtml}
-</div>
-</div>`;
-}
+const _lgSoldEntries = Object.entries(soldByCustomer).sort((a, b) => b[1] - a[1]);
+const _lgSoldHtml = _lgSoldEntries.length ? `<div class="lrow-extra"><div class="lg-lbl">Sold to</div>${_lgSoldEntries.map(([cust, qty]) => `<p><span>${esc(cust)}</span><b>${fmtNum(safeValue(qty), 3)} kg</b></p>`).join('')}</div>` : '';
+_lgStoresInfo.push({ name: storeNames[index], remaining: remainingQty, produced: totalIn });
 const card = document.createElement('div');
-card.className = `overview-card liquid-card`;
-card.innerHTML = `
-<span class="store-badge ${storeColors[index]}">${esc(storeNames[index])}</span>
-<h4>${esc(storeNames[index])} (${mode === 'all' ? 'All Times' : _cap(mode)})</h4>
-<p><span>Produced:</span> <span class="qty-val" style="color:var(--text-main);">${fmtNum(safeValue(storeData.production))} kg</span></p>
-${returnsHtml}
-<p><span>Sold (Sales Tab):</span> <span class="cost-val">${fmtNum(safeValue(soldQty))} kg</span></p>
-${soldBreakdownHtml}
-<div style="border-top:1px dashed var(--glass-border); margin:4px 0; padding-top:4px;">
-<p><span>Remaining:</span> <span class="profit-val" style="font-size:1.1rem;">${fmtNum(safeValue(remainingQty))} kg</span></p>
-</div>
-<div style="background:rgba(37,99,235,0.03); padding:5px; border-radius:6px; margin:5px 0;">
-<p><span>Formula Units:</span> <span class="qty-val u-fw-700" >${fmtNum(safeValue(storeData.formulaUnits))}</span></p>
-<p><span>Formula Cost:</span> <span class="cost-val u-fw-700" >${fmtAmt(safeValue(storeData.formulaCost))}</span></p>
-</div>
-<hr>
-<p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(storeData.value))}</span></p>
-<p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(storeData.profit))}</span></p>
-`;
+card.className = 'lrow';
+card.innerHTML = ledgerRowInner({
+title: `<i class="dot" style="background:${lgStoreColor(index)}"></i>${esc(storeNames[index])}`,
+main: fmtNum(safeValue(remainingQty), 3),
+side: 'kg left',
+summary: `Made ${fmtNum(safeValue(storeData.production), 3)}, sold ${fmtNum(safeValue(soldQty), 3)}`,
+progress: totalIn > 0 ? (soldQty / totalIn * 100) : 0,
+progressColor: lgStoreColor(index),
+rows: [
+['Produced', `${fmtNum(safeValue(storeData.production), 3)} kg`],
+['Returns received', storeData.returns > 0 ? `${fmtNum(safeValue(storeData.returns), 3)} kg` : ''],
+['Sold', `${fmtNum(safeValue(soldQty), 3)} kg`],
+['Left', `${fmtNum(safeValue(remainingQty), 3)} kg`],
+['Formula units', fmtNum(safeValue(storeData.formulaUnits))],
+['Formula cost', fmtAmt(safeValue(storeData.formulaCost))],
+['Total value', fmtAmt(safeValue(storeData.value))],
+['Net profit', `<span class="pos">${fmtAmt(safeValue(storeData.profit))}</span>`],
+],
+extra: _lgSoldHtml,
+});
 _asgFrag.appendChild(card);
 });
 const combinedRemaining = totalCombined.qty - totalCombined.sold;
@@ -5921,51 +5908,33 @@ const combinedRemaining = totalCombined.qty - totalCombined.sold;
 		totalCombined.returns = calcTabTotalReturns;
 	}
 
-let combinedSoldBreakdownHtml = '';
 const combinedSoldEntries = Object.entries(allStoresSoldByCustomer).sort((a, b) => b[1] - a[1]);
-if (combinedSoldEntries.length > 0) {
-const combinedSoldBreakdownId = `sold-breakdown-combined`;
-const combinedSoldRowsHtml = combinedSoldEntries.map(([cust, qty]) => `
-<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--glass-border);">
-<span style="font-size:0.7rem;color:var(--text-main);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cust)}</span>
-<span style="font-size:0.7rem;font-weight:700;color:var(--cost-val, #f59e0b);white-space:nowrap;margin-left:8px;">${fmtNum(safeValue(qty))} kg</span>
-</div>`).join('');
-combinedSoldBreakdownHtml = `
-<div style="margin-top:4px;">
-<button onclick="(function(el){var p=document.getElementById('${combinedSoldBreakdownId}');var open=p.style.display!=='none';p.style.display=open?'none':'block';el.querySelector('span').textContent=open?'▶':'▼';})(this)"
-style="display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;padding:4px 0;width:100%;">
-<span style="font-size:0.68rem;color:var(--accent);">▶</span>
-<span style="font-size:0.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;">Sold Breakdown</span>
-</button>
-<div id="${combinedSoldBreakdownId}" style="display:none;background:var(--glass-raised);border-radius:10px;padding:8px 10px;margin-top:4px;border:1px solid var(--glass-border);">
-<div style="display:flex;justify-content:space-between;padding-bottom:5px;margin-bottom:2px;">
-<span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Customer</span>
-<span style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;min-width:60px;text-align:right;">Qty Sold</span>
-</div>
-${combinedSoldRowsHtml}
-</div>
-</div>`;
-}
+const _lgCombSold = combinedSoldEntries.length ? `<div class="lrow-extra"><div class="lg-lbl">Sold to</div>${combinedSoldEntries.map(([cust, qty]) => `<p><span>${esc(cust)}</span><b>${fmtNum(safeValue(qty), 3)} kg</b></p>`).join('')}</div>` : '';
 const combinedCard = document.createElement('div');
-combinedCard.className = `overview-card liquid-card highlight-card`;
-combinedCard.innerHTML = `
-<h4 style="color: var(--accent);">Total Combined</h4>
-<p><span>Fresh Production:</span> <span class="qty-val">${fmtNum(safeValue(totalCombined.production))} kg</span></p>
-${totalCombined.returns > 0 ? `<p><span>Total Returns:</span> <span style="color:#10b981; font-weight:800;">${fmtNum(safeValue(totalCombined.returns))} kg</span></p>` : ''}
-<p><span>Total Sold:</span> <span class="cost-val">${fmtNum(safeValue(totalCombined.sold))} kg</span></p>
-${combinedSoldBreakdownHtml}
-<div style="border-top:1px dashed var(--glass-border); margin:4px 0; padding-top:4px;">
-<p><span>Total Remaining:</span> <span class="profit-val" style="font-size:1.1rem;">${fmtNum(safeValue(combinedRemaining))} kg</span></p>
-</div>
-<p><span>Total Formula Units:</span> <span class="qty-val">${fmtNum(safeValue(totalCombined.formulaUnits))}</span></p>
-<p><span>Total Formula Cost:</span> <span class="cost-val">${fmtAmt(safeValue(totalCombined.formulaCost))}</span></p>
-<hr style="margin:8px 0;">
-<p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(totalCombined.value))}</span></p>
-<p><span>Total Cost:</span> <span class="cost-val">${fmtAmt(safeValue(totalCombined.cost))}</span></p>
-<p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(totalCombined.profit))}</span></p>
-`;
+combinedCard.className = 'lrow';
+combinedCard.innerHTML = ledgerRowInner({
+title: `All stores${mode === 'all' ? '' : ''}`,
+main: fmtNum(safeValue(combinedRemaining), 3),
+side: 'kg left',
+summary: `Made ${fmtNum(safeValue(totalCombined.production), 3)}, sold ${fmtNum(safeValue(totalCombined.sold), 3)}`,
+progress: totalCombined.qty > 0 ? (totalCombined.sold / totalCombined.qty * 100) : 0,
+progressColor: 'var(--fg)',
+rows: [
+['Fresh production', `${fmtNum(safeValue(totalCombined.production), 3)} kg`],
+['Returns received', totalCombined.returns > 0 ? `${fmtNum(safeValue(totalCombined.returns), 3)} kg` : ''],
+['Sold', `${fmtNum(safeValue(totalCombined.sold), 3)} kg`],
+['Left', `${fmtNum(safeValue(combinedRemaining), 3)} kg`],
+['Formula units', fmtNum(safeValue(totalCombined.formulaUnits))],
+['Formula cost', fmtAmt(safeValue(totalCombined.formulaCost))],
+['Total value', fmtAmt(safeValue(totalCombined.value))],
+['Total cost', fmtAmt(safeValue(totalCombined.cost))],
+['Net profit', `<span class="pos">${fmtAmt(safeValue(totalCombined.profit))}</span>`],
+],
+extra: _lgCombSold,
+});
 _asgFrag.appendChild(combinedCard);
 allStoresGrid.replaceChildren(_asgFrag);
+if (window.LedgerUI) window.LedgerUI.updateProdStockHero(_lgStoresInfo, combinedRemaining, totalCombined.qty);
 updateStoreComparisonChart(mode);
 }
 
@@ -6385,7 +6354,7 @@ updateStatDisplay('all', stats.all);
 if (typeof setSalesSummaryMode === 'function') setSalesSummaryMode(currentSalesSummaryMode || 'day');
 const histContainer = document.getElementById('custHistoryList');
 if (totalItems === 0) {
-histContainer.replaceChildren(Object.assign(document.createElement('p'), {textContent:'No sales found.',style:'text-align:center;color:var(--text-muted);width:100%;font-size:0.85rem'}));
+histContainer.replaceChildren(Object.assign(document.createElement('p'), {textContent:'No sales yet. Use New sale above to record one.',className:'u-empty-state-md'}));
 } else {
 const fragment = document.createDocumentFragment();
 displayData.forEach(async item => {
@@ -6414,9 +6383,13 @@ if (item.isMerged) {
 mergedBadge = _mergedBadgeHtml(item, {inline:true});
 }
 const card = document.createElement('div');
-card.className = `card liquid-card ${highlightClass}${item.isSettled ? ' is-settled-record' : ''}`.trim();
+card.className = `card lrow ${highlightClass}${item.isSettled ? ' is-settled-record' : ''}`.trim();
 const _cardDate = item.supplyDate || item.date;
 if (_cardDate) card.setAttribute('data-date', _cardDate);
+const _lgTime = formatDisplayDateTime(item.date, item.time);
+const _lgSupplyName = supplyTagText.charAt(0) + supplyTagText.slice(1).toLowerCase();
+const _lgBadges = `${repBadge}${mergedBadge}${(typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(item) : ''}`;
+const _lgNote = _lgBadges.trim() ? `<div class="lrow-note">${_lgBadges}</div>` : '';
 let creditSection = '';
 if (!isOldDebtItem) {
 if (paymentType === 'CREDIT' && !creditReceived) {
@@ -6427,56 +6400,63 @@ creditSection = `
 </div>
 `;
 } else if (paymentType === 'CREDIT' && creditReceived) {
-creditSection = `<div class="received-indicator">Credit Received </div>`;
+creditSection = `<div class="received-indicator">Credit received</div>`;
 }
 }
-const deleteBtnHtml = item.isMerged ? '' : item.isSettled ? `<div class="settled-badge"> Settled</div>` : actionRowHtml('sale', item.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteCustomerSale('${esc(item.id)}') })()">Delete</button>`);
-const supplyDateLine = (item.supplyDate && item.supplyDate !== item.date)
-? `<p style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;font-style:italic;">Supply Date: ${esc(formatDisplayDate(item.supplyDate))}</p>`
-: '';
+const deleteBtnHtml = item.isMerged ? '' : item.isSettled ? `<div class="settled-badge">Settled</div>` : actionRowHtml('sale', item.id, `<button class="tbl-action-btn danger u-w-full u-mt-8" onclick="(async () => { await deleteCustomerSale('${esc(item.id)}') })()">Delete</button>`);
+const _lgSupplyDate = (item.supplyDate && item.supplyDate !== item.date) ? esc(formatDisplayDate(item.supplyDate)) : '';
 if (isOldDebtItem) {
-card.innerHTML = `
-<div class="payment-badge credit">CREDIT</div>
-<div class="customer-name" style="margin-top: 12px;">${esc(item.customerName)}
-<span class="old-debt-badge">OLD DEBT</span>${item.isMerged ? _mergedBadgeHtml(item, {inline:true}) : ''}${(typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(item) : ''}
-</div>
-<h4 style="margin-top: 5px; font-size: 0.75rem; font-weight:400; color: var(--text-muted);" class="u-fs-sm2 u-text-muted">${dateDisplay}</h4>
-${supplyDateLine}
-<hr>
-<p><span>Previous Balance:</span> <span class="rev-val">${fmtAmt(safeValue(item.totalValue))}</span></p>
-<p class="u-fs-sm u-text-muted" >${esc(item.notes || 'Brought forward from previous records')}</p>
-${deleteBtnHtml}
-`;
+card.innerHTML = ledgerRowInner({
+title: `${esc(item.customerName)}<span class="stamp mut">Old debt</span>`,
+main: fmtAmt(safeValue(item.totalValue)),
+side: '',
+summary: `${_lgTime}`,
+rows: [
+['Previous balance', fmtAmt(safeValue(item.totalValue))],
+['Supply date', _lgSupplyDate],
+],
+extra: `<div class="lrow-note">${esc(item.notes || 'Brought forward from previous records')}</div>${_lgNote}`,
+actions: deleteBtnHtml,
+});
 } else if (isAdminCollItem) {
-card.innerHTML = `
-<div class="payment-badge collection">COLLECTION</div>
-<div class="customer-name" style="margin-top:12px;">${esc(item.customerName)} ${mergedBadge}</div>
-<div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px;margin-bottom:2px;">
-<span class="u-fs-sm2 u-text-muted">${dateDisplay}</span>
-${(typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(item) : ''}
-</div>
-${supplyDateLine}
-<hr>
-<p><span>Amount Collected:</span> <span class="profit-val">${fmtAmt(safeValue(item.totalValue))}</span></p>
-${deleteBtnHtml}
-`;
+card.innerHTML = ledgerRowInner({
+title: `${esc(item.customerName)}<span class="stamp">Collection</span>`,
+main: fmtAmt(safeValue(item.totalValue)),
+side: '',
+summary: `${_lgTime}`,
+rows: [
+['Amount collected', `<span class="pos">${fmtAmt(safeValue(item.totalValue))}</span>`],
+['Supply date', _lgSupplyDate],
+],
+extra: _lgNote,
+actions: deleteBtnHtml,
+});
 } else {
-card.innerHTML = `
-<div class="payment-badge ${badgeClass}">${esc(badgeText)}</div>
-<div class="customer-name" style="margin-top: 12px;">${esc(item.customerName)} ${repBadge} ${mergedBadge}</div>
-<div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px;margin-bottom:2px;">
-<span class="u-fs-sm2 u-text-muted">${dateDisplay}</span>
-${(typeof _creatorBadgeHtml === 'function') ? _creatorBadgeHtml(item) : ''}
-</div>
-${supplyDateLine}
-<div class="supply-tag ${supplyTagClass}">Supply: ${supplyTagText}</div>
-<hr>
-<p><span>Quantity:</span> <span class="qty-val">${fmtNum(safeValue(item.quantity))} kg</span></p>
-<p><span>Total Value:</span> <span class="rev-val">${fmtAmt(safeValue(item.totalValue))}</span></p>
-<p><span>Net Profit:</span> <span class="profit-val">${fmtAmt(safeValue(item.profit))}</span></p>
-${creditSection}
-${deleteBtnHtml}
-`;
+const _qty = safeValue(item.quantity);
+const _rate = _qty > 0 ? safeValue(item.totalValue) / _qty : 0;
+const _stampCls = creditReceived || paymentType === 'CASH' ? 'stamp pos' : 'stamp';
+const _stampTxt = creditReceived ? 'Received' : (paymentType === 'CASH' ? 'Cash' : (paymentType === 'CREDIT' ? 'Credit' : esc(badgeText)));
+const _payStatus = paymentType === 'CREDIT' ? (creditReceived ? 'Credit, received' : 'Credit, not yet received') : (paymentType === 'CASH' ? 'Cash' : esc(badgeText));
+const _soldThrough = (item.salesRep && item.salesRep !== 'NONE' && item.salesRep !== 'ADMIN') ? esc(item.salesRep) : 'Direct';
+card.innerHTML = ledgerRowInner({
+title: `${esc(item.customerName)}<span class="${_stampCls}">${_stampTxt}</span>`,
+main: fmtNum(_qty),
+side: `+${fmtAmt(safeValue(item.profit))}`,
+sideClass: 'pos',
+summary: `${esc(_lgSupplyName)}, ${_lgTime}, ${fmtAmt(safeValue(item.totalValue))}`,
+rows: [
+['Quantity', `${fmtNum(_qty)} kg`],
+['Rate', `${fmtNum(_rate)} per kg`],
+['Total value', fmtAmt(safeValue(item.totalValue))],
+['Net profit', `<span class="pos">${fmtAmt(safeValue(item.profit))}</span>`],
+['Supply', esc(_lgSupplyName)],
+['Payment', _payStatus],
+['Sold through', _soldThrough],
+['Supply date', _lgSupplyDate],
+],
+extra: `${creditSection}${_lgNote}`,
+actions: deleteBtnHtml,
+});
 }
 fragment.appendChild(card);
 });

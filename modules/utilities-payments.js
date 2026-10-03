@@ -1039,6 +1039,7 @@ if (valueEl) valueEl.textContent = fmtAmt(s.v !== undefined ? s.v : 0);
 if (cashEl) cashEl.textContent = fmtAmt(s.cash !== undefined ? s.cash : 0);
 if (creditEl) creditEl.textContent = fmtAmt(s.credit !== undefined ? s.credit : 0);
 if (profitEl) profitEl.textContent = fmtAmt(s.profit !== undefined ? s.profit : 0);
+if (window.LedgerUI) window.LedgerUI.updateSalesPaymentBar(mode, s.cash, s.credit);
 const card = document.getElementById('sales-summary-card');
 if (card) {
 if (mode === 'all') card.classList.add('all-times-summary');
