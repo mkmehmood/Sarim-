@@ -1,6 +1,6 @@
 {
-  "appId": "com.sarim.app",
-  "appName": "Gull & Zubair",
+  "appId": "com.gullzubair.sarim",
+  "appName": "sarimbiz",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

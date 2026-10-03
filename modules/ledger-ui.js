@@ -40,7 +40,7 @@ export function toggleLedgerRow(row) {
 
 document.addEventListener('click', (e) => {
   const row = e.target.closest && e.target.closest('.lrow, .who-row');
-  if (!row) return;
+  if (!row || row.classList.contains('who-link')) return;
   if (e.target.closest('.lrow-more')) return;           // taps inside the panel never collapse it
   if (e.target.closest('a, input, select, textarea, [data-no-toggle]')) return;
   toggleLedgerRow(row);
@@ -50,6 +50,26 @@ document.addEventListener('click', (e) => {
 export function lgCase(v) {
   const t = String(v == null ? '' : v);
   return t === t.toUpperCase() && /[A-Z]/.test(t) ? t.charAt(0) + t.slice(1).toLowerCase() : t;
+}
+
+/* ---------- Shared list row: avatar, name, one line, amount. Tap opens the record's screen. ----------
+   No dropdown: this is the row used by Sales customers, Unified Records, Rep customers and Inventory. */
+const _initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('') || '?';
+export function whoRow(o) {
+  const el = document.createElement('div');
+  el.className = 'who-row who-link';
+  el.setAttribute('role', 'button');
+  el.tabIndex = 0;
+  const tag = o.tag ? `<span class="stamp ${lgEsc(o.tagClass || 'mut')}">${lgEsc(o.tag)}</span>` : '';
+  const col = o.amountColor ? ` style="color:${lgEsc(o.amountColor)}"` : '';
+  el.innerHTML = `<div class="av" aria-hidden="true">${lgEsc(o.avatar != null ? o.avatar : _initials(o.name))}</div>`
+    + `<div class="who-name">${lgEsc(o.name)}${tag}</div>`
+    + `<div class="lrow-s">${lgEsc(o.sub || '')}</div>`
+    + `<div class="lrow-n"${col}>${lgEsc(o.amount)}</div>`;
+  const open = () => { if (typeof o.onOpen === 'function') o.onOpen(); };
+  el.addEventListener('click', (e) => { if (e.target.closest('a, button')) return; open(); });
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  return el;
 }
 
 /* ---------- Number helpers ---------- */
@@ -138,8 +158,32 @@ function tabVisible(card) {
 function activeCard() {
   return [...document.querySelectorAll('.lg-entry')].find((c) => tabVisible(c)) || null;
 }
+/* The device can be locked to Rep Sales or a User role by a remote command (window.appMode).
+   In those modes there is no floating button: the entry cards stay on the page in full view. */
+const INLINE_MODES = ['rep', 'userrole'];
+function isInlineMode() { return INLINE_MODES.indexOf(window.appMode) !== -1; }
+function applyInlineMode() {
+  const on = isInlineMode();
+  document.body.classList.toggle('lg-inline-entry', on);
+  if (on && openSheet) closeEntrySheet(true);
+  updateFab();
+}
+function watchAppMode() {
+  let current = window.appMode;
+  try {
+    Object.defineProperty(window, 'appMode', {
+      configurable: true,
+      enumerable: true,
+      get() { return current; },
+      set(v) { current = v; applyInlineMode(); },
+    });
+  } catch (e) { /* property locked: fall back to polling */ setInterval(applyInlineMode, 1500); }
+  applyInlineMode();
+}
+
 function updateFab() {
   if (!fab) return;
+  if (isInlineMode()) { fab.classList.remove('show'); fab.tabIndex = -1; return; }
   if (openSheet && !tabVisible(openSheet)) { closeEntrySheet(true); return; }
   const card = activeCard();
   const show = !!card && !openSheet && window.__appLocked !== true && !document.querySelector('.standalone-screen.active, .standalone-screen.open, .standalone-screen[style*="display: block"], .standalone-screen[style*="display:block"]');
@@ -152,6 +196,7 @@ function updateFab() {
   }
 }
 export function openEntrySheet(card) {
+  if (isInlineMode()) return;
   card = card || activeCard();
   if (!card) return;
   if (openSheet && openSheet !== card) closeEntrySheet(true);
@@ -198,9 +243,7 @@ function initSheets() {
   document.querySelectorAll('.lg-entry').forEach((card) => {
     const bar = document.createElement('div');
     bar.className = 'lg-sheet-bar';
-    bar.innerHTML = '<span class="lg-grab" aria-hidden="true"></span><button type="button" class="lg-sheet-x" aria-label="Close">'
-      + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
-    bar.querySelector('.lg-sheet-x').addEventListener('click', () => closeEntrySheet());
+    bar.innerHTML = '<span class="lg-grab" aria-hidden="true"></span>';
     card.insertBefore(bar, card.firstChild);
   });
 
@@ -228,25 +271,10 @@ function initSheets() {
   updateFab();
 }
 
-/* Every standalone screen gets the same page header: round back button, then the big title */
-function initScreenHeaders() {
-  document.querySelectorAll('.standalone-screen').forEach((scr) => {
-    const bar = scr.querySelector(':scope > .screen-topbar');
-    if (!bar || bar.querySelector('.lg-back')) return;
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'lg-back';
-    b.setAttribute('aria-label', 'Back');
-    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-    b.addEventListener('click', () => { if (typeof window.closeStandaloneScreen === 'function') window.closeStandaloneScreen(scr.id); });
-    bar.insertBefore(b, bar.firstChild);
-  });
-}
-
 function init() {
   fillDates();
   initSheets();
-  initScreenHeaders();
+  watchAppMode();
   const lm = new MutationObserver(refreshLive);
   ['profit-per-kg', 'cust-total-value'].forEach((id) => {
     const t = byId(id);
@@ -259,4 +287,4 @@ function init() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
 
-window.LedgerUI = { openEntrySheet, closeEntrySheet, openSheetFor, lgCase, ledgerRowInner, toggleLedgerRow, updateProdStockHero, updateSalesOwed, updateSalesPaymentBar, syncLedgerHead, lgEsc, lgStoreColor, refreshLive };
+window.LedgerUI = { whoRow, openEntrySheet, closeEntrySheet, openSheetFor, lgCase, ledgerRowInner, toggleLedgerRow, updateProdStockHero, updateSalesOwed, updateSalesPaymentBar, syncLedgerHead, lgEsc, lgStoreColor, refreshLive };

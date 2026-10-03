@@ -1,4 +1,5 @@
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, balanceAfterHtml, currentRepProfile, debtDelta, debtNeedsGross, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, localDateStr, lockedUnitPrice, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
+import { whoRow } from './ledger-ui.js';
 import { unifiedDelete, unifiedSave } from './sync.js';
 import { getPersonPhoto, loadPersonPhotoIntoEditor, notifyDataChange, renderPersonAvatarHTML, savePersonPhoto, triggerAutoSync } from './utilities-core.js';
 import { calculateCashTracker, calculateNetCash, custTransactionMode, getStoreLabel, refreshCustomerSales, updateCollectionPreview } from './utilities-sales.js';
@@ -150,27 +151,15 @@ phone = contact?.phone || customerSaleData?.customerPhone || '-';
 } catch (phoneError) {
 console.warn('Customer data operation failed.', _safeErr(phoneError));
 }
-const safeName = esc(c.name || 'Unknown');
-const safeNameForAttr = (c.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-const initials = (c.name || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('') || '?';
 const owes = c.credit > 0;
 const sub = !c.lastSaleDate ? 'No orders yet' : (owes ? `Last order ${displayDate}` : 'Paid in full');
-const row = document.createElement('div');
-row.className = 'who-row';
-row.innerHTML = `
-<div class="av" aria-hidden="true">${esc(initials)}</div>
-<div class="who-name">${safeName}</div>
-<button type="button" class="lrow-s" aria-expanded="false">${esc(sub)}</button>
-<div class="lrow-n ${owes ? '' : 'pos'}">${fmtAmt(safeValue(c.credit))}</div>
-<div class="lrow-more"><div>
-<dl class="lrow-dl">
-<dt>Total bought</dt><dd>${fmtNum(safeNumber(c.quantity, 0))} kg</dd>
-<dt>Owes now</dt><dd>${fmtAmt(safeValue(c.credit))}</dd>
-<dt>Last order</dt><dd>${displayDate}</dd>
-<dt>Phone</dt><dd>${phoneActionHTML(phone)}</dd>
-</dl>
-<div class="lrow-acts"><button type="button" class="tbl-action-btn" onclick="event.stopPropagation(); openCustomerManagement('${safeNameForAttr}')">Open customer</button></div>
-</div></div>`;
+const row = whoRow({
+name: c.name || 'Unknown',
+sub,
+amount: fmtAmt(safeValue(c.credit)),
+amountColor: owes ? '' : 'var(--pos)',
+onOpen: () => { if (typeof window.openCustomerManagement === 'function') window.openCustomerManagement(c.name || ''); },
+});
 return row;
 } catch (rowError) {
 console.warn('An unexpected error occurred.', _safeErr(rowError));

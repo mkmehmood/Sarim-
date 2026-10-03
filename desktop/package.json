@@ -18,7 +18,7 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.sarim.app.desktop",
+    "appId": "com.gullzubair.sarim.desktop",
     "productName": "Gull and Zubair",
     "copyright": "Gull & Zubair Naswar Dealers",
     "directories": {

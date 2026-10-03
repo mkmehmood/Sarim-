@@ -1,4 +1,5 @@
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
+import { whoRow } from './ledger-ui.js';
 import { actionRowHtml, beginEditMode, confirmEditChanges, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
 import { _checkFirebaseSessionExists, _creatorBadgeHtml, _extractDeviceFirstLoginTime, _mergedBadgeHtml, _readFileAsText, _safeErr, _set_appMode, _set_currentRepProfile, _set_isSyncing, _set_salesRepsList, _set_userRolesList, _triggerFileDownload, appMode, compareRecordVersions, CryptoEngine, currentRepProfile, currentUser, deriveDeviceShard, ensureArray, ensureRecordIntegrity, esc, firebaseDB, fmtAmt, fmtNum, generateUUID, getDeviceId, getDeviceName, getTimestamp, initializeDeviceListeners, isSyncing, loadAllData, localDateStr, registerDevice, safeNumber, salesRepsList, scheduleAutomaticCleanup, SQLiteCrypto, sqliteStore, userRolesList, validateAllDataOnStartup, validateTimestamp, validateUUID } from './business.js';
 import { createAuthOverlay, emitSyncUpdate, getSQLiteKey, initFirebase, initializeCompleteFirestoreDatabase, initializeFirebaseSystem, isCompleteDatabaseInitialized, isConnectionStale, isReconnecting, listenerReconnectTimer, loadAccountsList, performOneClickSync, safeInitializeCompleteDatabase, sanitizeForFirestore, scheduleListenerReconnect, showAuthOverlay, signOut, unifiedDelete, unifiedSave, updateSyncButton } from './sync.js';
@@ -2888,63 +2889,27 @@ return b.date - a.date;
 });
 const totalItems = rows.length;
 if (!rows || !Array.isArray(rows)) {
-tbody.innerHTML = `<tr><td class="u-empty-state-danger" colspan="4" >Invalid data format</td></tr>`;
+tbody.innerHTML = `<div class="u-empty-state-danger">Records could not be read. Reload the app to try again.</div>`;
 if (totalSpan) totalSpan.textContent = '0';
 return;
 }
 if (rows.length === 0) {
-tbody.innerHTML = `
-<tr>
-<td class="u-empty-state-md" colspan="4" >
-No records found matching your filters
-</td>
-</tr>`;
+tbody.innerHTML = `<div class="u-empty-state-md">No records match your filters.</div>`;
 if (totalSpan) totalSpan.textContent = '0';
 return;
 }
 
 function buildUnifiedRow(row) {
-const tr = document.createElement('tr');
-tr.style.cssText = 'border-bottom: 1px solid var(--glass-border); transition: background 0.2s; cursor: pointer;';
-tr.onmouseover = function() { this.style.background = 'var(--highlight-bg)'; };
-tr.onmouseout = function() { this.style.background = row.type === 'entity' ? 'var(--input-bg)' : 'transparent'; };
-if (row.type === 'transaction') {
-tr.onclick = function(e) { if (!e.target.closest('a,button')) openExpenseEntityDetails(row.id); };
-tr.innerHTML = `
-<td style="padding: 8px 4px; font-size: 0.7rem; white-space: nowrap;">${row.dateStr}</td>
-<td style="padding: 8px 4px; font-weight: 600; font-size: 0.8rem; cursor:pointer;" onclick="openExpenseEntityDetails('${esc(row.id)}')">
-${esc(row.name)}
-<div style="display: inline-block; margin-left: 6px;">
-<span style="color: ${row.typeLabel === 'EXPENSE' ? 'var(--warning)' : 'var(--accent)'}; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700;">
-${row.typeLabel}
-</span>
-</div>
-</td>
-<td style="padding: 8px 4px; font-size: 0.7rem; color: var(--text-muted);">${phoneActionHTML(row.contact)}</td>
-<td style="padding: 8px 4px; text-align: right; font-weight: 700; color: ${row.color}; white-space: nowrap; font-size: 0.75rem;">
-${row.amountStr}
-</td>`;
-} else {
-tr.style.background = 'var(--input-bg)';
-tr.onclick = function(e) { if (!e.target.closest('a,button')) openEntityDetailsOverlay(row.id); };
-tr.innerHTML = `
-<td style="padding: 8px 4px; font-size: 0.7rem; white-space: nowrap; color: var(--text-main);">
-${row.dateStr}
-</td>
-<td style="padding: 8px 4px; font-weight: 700; font-size: 0.8rem; color: ${row.nameColor}; cursor:pointer;" onclick="openEntityDetailsOverlay('${esc(row.id)}')">
-${esc(row.name)}
-<div style="font-size: 0.6rem; margin-top: 2px;">
-<span style="color: ${row.amountColor}; padding: 1px 4px; border-radius: 3px; font-size: 0.55rem; font-weight: 600;">
-${row.balanceLabel}
-</span>
-</div>
-</td>
-<td style="padding: 8px 4px; font-size: 0.7rem; color: var(--text-muted);">${phoneActionHTML(row.contact)}</td>
-<td style="padding: 8px 4px; text-align: right; font-weight: 700; color: ${row.amountColor}; white-space: nowrap; font-size: 0.75rem;">
-${row.amountStr}
-</td>`;
-}
-return tr;
+const isExp = row.type === 'transaction';
+return whoRow({
+name: row.name,
+tag: isExp ? 'Expense' : (row.balanceLabel || ''),
+tagClass: isExp ? 'mut' : (/receiv/i.test(row.balanceLabel || '') ? 'pos' : (/pay/i.test(row.balanceLabel || '') ? 'neg' : 'mut')),
+sub: isExp ? `${row.dateStr}${row.description ? ', ' + row.description : ''}` : [row.contact && row.contact !== '-' ? row.contact : '', row.dateStr].filter(Boolean).join(', '),
+amount: row.amountStr,
+amountColor: isExp ? row.color : row.amountColor,
+onOpen: () => { if (isExp) openExpenseEntityDetails(row.id); else openEntityDetailsOverlay(row.id); },
+});
 }
 tbody.innerHTML = '';
 const _fragU = document.createDocumentFragment();

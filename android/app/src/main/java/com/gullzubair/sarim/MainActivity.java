@@ -1,4 +1,4 @@
-package com.sarim.app;
+package com.gullzubair.sarim;
 
 import android.os.Bundle;
 

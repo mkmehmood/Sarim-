@@ -1,4 +1,5 @@
 import { deleteProdPhotos } from './prod-photos.js';
+import { whoRow } from './ledger-ui.js';
 import { actionRowHtml, beginEditMode, endEditMode, getEditCtx, registerEditHandler, stampEdit } from './edit-mode.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, appMode, currentUser, database, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getTimestamp, localDateStr, lockedSaleValue, round2, safeNumber, safeToFixed, sqliteStore, validateUUID } from './business.js';
 import { emitSyncUpdate, pushDataToCloud, sanitizeForFirestore, unifiedDelete, unifiedSave } from './sync.js';
@@ -839,7 +840,7 @@ const factoryInventoryData = ensureArray(await sqliteStore.get('factory_inventor
 const tbody = document.getElementById('factoryInventoryTableBody');
 let totalVal = 0;
 if (factoryInventoryData.length === 0) {
-tbody.innerHTML = '<tr><td class="u-empty-state-md" colspan="5">No items in inventory</td></tr>';
+tbody.innerHTML = '<div class="u-empty-state-md">No materials yet. Add a raw material from the Factory screen.</div>';
 const _invEl = document.getElementById('factoryTotalInventoryValue');
 if (_invEl) _invEl.innerText = await formatCurrency(0);
 return;
@@ -848,39 +849,29 @@ const prebuiltRows = [];
 for (const item of factoryInventoryData) {
 const itemTotalValue = (item.quantity * item.cost) || 0;
 totalVal += itemTotalValue;
-let supplierHtml = '';
+const cf = item.conversionFactor;
+let qtyTxt;
+if (item.purchaseQuantity && item.purchaseUnitName && cf && cf !== 1) qtyTxt = `${fmtNum(item.purchaseQuantity || 0)} ${item.purchaseUnitName}`;
+else if (item.purchaseQuantity && cf && cf !== 1) qtyTxt = `${fmtNum(item.purchaseQuantity || 0)} units`;
+else qtyTxt = `${fmtNum(item.quantity || 0)} kg`;
+let costTxt;
+if (item.purchaseCost && item.purchaseUnitName && cf && cf !== 1) costTxt = `${await formatCurrency(item.purchaseCost)} per ${item.purchaseUnitName}`;
+else if (item.purchaseCost && cf && cf !== 1) costTxt = `${await formatCurrency(item.purchaseCost)} per unit`;
+else costTxt = `${await formatCurrency(item.cost)} per kg`;
+const parts = [qtyTxt, costTxt];
 if (item.supplierName) {
 const remainingPayable = item.totalPayable || 0;
 const isFullyPaid = item.paymentStatus === 'paid' || remainingPayable <= 0;
-const payableDisplay = isFullyPaid ? `<span class="u-text-emerald">0</span>` : `<span style="font-weight:600;color:var(--accent);">${fmtNum(safeNumber(remainingPayable, 0))}</span>`;
-supplierHtml = `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;"><div class="supplier-name-badge">${String(item.supplierName).replace(/'/g, "&#39;").replace(/"/g, "&quot;")}</div><div style="margin-top:3px;font-size:0.7rem;">${payableDisplay}</div></div>`;
-} else {
-supplierHtml = `<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;opacity:0.6;">No supplier linked</div>`;
+if (!isFullyPaid) parts.push(`owes ${fmtNum(safeNumber(remainingPayable, 0))}`);
 }
-let quantityHtml = '';
-if (item.purchaseQuantity && item.purchaseUnitName && item.conversionFactor && item.conversionFactor !== 1) {
-quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${fmtNum(item.purchaseQuantity || 0)}</div><div class="u-fs-sm u-text-muted">${esc(item.purchaseUnitName)}</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">(${fmtNum(item.quantity || 0)})</div></div>`;
-} else if (item.purchaseQuantity && item.conversionFactor && item.conversionFactor !== 1) {
-quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${fmtNum(item.purchaseQuantity || 0)}</div><div class="u-fs-sm u-text-muted">units</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;">(${fmtNum(item.quantity || 0)})</div></div>`;
-} else {
-quantityHtml = `<div class="u-text-center"><div class="u-fs-sm3 u-text-main u-fw-600">${fmtNum(item.quantity || 0)}</div><div class="u-fs-sm u-text-muted">kg</div></div>`;
-}
-let costHtml = '';
-if (item.purchaseCost && item.purchaseUnitName && item.conversionFactor && item.conversionFactor !== 1) {
-costHtml = `<div class="u-text-center"><div class="u-fs-sm2 u-text-main">${await formatCurrency(item.purchaseCost)}</div><div class="u-fs-sm u-text-muted">${esc(item.purchaseUnitName)}</div></div>`;
-} else if (item.purchaseCost && item.conversionFactor && item.conversionFactor !== 1) {
-costHtml = `<div class="u-text-center"><div class="u-fs-sm2 u-text-main">${await formatCurrency(item.purchaseCost)}</div><div class="u-fs-sm u-text-muted">unit</div></div>`;
-} else {
-costHtml = `<div class="u-text-center"><div class="u-fs-sm2 u-text-main">${await formatCurrency(item.cost)}</div><div class="u-fs-sm u-text-muted">kg</div></div>`;
-}
-const totalValueStr = await formatCurrency(itemTotalValue);
-const itemId = esc(item.id);
-const itemName = esc(item.name);
-const tr = document.createElement('tr');
-tr.style.borderBottom = '1px solid var(--glass-border)';
-tr.style.cursor = 'pointer';
-tr.innerHTML = `<td style="padding:8px 2px; cursor:pointer;" onclick="editFactoryInventoryItem('${itemId}')"><div style="font-weight:600;font-size:0.8rem;color:var(--accent);">${itemName}</div>${supplierHtml}</td><td style="text-align:center;padding:8px 2px;">${quantityHtml}</td><td style="text-align:right;padding:8px 2px;font-size:0.75rem;color:var(--text-muted);">${costHtml}</td><td style="text-align:right;padding:8px 2px;font-size:0.8rem;font-weight:700;color:var(--accent);">${totalValueStr}</td>`;
-prebuiltRows.push(tr);
+const itemId = item.id;
+prebuiltRows.push(whoRow({
+name: item.name || 'Unnamed',
+tag: item.supplierName ? String(item.supplierName) : '',
+sub: parts.join(', '),
+amount: await formatCurrency(itemTotalValue),
+onOpen: () => { if (typeof window.editFactoryInventoryItem === 'function') window.editFactoryInventoryItem(itemId); },
+}));
 }
 tbody.innerHTML = '';
 const _fragF = document.createDocumentFragment();

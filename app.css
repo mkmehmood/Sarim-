@@ -6202,11 +6202,6 @@ body.lg-sheet-open { overflow: hidden !important; }
 }
 .lg-sheet-bar { position: sticky; top: 0; z-index: 3; display: flex; justify-content: center; align-items: center; height: 52px; margin: 0 -20px 4px; background: var(--bg); }
 .lg-grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
-.lg-sheet-x {
-  position: absolute; right: 12px; top: 8px; width: 38px; height: 38px; border-radius: 50% !important; border: 1px solid var(--line) !important;
-  background: none !important; display: grid; place-items: center; padding: 0 !important; color: var(--fg); cursor: pointer; min-height: 0 !important;
-}
-.lg-sheet-x svg { width: 16px; height: 16px; stroke: var(--fg); fill: none; stroke-width: 2; stroke-linecap: round; }
 .lg-entry > h3:first-of-type, .lg-entry > .section-header:first-of-type { margin-top: 0 !important; }
 .lg-entry > .section-header h3 { font-size: 1.4rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
 .lg-entry > h3 { font-size: 1.4rem !important; font-weight: 800 !important; letter-spacing: -.02em; }
@@ -6253,8 +6248,6 @@ body.lg-sheet-open { overflow: hidden !important; }
   display: block !important; min-height: 0 !important; background: var(--bg) !important; border: 0 !important; border-radius: 0 !important;
   padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 0 !important; max-width: 440px; width: 100%; margin: 0 auto;
 }
-.lg-back { width: 40px; height: 40px; border-radius: 50% !important; border: 1px solid var(--line) !important; background: none !important; display: grid; place-items: center; padding: 0 !important; cursor: pointer; min-height: 0 !important; }
-.lg-back svg { width: 18px; height: 18px; stroke: var(--fg); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .standalone-screen .screen-title {
   display: block; font-size: 2rem !important; line-height: 1.08; font-weight: 800 !important; font-stretch: 78%; letter-spacing: -.035em !important;
   margin: 20px 0 0 !important; padding: 0 0 14px !important; border-bottom: 1px solid var(--line); color: var(--fg) !important; text-align: left !important;
@@ -6275,3 +6268,23 @@ body.lg-sheet-open { overflow: hidden !important; }
 
 /* tokens referenced by older markup */
 :root, [data-theme="light"] { --card-bg: var(--bg); }
+
+/* ---------- 29. One list row everywhere: tap to open, no dropdown ---------- */
+.who-link { cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .15s; }
+.who-link:active { background: var(--soft); }
+.who-link:focus-visible { outline: 2px solid var(--pri); outline-offset: -2px; }
+.who-link .lrow-s { grid-column: 2; grid-row: 2; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who-link .lrow-s::after, .who-link .lrow-more { display: none !important; }
+.who-link .who-name { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 0; min-width: 0; }
+.who-link .lrow-n { white-space: nowrap; }
+.who-list { display: block; }
+
+/* ---------- 30. Locked to Rep Sales / User role: entry cards open inline, in full view ---------- */
+body.lg-inline-entry #lg-fab, body.lg-inline-entry #lg-scrim { display: none !important; }
+body.lg-inline-entry .section.lg-entry, body.lg-inline-entry .liquid-card.lg-entry, body.lg-inline-entry .lg-entry {
+  position: static !important; transform: none !important; visibility: visible !important; pointer-events: auto !important;
+  max-height: none !important; overflow: visible !important; width: auto !important; max-width: none !important;
+  border: 0 !important; border-radius: 0 !important; padding: 0 !important; margin: 34px 0 0 !important; background: transparent !important; transition: none !important;
+}
+body.lg-inline-entry .lg-sheet-bar { display: none !important; }
+body.lg-inline-entry #tab-prod, body.lg-inline-entry #tab-sales, body.lg-inline-entry #tab-factory, body.lg-inline-entry #tab-payments, body.lg-inline-entry #tab-rep { padding-bottom: 60px !important; }

@@ -1,4 +1,5 @@
 import { beginEditMode, endEditMode, getEditCtx, registerEditHandler, replaceRecord, stampEdit } from './edit-mode.js';
+import { whoRow } from './ledger-ui.js';
 import { BRAND_LOGO_JPEG_BASE64 } from './constants.js';
 import { _creatorBadgeHtml, _mergedBadgeHtml, _safeErr, _set_currentRepProfile, appMode, balanceAfterHtml, compareTimestamps, currentRepProfile, debtDelta, ensureArray, ensureRecordIntegrity, esc, fmtAmt, fmtNum, generateUUID, getRecordTimestamp, getTimestamp, localDateStr, lockedUnitPrice, round2, safeNumber, safeToFixed, salesRepsList, sqliteStore, validateTimestamp, validateUUID } from './business.js';
 import { emitSyncUpdate, unifiedDelete, unifiedSave } from './sync.js';
@@ -762,14 +763,14 @@ return name && typeof name === 'string' && name.toLowerCase().includes(filter);
 });
 const totalItems = filteredCustomers.length;
 if (!filteredCustomers || !Array.isArray(filteredCustomers) || !custMap) {
-tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--danger);">Invalid customer data</td></tr>`;
+tbody.innerHTML = `<div class="u-empty-state-danger">Customer data could not be read. Reload the app to try again.</div>`;
 } else if (totalItems === 0) {
 if (Object.keys(custMap).length === 0) {
-tbody.innerHTML = `<tr><td class="u-empty-state-md" colspan="5" >No customers yet. Add your first sale to get started!</td></tr>`;
+tbody.innerHTML = `<div class="u-empty-state-md">No customers yet. Add your first sale to get started.</div>`;
 } else {
 const filterInput = document.getElementById('rep-filter');
 const filter = filterInput ? filterInput.value : '';
-tbody.innerHTML = `<tr><td class="u-empty-state-md" colspan="5" >No customers match "${esc(filter)}"</td></tr>`;
+tbody.innerHTML = `<div class="u-empty-state-md">No customers match "${esc(filter)}".</div>`;
 }
 } else {
 function buildRepCustomerRow(name) {
@@ -782,17 +783,14 @@ const latestTransaction = customerTransactions.sort((a, b) => b.timestamp - a.ti
 const displayDate = latestTransaction?.date ? formatDisplayDate(latestTransaction.date) : '-';
 const repContact = repCustomers.find(c => c && c.name && c.name.toLowerCase() === name.toLowerCase() && (c.salesRep === currentRepProfile || !c.salesRep));
 const phone = repContact?.phone || latestTransaction?.customerPhone || '-';
-const tr = document.createElement('tr');
-tr.style.borderBottom = '1px solid var(--glass-border)';
-const safeNameForAttr = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-tr.innerHTML = `
-<td class="u-table-td">${displayDate}</td>
-<td style="padding: 8px 2px; font-size: 0.8rem; color: var(--accent); font-weight: 600; cursor:pointer;" onclick="event.stopPropagation(); openRepCustomerManagement('${safeNameForAttr}')">${esc(name)}</td>
-<td class="u-table-td">${phoneActionHTML(phone)}</td>
-<td style="padding: 8px 2px; text-align: right; font-size: 0.8rem; color: ${customerData.debt > 1 ? 'var(--warning)' : 'var(--accent-emerald)'}; font-weight: 700;">
-${fmtAmt(Math.max(0, customerData.debt))}
-</td>`;
-return tr;
+const owes = customerData.debt > 1;
+return whoRow({
+name,
+sub: [phone && phone !== '-' ? phone : '', displayDate !== '-' ? 'Last order ' + displayDate : 'No orders yet'].filter(Boolean).join(', '),
+amount: fmtAmt(Math.max(0, customerData.debt)),
+amountColor: owes ? '' : 'var(--pos)',
+onOpen: () => { if (typeof window.openRepCustomerManagement === 'function') window.openRepCustomerManagement(name); },
+});
 }
 tbody.innerHTML = '';
 const _fragR = document.createDocumentFragment();
